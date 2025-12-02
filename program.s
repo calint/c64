@@ -2,6 +2,7 @@
 
 VIC_CONTROL_X = $D016  ; VIC-II Screen Control Register 2 (Horizontal Scroll)
 SCREEN        = $0400  ; screen address
+DELAY         = 0
 SCROLL_X      = $FE
 DELAY1        = $FD
 DELAY2        = $FC
@@ -19,7 +20,7 @@ print_screen:
 
 loop1:
     lda message, x
-    beq scroll_left
+    beq scroll_left ; done writing string
     sta SCREEN, y
     inx
     iny
@@ -44,12 +45,15 @@ fine_scroll:
     jmp scroll_left
 
 delay:
-    lda #0
+    lda #DELAY 
     sta DELAY1
+    lda #0
     sta DELAY2
 delay1:
     dec DELAY1
     bne delay1
+    lda #DELAY
+    sta DELAY1
     dec DELAY2
     bne delay1
     rts
