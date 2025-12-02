@@ -9,26 +9,26 @@ DELAY2        = $FC    ; delay inner loop
 MAP_OFFSET_X  = $FB    ; map offset in characters
 
 start:
-    lda #7
-    sta SCROLL_X
-    lda #0
-    sta MAP_OFFSET_X
+    lda #7             ; start at rightmost offset  
+    sta SCROLL_X       ; store
+    lda #0             ; start at leftmost map offset
+    sta MAP_OFFSET_X   ; store
 
 render_map:
     ldx MAP_OFFSET_X   ; load map offset
-    ldy #0             ; offset on screen
+    ldy #0             ; load screen position
 
 loop1:
     lda message, x     ; load next character
     beq scroll_left    ; done writing string
     sta SCREEN, y      ; store on screen
-    inx                ; increase character
+    inx                ; increase character position in string
     iny                ; increase screen position
     jmp loop1          ; loop until terminator
 
 scroll_left:
     lda SCROLL_X       ; load fine scroll x
-    cmp #255           ; has it rolled over
+    cmp #255           ; has it rolled over?
     bne fine_scroll    ; no, fine scroll
     lda #7             ; yes, set to maximum right
     sta SCROLL_X       ; store
