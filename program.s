@@ -1,15 +1,15 @@
 .export start
 
-VIC_CONTROL_X = $D016  ; VIC-II Screen Control Register 2 (Horizontal Scroll)
+VIC_CONTROL_X = $D016  ; vic-ii screen control register 2 (horizontal scroll)
 SCREEN        = $0400  ; screen address
-DELAY         = 8
+DELAY         = 8      ; scroll delay
 SCROLL_X      = $FE    ; fine scroll of screen between 0 and 7
 DELAY1        = $FD    ; delay outer loop
 DELAY2        = $FC    ; delay inner loop
 MAP_OFFSET_X  = $FB    ; map offset in characters
 
 start:
-    lda #7             ; start at rightmost offset  
+    lda #7             ; start at rightmost offset
     sta SCROLL_X       ; store
     lda #0             ; start at leftmost map offset
     sta MAP_OFFSET_X   ; store
@@ -36,9 +36,7 @@ scroll_left:
     jmp render_map     ; draw map
 
 fine_scroll:
-    lda VIC_CONTROL_X  ; load chip address
-    and #%11111000     ; clear offset
-    ora SCROLL_X       ; OR offset
+    lda SCROLL_X       ; OR offset
     sta VIC_CONTROL_X  ; store to chip address
     dec SCROLL_X       ; decrease fine scroll by 1
     jsr delay          ; delay
