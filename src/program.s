@@ -5,6 +5,10 @@ SCREEN_ADDRESS  = $0400     ; screen address
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 255       ; scroll delay
+D018_SCREEN_1   = %00010100 ; screen at $0400 char map at $1000
+D018_SCREEN_2   = %10000100 ; screen at $2000 char map at $1000 
+SCREEN_1        = $0400
+SCREEN_2        = $2000
 
 ; page 0 variables
 SCROLL_X             = $FE       ; fine scroll of screen between 0 and 7
@@ -16,6 +20,7 @@ TILE_MAP_ROW         = $F8       ; tile map rendering row number
 SCREEN_PTR           = $F6       ; pointer to screen address (2 bytes)
 SCREEN_COLUMN        = $F5       ; current screen column
 TILE_MAP_COLUMN      = $F4       ; current tile map column (x coordinate)
+SCREEN_ACTIVE        = $F3
 
 .export start
 start:
@@ -23,18 +28,32 @@ start:
     sta SCROLL_X            ; store
     lda #0                  ; start at leftmost map offset
     sta MAP_OFFSET_X        ; store
+    sta SCREEN_ACTIVE
     lda #<tile_map          ; Load low byte of tile_map address
     sta TILE_MAP_BASE       ; Store to ZP location $F9
     lda #>tile_map          ; Load high byte of tile_map address
     sta TILE_MAP_BASE+1     ; Store to ZP location $FA
 
 render_tile_map:
-    ; set screen pointer to $0400
-    lda #$04
-    sta SCREEN_PTR+1
-    lda #$00
-    sta SCREEN_PTR
+    lda SCREEN_ACTIVE
+    beq activate_screen_2
 
+activate_screen_1:
+    lda #>SCREEN_1
+    sta SCREEN_PTR+1
+    lda #<SCREEN_1
+    sta SCREEN_PTR
+    dec SCREEN_ACTIVE
+    jmp screen_activated
+
+activate_screen_2:
+    lda #>SCREEN_2
+    sta SCREEN_PTR+1
+    lda #<SCREEN_2
+    sta SCREEN_PTR
+    inc SCREEN_ACTIVE
+
+screen_activated:
     ; reset current column
     lda #0
     sta SCREEN_COLUMN
@@ -79,13 +98,22 @@ end_of_row:
     dec TILE_MAP_ROW
     bne row_loop
 
+    ; swap screens
+    lda SCREEN_ACTIVE
+    bne swap_screen_2
+    lda #D018_SCREEN_1
+    jmp swap_screen
+swap_screen_2:
+    lda #D018_SCREEN_2
+swap_screen:
+    sta VIC_MEM_CTRL
+
 scroll_left:
     lda SCROLL_X            ; load fine scroll x
     cmp #255                ; has it rolled over?
     bne fine_scroll         ; no, fine scroll
     lda #7                  ; yes, set to maximum right
     sta SCROLL_X
-    sta VIC_CONTROL_X
     inc MAP_OFFSET_X        ; scroll map left one character
     jmp render_tile_map
 
