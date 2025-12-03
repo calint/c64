@@ -2,7 +2,7 @@ VIC_CONTROL_X   = $D016     ; vic-ii screen control register 2 (horizontal scrol
 SCREEN_ADDRESS  = $0400     ; screen addreoss
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-DELAY           = 128       ; scroll delay
+DELAY           = 255       ; scroll delay
 SCROLL_X        = $FE       ; fine scroll of screen between 0 and 7
 DELAY1          = $FD       ; delay outer loop
 DELAY2          = $FC       ; delay inner loop
@@ -80,15 +80,15 @@ scroll_left:
     cmp #255                ; has it rolled over?
     bne fine_scroll         ; no, fine scroll
     lda #7                  ; yes, set to maximum right
-    sta SCROLL_X            ; store
+    sta SCROLL_X
+    sta VIC_CONTROL_X
     inc MAP_OFFSET_X        ; scroll map left one character
     jmp render_tile_map
 
 fine_scroll:
-    lda SCROLL_X            ; OR offset
     sta VIC_CONTROL_X       ; store to chip address
     dec SCROLL_X            ; decrease fine scroll by 1
-    jsr delay               ; delay
+    jsr delay
     jmp scroll_left         ; scroll left
 
 delay:
