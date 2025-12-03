@@ -1,7 +1,7 @@
 ; constants
 VIC_CONTROL_X   = $D016     ; vic-ii screen control register 2
-VIC_MEM_CTRL    = $D018     ; VIC-II Memory Control Register (Screen Base Address)
-SCREEN_ADDRESS  = $0400     ; screen addreoss
+VIC_MEM_CTRL    = $D018     ; vic-ii memory control register
+SCREEN_ADDRESS  = $0400     ; screen address
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 255       ; scroll delay
