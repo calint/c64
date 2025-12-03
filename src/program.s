@@ -4,11 +4,11 @@ VIC_MEM_CTRL    = $D018     ; vic-ii memory control register
 SCREEN_ADDRESS  = $0400     ; screen address
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-DELAY           = 255       ; scroll delay
+DELAY           = 32       ; scroll delay
 D018_SCREEN_1   = %00010100 ; screen at $0400 char map at $1000
-D018_SCREEN_2   = %10000100 ; screen at $2000 char map at $1000 
 SCREEN_1        = $0400
-SCREEN_2        = $2000
+D018_SCREEN_2   = %10010100 ; screen at $2000 char map at $1000 
+SCREEN_2        = $2400
 
 ; page 0 variables
 SCROLL_X             = $FE       ; fine scroll of screen between 0 and 7
