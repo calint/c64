@@ -5,7 +5,9 @@
     },
     "activeFile": "tile-map.tmx",
     "expandedProjectPaths": [
+        "."
     ],
+    "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
         "charset-1.tsx": {
             "scaleInDock": 4,
@@ -15,12 +17,13 @@
             "scale": 4,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 97.25,
-                "y": 79.875
+                "x": 76.75,
+                "y": 131.625
             }
         }
     },
     "last.imagePath": "/home/c/w/c64/resources",
+    "map.height": 25,
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 8,
     "map.tileWidth": 8,
