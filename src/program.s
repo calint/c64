@@ -19,9 +19,9 @@ start:
     sta SCROLL_X            ; store
     lda #0                  ; start at leftmost map offset
     sta MAP_OFFSET_X        ; store
-    lda tile_map_ptr        ; Load low byte of tile_map address
+    lda #<tile_map          ; Load low byte of tile_map address
     sta TILE_MAP_BASE       ; Store to ZP location $F9
-    lda tile_map_ptr+1      ; Load high byte of tile_map address
+    lda #>tile_map          ; Load high byte of tile_map address
     sta TILE_MAP_BASE+1     ; Store to ZP location $FA
 
 render_tile_map:
@@ -40,7 +40,7 @@ render_tile_map:
     sta TILE_MAP_COLUMN
 
     ; set tile map row to initial value
-    lda tile_map_ptr+1
+    lda #>tile_map
     sta TILE_MAP_BASE+1
     
     ; initialize to number of rows to be rendered
@@ -105,7 +105,6 @@ delay1:
     bne delay1
     rts
 
-tile_map_ptr: .addr tile_map
     .align 256         ; make 256 tiles row accessed by the lower byte 
 tile_map:
     .include "../resources/tile_map.s"
