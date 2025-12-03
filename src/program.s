@@ -7,8 +7,8 @@ SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 32       ; scroll delay
 D018_SCREEN_1   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1        = $0400
-D018_SCREEN_2   = %10010100 ; screen at $2000 char map at $1000 
-SCREEN_2        = $2400
+D018_SCREEN_2   = %11110100 ; screen at $2000 char map at $1000 
+SCREEN_2        = $3c00
 
 ; page 0 variables
 SCROLL_X             = $FE       ; fine scroll of screen between 0 and 7
