@@ -1,16 +1,10 @@
 ; constants
 VIC_CONTROL_X   = $D016     ; vic-ii screen control register 2
-VIC_CONTROL_Y   = $D011     ; Screen Control Register 1 (Rows/Display Enable)
 VIC_MEM_CTRL    = $D018     ; VIC-II Memory Control Register (Screen Base Address)
 SCREEN_ADDRESS  = $0400     ; screen addreoss
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 255       ; scroll delay
-VIC_CHAR_BASE   = $20       ; Character ROM is typically $D000, which is $10 << 4.
-SCREEN_BUFFER1  = $0400     ; Buffer 1 Base Address (Default C64 screen)
-SCREEN_BUFFER2  = $1000     ; Buffer 2 Base Address (Off-screen buffer)
-VM_BUFFER1_VAL  = $01       ; D018 value for $0400 (VM bits D3-D0)
-VM_BUFFER2_VAL  = $04       ; D018 value for $1000 (VM bits D3-D0)
 
 ; page 0 variables
 SCROLL_X             = $FE       ; fine scroll of screen between 0 and 7
@@ -22,7 +16,6 @@ TILE_MAP_ROW         = $F8       ; tile map rendering row number
 SCREEN_PTR           = $F6       ; pointer to screen address (2 bytes)
 SCREEN_COLUMN        = $F5       ; current screen column
 TILE_MAP_COLUMN      = $F4       ; current tile map column (x coordinate)
-SCREEN_BUFFER_ACTIVE = $F3       ; 0 or 1 depending if $0400 or SCREEN_BUFFER2
 
 .export start
 start:
@@ -30,7 +23,6 @@ start:
     sta SCROLL_X            ; store
     lda #0                  ; start at leftmost map offset
     sta MAP_OFFSET_X        ; store
-    sta SCREEN_BUFFER_ACTIVE
     lda #<tile_map          ; Load low byte of tile_map address
     sta TILE_MAP_BASE       ; Store to ZP location $F9
     lda #>tile_map          ; Load high byte of tile_map address
@@ -116,47 +108,6 @@ delay1:
     dec DELAY2
     bne delay1
     rts
-
-;-------------------------------------------------------------------------------
-setup_buffers:
-    lda SCREEN_BUFFER_ACTIVE
-    beq setup_buffer_1
-
-    lda #<SCREEN_BUFFER2
-    sta SCREEN_PTR
-    lda #>SCREEN_BUFFER2
-    sta SCREEN_PTR+1
-    rts
-
-setup_buffer_1:
-    lda #<SCREEN_BUFFER1
-    sta SCREEN_PTR
-    lda #>SCREEN_BUFFER1
-    sta SCREEN_PTR+1
-    rts
-;-------------------------------------------------------------------------------
-switch_buffers:
-    lda SCREEN_BUFFER_ACTIVE
-    beq switch_buffers_1
-
-    ; Set $D018 to show Buffer 1 ($0400)
-    lda #VIC_CHAR_BASE | VM_BUFFER1_VAL
-    sta VIC_MEM_CTRL
-    lda #1
-    sta SCREEN_BUFFER_ACTIVE
-    rts
-
-switch_buffers_1:
-    ; Set $D018 to show Buffer 2 ($1000)
-    lda #VIC_CHAR_BASE | VM_BUFFER2_VAL
-    sta VIC_MEM_CTRL
-    lda #0
-    sta SCREEN_BUFFER_ACTIVE  
-    rts
-;-------------------------------------------------------------------------------
-
-;SCREEN_BUFFER2:
-;.res SCREEN_WIDTH * SCREEN_HEIGHT
 
 .align $100         ; make 256 tiles row accessed by the lower byte 
 tile_map:
