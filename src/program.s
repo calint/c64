@@ -50,8 +50,10 @@ start:
     lda #>tile_map          ; load high byte of `tile_map` address
     sta TILE_MAP_BASE+1     ; store
 
+    ; setup interrupt
+
     ; disable cia interrupts that might interfere
-    lda #$7f
+    lda #$7f                ; bit 7 = 0 means "disable" 
     sta $dc0d               ; disable cia 1 interrupts
     sta $dd0d               ; disable cia 2 interrupts
     lda $dc0d               ; acknowledge cia 1 interrupts
