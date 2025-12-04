@@ -168,6 +168,7 @@ fine_scroll:
     jsr delay               ; delay
     jmp scroll_left         ; scroll left
 
+;-------------------------------------------------------------------------------
 delay:
     lda #DELAY 
     sta DELAY1
@@ -181,6 +182,7 @@ delay1:
     dec DELAY2
     bne delay1
     rts
+;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 irq:
@@ -197,7 +199,7 @@ irq:
 swap_screen_1:
     lda #SCREEN_1_D018      ; screen 1 active
 swap_screen:
-    sta VIC_MEM_CTRL        ; set register
+    sta VIC_MEM_CTRL        ; write to register
     dec SCREEN_SWAP_REQ     ; clear screen swap request flag
 irq_done:
     asl $d019               ; acknowledge interrupt
