@@ -3,46 +3,49 @@
 ; 0x0400 - 0x07ff: default screen
 ; 0x1000 - 0x17ff: default character set
 ; 0x3C00 - 0x3fff: double buffer screen
-;
+
 ; constants
-VIC_CONTROL_X   = $D016     ; vic-ii screen control register 2
-VIC_MEM_CTRL    = $D018     ; vic-ii memory control register
-SCREEN_ADDRESS  = $0400     ; screen address
+VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
+VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
+VIC_RASTER_REG  = $d012     ; vic-ii raster register
+VIC_CTRL_1      = $d011     ; vic-ii control register 1
+VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
+VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
+D018_SCREEN_0   = %00010100 ; screen at $0400 char map at $1000
+SCREEN_0        = $0400
+D018_SCREEN_1   = %11110100 ; screen at $3C00 char map at $1000 
+SCREEN_1        = $3c00
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 32        ; scroll delay
-D018_SCREEN_1   = %00010100 ; screen at $0400 char map at $1000
-SCREEN_1        = $0400
-D018_SCREEN_2   = %11110100 ; screen at $3C00 char map at $1000 
-SCREEN_2        = $3C00
 
 ; page 0 variables
-SCROLL_X             = $FE       ; fine scroll of screen between 0 and 7
-DELAY1               = $FD       ; delay outer loop
-DELAY2               = $FC       ; delay inner loop
-MAP_OFFSET_X         = $FB       ; map offset in characters
-TILE_MAP_BASE        = $F9       ; address to base of tile map (2 bytes)
-TILE_MAP_ROW         = $F8       ; tile map rendering row number
-SCREEN_PTR           = $F6       ; pointer to screen address (2 bytes)
-SCREEN_COLUMN        = $F5       ; current screen column
-TILE_MAP_COLUMN      = $F4       ; current tile map column (x coordinate)
-SCREEN_ACTIVE        = $F3       ; active screen 0 or 1
-SWAP_SCREEN_REQ      = $F2       ; 1 when swap screen is requested, 0 when done
+DELAY1               = $fe  ; delay outer loop
+DELAY2               = $fd  ; delay inner loop
+TILE_MAP_BASE        = $fb  ; address to base of tile map (2 bytes)
+TILE_MAP_X           = $fa  ; tile map x offset in characters
+TILE_MAP_X_FINE      = $f9  ; fine scroll of screen between 0 and 7
+TILE_MAP_ROW         = $f8  ; rendering tile map row number (y coordiante)
+TILE_MAP_COLUMN      = $f7  ; rendering tile map column (x coordinate)
+SCREEN_PTR           = $f5  ; pointer to screen address (2 bytes)
+SCREEN_COLUMN        = $f4  ; rendering screen column
+SCREEN_ACTIVE        = $f3  ; active screen (0 or 1)
+SCREEN_SWAP_REQ      = $f2  ; 1 when swap screen is requested, 0 when done
 
 .export start
 start:
     sei                     ; disable interrupts
 
     lda #7                  ; start at rightmost offset
-    sta SCROLL_X            ; store
-    lda #0                  ; start at leftmost map offset
-    sta MAP_OFFSET_X        ; store
-    sta SCREEN_ACTIVE
-    sta SWAP_SCREEN_REQ
-    lda #<tile_map          ; Load low byte of tile_map address
-    sta TILE_MAP_BASE       ; Store to ZP location $F9
-    lda #>tile_map          ; Load high byte of tile_map address
-    sta TILE_MAP_BASE+1     ; Store to ZP location $FA
+    sta TILE_MAP_X_FINE     ; store
+    lda #0                  ; 0 
+    sta TILE_MAP_X          ; start at leftmost map offset
+    sta SCREEN_ACTIVE       ; active screen to 0
+    sta SCREEN_SWAP_REQ     ; swap screen request to 0
+    lda #<tile_map          ; load low byte of `tile_map` address
+    sta TILE_MAP_BASE       ; store 
+    lda #>tile_map          ; load high byte of `tile_map` address
+    sta TILE_MAP_BASE+1     ; store
 
     ; disable cia interrupts that might interfere
     lda #$7f
@@ -51,88 +54,85 @@ start:
     lda $dc0d               ; acknowledge cia 1 interrupts
     lda $dd0d               ; acknowledge cia 2 interrupts
 
-    ; make sure we can write to $fffe/$ffff (all ram mode)
+    ; enable write to $fffe/$ffff (all ram mode)
     lda #$35                ; i/o visible, ram at $a000-$ffff
     sta $01
 
-    ; install irq vector at hardware vector (not kernal)
-    lda #<irq
-    sta $fffe               ; hardware irq vector low byte
-    lda #>irq
-    sta $ffff               ; hardware irq vector high byte
+    ; install irq vector at hardware vector
+    lda #<irq               ; hardware irq vector low byte
+    sta $fffe               ; store
+    lda #>irq               ; hardware irq vector high byte
+    sta $ffff               ; store
 
-    ; set raster line = 250 (inside vblank)
-    lda #250
-    sta $d012
-
-    ; ensure high bit of raster = 0
-    lda $d011
+    ; setup which raster line to generate irq
+    lda VIC_CTRL_1          ; ensure 9'th bit of raster = 0
     and #%01111111          ; clear bit 7 of raster
-    sta $d011
+    sta VIC_CTRL_1          ; write
+    lda #250                ; raster line 250 (inside vblank)
+    sta VIC_RASTER_REG      ; write
  
-    ; acknowledge any pending vic interrupts
-    lda #$ff
-    sta $d019
-    
-    ; enable raster irq (bit 0 = raster interrupt)
-    lda #1
-    sta $d01a
+    lda #$ff                ; acknowledge any pending vic interrupts
+    sta VIC_IRQ_REG         ; write
+
+    lda #1                  ; enable raster irq (bit 0 = raster interrupt)
+    sta VIC_IRQ_ENABLE      ; write
 
     cli                     ; enable interrupts
 
 render_tile_map:
-wait_for_screen_swap_done:
-    lda SWAP_SCREEN_REQ
+wait_for_screen_swap_done:  ; wait until screen swap request is done
+    lda SCREEN_SWAP_REQ     ; load flag
     bne wait_for_screen_swap_done
 
-    lda SCREEN_ACTIVE
+    lda SCREEN_ACTIVE       ; set SCREEN_PTR to current screen
     beq activate_screen_2
 activate_screen_1:
+    lda #>SCREEN_0
+    sta SCREEN_PTR+1
+    lda #<SCREEN_0
+    sta SCREEN_PTR
+    dec SCREEN_ACTIVE       ; set next active screen to 0
+    jmp screen_activated
+activate_screen_2:
     lda #>SCREEN_1
     sta SCREEN_PTR+1
     lda #<SCREEN_1
     sta SCREEN_PTR
-    dec SCREEN_ACTIVE
-    jmp screen_activated
-activate_screen_2:
-    lda #>SCREEN_2
-    sta SCREEN_PTR+1
-    lda #<SCREEN_2
-    sta SCREEN_PTR
-    inc SCREEN_ACTIVE
+    inc SCREEN_ACTIVE       ; set next active screen to 1
 screen_activated:
     ; reset current column
     lda #0
     sta SCREEN_COLUMN
  
     ; set offset in tile map
-    lda MAP_OFFSET_X
+    lda TILE_MAP_X
     sta TILE_MAP_COLUMN
 
-    ; set tile map row to initial value
+    ; set tile map row to initial value (columns are the low byte 0-255)
     lda #>tile_map
     sta TILE_MAP_BASE+1
-    
+ 
     ; initialize to number of rows to be rendered
     lda #SCREEN_HEIGHT
     sta TILE_MAP_ROW
 
 row_loop:
-    ldy TILE_MAP_COLUMN
-    lda (TILE_MAP_BASE),y
-    ldy SCREEN_COLUMN
-    cpy #SCREEN_WIDTH
-    beq end_of_row
-    sta (SCREEN_PTR),y
-    inc TILE_MAP_COLUMN
-    inc SCREEN_COLUMN
-    jmp row_loop
+    ldy TILE_MAP_COLUMN     ; load next character from tile map
+    lda (TILE_MAP_BASE),y   ; offset from base
+    ldy SCREEN_COLUMN       ; load column on screen to write the character to
+    cpy #SCREEN_WIDTH       ; check if done
+    beq end_of_row          ; done, next row or screen done
+    sta (SCREEN_PTR),y      ; store on current screen
+    inc TILE_MAP_COLUMN     ; next tile map column
+    inc SCREEN_COLUMN       ; next screen column
+    jmp row_loop            ; next character
 end_of_row:
-    inc TILE_MAP_BASE+1
-    lda MAP_OFFSET_X
-    sta TILE_MAP_COLUMN
-    lda #0
-    sta SCREEN_COLUMN
+    inc TILE_MAP_BASE+1     ; increase high byte addressing next row
+    lda TILE_MAP_X          ; offset by x position in tile map
+    sta TILE_MAP_COLUMN     ; store
+    lda #0                  ; start at screen column 0
+    sta SCREEN_COLUMN       ; store
+
     ; increase screen pointer by a screen width
     clc
     lda SCREEN_PTR
@@ -141,28 +141,28 @@ end_of_row:
     lda SCREEN_PTR+1
     adc #0
     sta SCREEN_PTR+1
-    ; when screen is rendered scroll left
-    dec TILE_MAP_ROW
-    bne row_loop
 
-    inc SWAP_SCREEN_REQ
-wait_for_screen_swap_done_2:
-    lda SWAP_SCREEN_REQ
-    bne wait_for_screen_swap_done_2
+    dec TILE_MAP_ROW        ; decrease number of rows to render
+    bne row_loop            ; if not finished then next row
+
+    inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
+wait_1:                     ; wait for swap to be done by the `irq`
+    lda SCREEN_SWAP_REQ     ; check status of flag
+    bne wait_1              ; wait until it is 0
 
 scroll_left:
-    lda SCROLL_X            ; load fine scroll x
+    lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
     bne fine_scroll         ; no, fine scroll
     lda #7                  ; yes, set to maximum right
-    sta SCROLL_X
-    inc MAP_OFFSET_X        ; scroll map left one character
-    jmp render_tile_map
+    sta TILE_MAP_X_FINE     ; store
+    inc TILE_MAP_X          ; scroll map left one character
+    jmp render_tile_map     ; render screen to next screen
 
 fine_scroll:
-    sta VIC_CONTROL_X       ; store to chip address
-    dec SCROLL_X            ; decrease fine scroll by 1
-    jsr delay
+    sta VIC_CTRL_2          ; store to chip address
+    dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
+    jsr delay               ; delay
     jmp scroll_left         ; scroll left
 
 delay:
@@ -179,26 +179,29 @@ delay1:
     bne delay1
     rts
 
+;-------------------------------------------------------------------------------
 irq:
-    pha
+    pha                     ; push accumulator on the stack
 
-    lda SWAP_SCREEN_REQ
-    beq irq_done
+    lda SCREEN_SWAP_REQ     ; check screen swap request flag
+    beq irq_done            ; no request active, continue to done
+
     ; swap screens
-    lda SCREEN_ACTIVE
-    bne swap_screen_2
-    lda #D018_SCREEN_1
-    jmp swap_screen
-swap_screen_2:
-    lda #D018_SCREEN_2
+    lda SCREEN_ACTIVE       ; load active screen
+    bne swap_screen_1       ; if screen 1 active
+    lda #D018_SCREEN_0      ; screen 0 active
+    jmp swap_screen         ; continue to write to register
+swap_screen_1:
+    lda #D018_SCREEN_1      ; screen 1 active
 swap_screen:
-    sta VIC_MEM_CTRL
-    dec SWAP_SCREEN_REQ
+    sta VIC_MEM_CTRL        ; set register
+    dec SCREEN_SWAP_REQ     ; clear screen swap request flag
 irq_done:
-    asl $d019
+    asl $d019               ; acknowledge interrupt
 
-    pla
-    rti
+    pla                     ; restore accumulator
+    rti                     ; interrupt done
+;-------------------------------------------------------------------------------
 
 .align $100         ; make 256 tiles row accessed by the lower byte 
 tile_map:
