@@ -6,7 +6,9 @@
 
 ; see: https://sta.c64.org/cbm64mem.html
 
+;-------------------------------------------------------------------------------
 ; constants
+;-------------------------------------------------------------------------------
 VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_RASTER_REG  = $d012     ; vic-ii raster register
 VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
@@ -22,7 +24,9 @@ SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 32        ; scroll delay
 
+;-------------------------------------------------------------------------------
 ; zero page variables
+;-------------------------------------------------------------------------------
 DELAY1               = $fe  ; delay outer loop
 DELAY2               = $fd  ; delay inner loop
 TILE_MAP_BASE        = $fb  ; address to base of tile map (2 bytes)
@@ -35,8 +39,10 @@ SCREEN_COLUMN        = $f4  ; rendering screen column
 SCREEN_ACTIVE        = $f3  ; active screen (0 or 1)
 SCREEN_SWAP_REQ      = $f2  ; 1 when swap screen is requested, 0 when done
 
+;-------------------------------------------------------------------------------
 .export start
 start:
+;-------------------------------------------------------------------------------
     sei                     ; disable interrupts
 
     ; initiate for first render
@@ -85,6 +91,7 @@ start:
 
     cli                     ; enable interrupts
 
+;-------------------------------------------------------------------------------
 render_tile_map:
 wait_for_screen_swap_done:  ; wait until screen swap request is done
     ; lda #2
