@@ -90,17 +90,17 @@ wait_for_screen_swap_done:  ; wait until screen swap request is done
     lda SCREEN_ACTIVE       ; set SCREEN_PTR to current screen
     beq activate_screen_2
 activate_screen_1:
-    lda #>SCREEN_0
-    sta SCREEN_PTR+1
     lda #<SCREEN_0
     sta SCREEN_PTR
+    lda #>SCREEN_0
+    sta SCREEN_PTR+1
     dec SCREEN_ACTIVE       ; set next active screen to 0
     jmp screen_activated
 activate_screen_2:
-    lda #>SCREEN_1
-    sta SCREEN_PTR+1
     lda #<SCREEN_1
     sta SCREEN_PTR
+    lda #>SCREEN_1
+    sta SCREEN_PTR+1
     inc SCREEN_ACTIVE       ; set next active screen to 1
 screen_activated:
     ; reset current column
