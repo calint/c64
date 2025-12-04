@@ -178,30 +178,8 @@ delay1:
     dec DELAY2
     bne delay1
     rts
-; irq:
-;     pha
-;     txa
-;     pha
-;     tya
-;     pha
-;
-;     inc $0400               ; always increment screen 1 position 0,0
-;
-;     lda #1
-;     sta $d019               ; acknowledge interrupt
-;
-;     pla
-;     tay
-;     pla
-;     tax
-;     pla
-;     rti
 
 irq:
-    pha
-    txa
-    pha
-    tya
     pha
 
     lda SWAP_SCREEN_REQ
@@ -217,13 +195,8 @@ swap_screen:
     sta VIC_MEM_CTRL
     dec SWAP_SCREEN_REQ
 irq_done:
-    lda #1
-    sta $d019
+    asl $d019
 
-    pla
-    tay
-    pla
-    tax
     pla
     rti
 
