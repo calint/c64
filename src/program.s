@@ -4,22 +4,24 @@
 ; 0x1000 - 0x17ff: default character set
 ; 0x3C00 - 0x3fff: double buffer screen
 
+; see: https://sta.c64.org/cbm64mem.html
+
 ; constants
+VIC_CTRL_1      = $d011     ; vic-ii control register 1
+VIC_RASTER_REG  = $d012     ; vic-ii raster register
 VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
 VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
-VIC_RASTER_REG  = $d012     ; vic-ii raster register
-VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 D018_SCREEN_0   = %00010100 ; screen at $0400 char map at $1000
-SCREEN_0        = $0400
+SCREEN_0        = $0400     ; address of screen 0
 D018_SCREEN_1   = %11110100 ; screen at $3C00 char map at $1000 
-SCREEN_1        = $3c00
+SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 32        ; scroll delay
 
-; page 0 variables
+; zero page variables
 DELAY1               = $fe  ; delay outer loop
 DELAY2               = $fd  ; delay inner loop
 TILE_MAP_BASE        = $fb  ; address to base of tile map (2 bytes)
@@ -36,6 +38,7 @@ SCREEN_SWAP_REQ      = $f2  ; 1 when swap screen is requested, 0 when done
 start:
     sei                     ; disable interrupts
 
+    ; initiate for first render
     lda #7                  ; start at rightmost offset
     sta TILE_MAP_X_FINE     ; store
     lda #0                  ; 0 
