@@ -13,6 +13,7 @@ VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
 VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
+VIC_BORDER      = $d020     ; vic-ii border color register
 SCREEN_0        = $0400     ; address of screen 0
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1        = $3c00     ; address of screen 1
@@ -86,8 +87,13 @@ start:
 
 render_tile_map:
 wait_for_screen_swap_done:  ; wait until screen swap request is done
+    ; lda #2
+    ; sta VIC_BORDER
     lda SCREEN_SWAP_REQ     ; load flag
     bne wait_for_screen_swap_done
+
+    ; lda #14
+    ; sta VIC_BORDER
 
     lda SCREEN_ACTIVE       ; set SCREEN_PTR to current screen
     beq activate_screen_2
