@@ -1,3 +1,9 @@
+; mapped memory:
+; 0x0000 - 0x00ff: page zero
+; 0x0400 - 0x07ff: default screen
+; 0x1000 - 0x17ff: default character set
+; 0x3C00 - 0x3fff: double buffer screen
+;
 ; constants
 VIC_CONTROL_X   = $D016     ; vic-ii screen control register 2
 VIC_MEM_CTRL    = $D018     ; vic-ii memory control register
