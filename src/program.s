@@ -13,10 +13,10 @@ VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
 VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
-D018_SCREEN_0   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_0        = $0400     ; address of screen 0
-D018_SCREEN_1   = %11110100 ; screen at $3C00 char map at $1000 
+SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1        = $3c00     ; address of screen 1
+SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 32        ; scroll delay
@@ -192,10 +192,10 @@ irq:
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
     bne swap_screen_1       ; if screen 1 active
-    lda #D018_SCREEN_0      ; screen 0 active
+    lda #SCREEN_0_D018      ; screen 0 active
     jmp swap_screen         ; continue to write to register
 swap_screen_1:
-    lda #D018_SCREEN_1      ; screen 1 active
+    lda #SCREEN_1_D018      ; screen 1 active
 swap_screen:
     sta VIC_MEM_CTRL        ; set register
     dec SCREEN_SWAP_REQ     ; clear screen swap request flag
