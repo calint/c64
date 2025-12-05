@@ -221,7 +221,7 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    lda #5                  ; make border blue while waiting
+    lda #5                  ; make border green while waiting
     sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
