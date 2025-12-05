@@ -28,6 +28,7 @@ SCREEN_BLANKS   = 4         ; number of blank rows at top
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
+IRQ_RASTER_LINE = 250       ; start of bottom border
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
@@ -92,7 +93,7 @@ start:
     lda VIC_CTRL_1          ; ensure 9'th bit of raster = 0
     and #%01111111          ; clear bit 7 of raster
     sta VIC_CTRL_1          ; write
-    lda #250                ; raster line 250 (inside vblank)
+    lda #IRQ_RASTER_LINE    ; raster line (inside vblank)
     sta VIC_RASTER_REG      ; write
  
     lda #$ff                ; acknowledge any pending vic interrupts
@@ -137,6 +138,14 @@ render_tile_map:
     jmp @screen_1
 
 @done:
+    ; restore border color
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
+ :  lda VBLANK_DONE
+    beq :-
+    dec VBLANK_DONE
+
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
     bne @to_screen_1        ; if screen 1 active
@@ -150,10 +159,6 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
-    ; restore border color
-    lda #BORDER_COLOR
-    sta VIC_BORDER
-
 scroll_left:
     ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
@@ -166,16 +171,16 @@ scroll_left:
 :   sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
 
-    ; wait for vblank
-    ; lda #BORDER_VBLANK
-    ; sta VIC_BORDER
-:   lda VBLANK_DONE         ; wait for vblank 
-    beq :-
-    dec VBLANK_DONE         ; reset flag
-    ; lda #BORDER_COLOR
-    ; sta VIC_BORDER
+    ; if at pixel 0 skip wait for frame and continue to render
+    cmp #0
+    beq @done
 
-    jmp scroll_left         ; scroll left
+ :  lda VBLANK_DONE
+    beq :-
+    dec VBLANK_DONE
+
+@done:
+    jmp scroll_left
 
 ;-------------------------------------------------------------------------------
 irq:
