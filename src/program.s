@@ -231,25 +231,13 @@ render_tile_map:
 @done:
     lda #BORDER_SWAP_REQ    ; set border color while waiting for swap
     sta VIC_BORDER
-
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
-
     lda #BORDER_COLOR       ; restore border
     sta VIC_BORDER
 
 scroll_left:
-    ; wait for vblank
-    lda #BORDER_VBLANK
-    sta VIC_BORDER
-
-:   lda VBLANK_DONE         ; wait for vblank 
-    beq :-
-    dec VBLANK_DONE         ; reset flag
-
-    lda #BORDER_COLOR
-    sta VIC_BORDER
 
     ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
@@ -261,6 +249,15 @@ scroll_left:
     jmp render_tile_map     ; render tile map to next screen
 :   sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
+
+    ; wait for vblank
+    lda #BORDER_VBLANK
+    sta VIC_BORDER
+:   lda VBLANK_DONE         ; wait for vblank 
+    beq :-
+    dec VBLANK_DONE         ; reset flag
+    lda #BORDER_COLOR
+    sta VIC_BORDER
 
     jmp scroll_left         ; scroll left
 
