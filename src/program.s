@@ -28,7 +28,7 @@ DELAY           = 16        ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
-BORDER_SWAP     = 5         ; green
+BORDER_SWAP_REQ = 5         ; green
 BORDER_VBLANK   = 13        ; light green
 
 ;-------------------------------------------------------------------------------
@@ -231,7 +231,7 @@ render_tile_map:
     sta VIC_BORDER
 
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    lda #5                  ; make border green while waiting
+    lda #BORDER_SWAP_REQ    ; make border green while waiting
     sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
