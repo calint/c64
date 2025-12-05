@@ -1,0 +1,42 @@
+    lda tile_map+TILE_MAP_WIDTH* 0,x
+    sta SCREEN_1+  SCREEN_WIDTH* 4,y
+    lda tile_map+TILE_MAP_WIDTH* 1,x
+    sta SCREEN_1+  SCREEN_WIDTH* 5,y
+    lda tile_map+TILE_MAP_WIDTH* 2,x
+    sta SCREEN_1+  SCREEN_WIDTH* 6,y
+    lda tile_map+TILE_MAP_WIDTH* 3,x
+    sta SCREEN_1+  SCREEN_WIDTH* 7,y
+    lda tile_map+TILE_MAP_WIDTH* 4,x
+    sta SCREEN_1+  SCREEN_WIDTH* 8,y
+    lda tile_map+TILE_MAP_WIDTH* 5,x
+    sta SCREEN_1+  SCREEN_WIDTH* 9,y
+    lda tile_map+TILE_MAP_WIDTH* 6,x
+    sta SCREEN_1+  SCREEN_WIDTH*10,y
+    lda tile_map+TILE_MAP_WIDTH* 7,x
+    sta SCREEN_1+  SCREEN_WIDTH*11,y
+    lda tile_map+TILE_MAP_WIDTH* 8,x
+    sta SCREEN_1+  SCREEN_WIDTH*12,y
+    lda tile_map+TILE_MAP_WIDTH* 9,x
+    sta SCREEN_1+  SCREEN_WIDTH*13,y
+    lda tile_map+TILE_MAP_WIDTH*10,x
+    sta SCREEN_1+  SCREEN_WIDTH*14,y
+    lda tile_map+TILE_MAP_WIDTH*11,x
+    sta SCREEN_1+  SCREEN_WIDTH*15,y
+    lda tile_map+TILE_MAP_WIDTH*12,x
+    sta SCREEN_1+  SCREEN_WIDTH*16,y
+    lda tile_map+TILE_MAP_WIDTH*13,x
+    sta SCREEN_1+  SCREEN_WIDTH*17,y
+    lda tile_map+TILE_MAP_WIDTH*14,x
+    sta SCREEN_1+  SCREEN_WIDTH*18,y
+    lda tile_map+TILE_MAP_WIDTH*15,x
+    sta SCREEN_1+  SCREEN_WIDTH*19,y
+    lda tile_map+TILE_MAP_WIDTH*16,x
+    sta SCREEN_1+  SCREEN_WIDTH*20,y
+    lda tile_map+TILE_MAP_WIDTH*17,x
+    sta SCREEN_1+  SCREEN_WIDTH*21,y
+    lda tile_map+TILE_MAP_WIDTH*18,x
+    sta SCREEN_1+  SCREEN_WIDTH*22,y
+    lda tile_map+TILE_MAP_WIDTH*19,x
+    sta SCREEN_1+  SCREEN_WIDTH*23,y
+    lda tile_map+TILE_MAP_WIDTH*20,x
+    sta SCREEN_1+  SCREEN_WIDTH*24,y
