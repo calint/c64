@@ -54,7 +54,7 @@ start:
     sta SCREEN_ACTIVE       ; active screen to 0
     sta VBLANK_DONE         ; vblank not done
 
-    ; clear 3 top rows on screens
+    ; clear top rows on screens
     lda #160                 ; filled background (space)
     ldx #0
 :   sta SCREEN_0,x
