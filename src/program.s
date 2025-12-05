@@ -229,9 +229,8 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    ; wait for swap to be done by the `irq`
-:   lda SCREEN_SWAP_REQ     ; check status of flag
-    bne :-                  ; wait until it is 0
+:   lda SCREEN_SWAP_REQ     ; wait for request done
+    bne :-                  ; wait for 0
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
