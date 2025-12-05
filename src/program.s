@@ -162,24 +162,19 @@ render_tile_map:
 scroll_left:
     ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
-    cmp #255                ; has it rolled over?
-    bne :+                  ; no, fine scroll
-    lda #7                  ; yes, set to maximum right
+    sta VIC_CTRL_2          ; store to chip address
+    dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
+    bne @wait_vblank        ; if not 0 wait for vblank before next fine scroll
+    lda #7                  ; last pixel, set to maximum right for next frame
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jmp render_tile_map     ; render tile map to next screen
-:   sta VIC_CTRL_2          ; store to chip address
-    dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
 
-    ; if at pixel 0 skip wait for frame and continue to render
-    cmp #0
-    beq @done
-
+@wait_vblank:
  :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
-@done:
     jmp scroll_left
 
 ;-------------------------------------------------------------------------------
