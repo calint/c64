@@ -24,12 +24,11 @@ SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
+SCREEN_BLANKS   = 4         ; number of blank rows at top
 DELAY           = 16        ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
-BORDER_SWAP_REQ = 5         ; green
-BORDER_VBLANK   = 13        ; light green
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
@@ -38,8 +37,7 @@ DELAY1          = $fe       ; delay outer loop
 TILE_MAP_X      = $fd       ; tile map x offset in characters
 TILE_MAP_X_FINE = $fc       ; fine scroll of screen between 0 and 7
 SCREEN_ACTIVE   = $fb       ; active screen (0 or 1)
-SCREEN_SWAP_REQ = $fa       ; 1 when swap screen is requested, 0 when done
-VBLANK_DONE     = $f9       ; 1 when raster irq triggers
+VBLANK_DONE     = $fa       ; 1 when raster irq triggers
 
 ;-------------------------------------------------------------------------------
 .export start
@@ -56,8 +54,20 @@ start:
     lda #0                  ; 0 
     sta TILE_MAP_X          ; start at leftmost map offset
     sta SCREEN_ACTIVE       ; active screen to 0
-    sta SCREEN_SWAP_REQ     ; swap screen request to 0
     sta VBLANK_DONE         ; vblank not done
+
+    ; clear 3 top rows on screens
+    lda #160                 ; filled background (space)
+    ldx #0
+:   sta SCREEN_0,x
+    inx
+    cpx #SCREEN_BLANKS*SCREEN_WIDTH
+    bne :-
+    ldx #0
+:   sta SCREEN_1,x
+    inx
+    cpx #SCREEN_BLANKS*SCREEN_WIDTH
+    bne :-
 
     ;
     ; setup interrupt
@@ -112,55 +122,47 @@ render_tile_map:
 
 @screen_0:
     ; unroll loop and use cheaper instructions to render a column to SCREEN_0
-    lda tile_map+TILE_MAP_WIDTH*0,x
-    sta SCREEN_0+  SCREEN_WIDTH*0,y
-    lda tile_map+TILE_MAP_WIDTH*1,x
-    sta SCREEN_0+  SCREEN_WIDTH*1,y
-    lda tile_map+TILE_MAP_WIDTH*2,x
-    sta SCREEN_0+  SCREEN_WIDTH*2,y
-    lda tile_map+TILE_MAP_WIDTH*3,x
-    sta SCREEN_0+  SCREEN_WIDTH*3,y
-    lda tile_map+TILE_MAP_WIDTH*4,x
-    sta SCREEN_0+  SCREEN_WIDTH*4,y
-    lda tile_map+TILE_MAP_WIDTH*5,x
-    sta SCREEN_0+  SCREEN_WIDTH*5,y
-    lda tile_map+TILE_MAP_WIDTH*6,x
-    sta SCREEN_0+  SCREEN_WIDTH*6,y
-    lda tile_map+TILE_MAP_WIDTH*7,x
-    sta SCREEN_0+  SCREEN_WIDTH*7,y
-    lda tile_map+TILE_MAP_WIDTH*8,x
-    sta SCREEN_0+  SCREEN_WIDTH*8,y
-    lda tile_map+TILE_MAP_WIDTH*9,x
-    sta SCREEN_0+  SCREEN_WIDTH*9,y
-    lda tile_map+TILE_MAP_WIDTH*10,x
+    lda tile_map+TILE_MAP_WIDTH* 0,x
+    sta SCREEN_0+  SCREEN_WIDTH* 4,y
+    lda tile_map+TILE_MAP_WIDTH* 1,x
+    sta SCREEN_0+  SCREEN_WIDTH* 5,y
+    lda tile_map+TILE_MAP_WIDTH* 2,x
+    sta SCREEN_0+  SCREEN_WIDTH* 6,y
+    lda tile_map+TILE_MAP_WIDTH* 3,x
+    sta SCREEN_0+  SCREEN_WIDTH* 7,y
+    lda tile_map+TILE_MAP_WIDTH* 4,x
+    sta SCREEN_0+  SCREEN_WIDTH* 8,y
+    lda tile_map+TILE_MAP_WIDTH* 5,x
+    sta SCREEN_0+  SCREEN_WIDTH* 9,y
+    lda tile_map+TILE_MAP_WIDTH* 6,x
     sta SCREEN_0+  SCREEN_WIDTH*10,y
-    lda tile_map+TILE_MAP_WIDTH*11,x
+    lda tile_map+TILE_MAP_WIDTH* 7,x
     sta SCREEN_0+  SCREEN_WIDTH*11,y
-    lda tile_map+TILE_MAP_WIDTH*12,x
+    lda tile_map+TILE_MAP_WIDTH* 8,x
     sta SCREEN_0+  SCREEN_WIDTH*12,y
-    lda tile_map+TILE_MAP_WIDTH*13,x
+    lda tile_map+TILE_MAP_WIDTH* 9,x
     sta SCREEN_0+  SCREEN_WIDTH*13,y
-    lda tile_map+TILE_MAP_WIDTH*14,x
+    lda tile_map+TILE_MAP_WIDTH*10,x
     sta SCREEN_0+  SCREEN_WIDTH*14,y
-    lda tile_map+TILE_MAP_WIDTH*15,x
+    lda tile_map+TILE_MAP_WIDTH*11,x
     sta SCREEN_0+  SCREEN_WIDTH*15,y
-    lda tile_map+TILE_MAP_WIDTH*16,x
+    lda tile_map+TILE_MAP_WIDTH*12,x
     sta SCREEN_0+  SCREEN_WIDTH*16,y
-    lda tile_map+TILE_MAP_WIDTH*17,x
+    lda tile_map+TILE_MAP_WIDTH*13,x
     sta SCREEN_0+  SCREEN_WIDTH*17,y
-    lda tile_map+TILE_MAP_WIDTH*18,x
+    lda tile_map+TILE_MAP_WIDTH*14,x
     sta SCREEN_0+  SCREEN_WIDTH*18,y
-    lda tile_map+TILE_MAP_WIDTH*19,x
+    lda tile_map+TILE_MAP_WIDTH*15,x
     sta SCREEN_0+  SCREEN_WIDTH*19,y
-    lda tile_map+TILE_MAP_WIDTH*20,x
+    lda tile_map+TILE_MAP_WIDTH*16,x
     sta SCREEN_0+  SCREEN_WIDTH*20,y
-    lda tile_map+TILE_MAP_WIDTH*21,x
+    lda tile_map+TILE_MAP_WIDTH*17,x
     sta SCREEN_0+  SCREEN_WIDTH*21,y
-    lda tile_map+TILE_MAP_WIDTH*22,x
+    lda tile_map+TILE_MAP_WIDTH*18,x
     sta SCREEN_0+  SCREEN_WIDTH*22,y
-    lda tile_map+TILE_MAP_WIDTH*23,x
+    lda tile_map+TILE_MAP_WIDTH*19,x
     sta SCREEN_0+  SCREEN_WIDTH*23,y
-    lda tile_map+TILE_MAP_WIDTH*24,x
+    lda tile_map+TILE_MAP_WIDTH*20,x
     sta SCREEN_0+  SCREEN_WIDTH*24,y
     inx
     iny
@@ -172,55 +174,47 @@ render_tile_map:
 
 @screen_1:
     ; unroll loop and use cheaper instructions to render a column to SCREEN_1
-    lda tile_map+TILE_MAP_WIDTH*0,x
-    sta SCREEN_1+  SCREEN_WIDTH*0,y
-    lda tile_map+TILE_MAP_WIDTH*1,x
-    sta SCREEN_1+  SCREEN_WIDTH*1,y
-    lda tile_map+TILE_MAP_WIDTH*2,x
-    sta SCREEN_1+  SCREEN_WIDTH*2,y
-    lda tile_map+TILE_MAP_WIDTH*3,x
-    sta SCREEN_1+  SCREEN_WIDTH*3,y
-    lda tile_map+TILE_MAP_WIDTH*4,x
-    sta SCREEN_1+  SCREEN_WIDTH*4,y
-    lda tile_map+TILE_MAP_WIDTH*5,x
-    sta SCREEN_1+  SCREEN_WIDTH*5,y
-    lda tile_map+TILE_MAP_WIDTH*6,x
-    sta SCREEN_1+  SCREEN_WIDTH*6,y
-    lda tile_map+TILE_MAP_WIDTH*7,x
-    sta SCREEN_1+  SCREEN_WIDTH*7,y
-    lda tile_map+TILE_MAP_WIDTH*8,x
-    sta SCREEN_1+  SCREEN_WIDTH*8,y
-    lda tile_map+TILE_MAP_WIDTH*9,x
-    sta SCREEN_1+  SCREEN_WIDTH*9,y
-    lda tile_map+TILE_MAP_WIDTH*10,x
+    lda tile_map+TILE_MAP_WIDTH* 0,x
+    sta SCREEN_1+  SCREEN_WIDTH* 4,y
+    lda tile_map+TILE_MAP_WIDTH* 1,x
+    sta SCREEN_1+  SCREEN_WIDTH* 5,y
+    lda tile_map+TILE_MAP_WIDTH* 2,x
+    sta SCREEN_1+  SCREEN_WIDTH* 6,y
+    lda tile_map+TILE_MAP_WIDTH* 3,x
+    sta SCREEN_1+  SCREEN_WIDTH* 7,y
+    lda tile_map+TILE_MAP_WIDTH* 4,x
+    sta SCREEN_1+  SCREEN_WIDTH* 8,y
+    lda tile_map+TILE_MAP_WIDTH* 5,x
+    sta SCREEN_1+  SCREEN_WIDTH* 9,y
+    lda tile_map+TILE_MAP_WIDTH* 6,x
     sta SCREEN_1+  SCREEN_WIDTH*10,y
-    lda tile_map+TILE_MAP_WIDTH*11,x
+    lda tile_map+TILE_MAP_WIDTH* 7,x
     sta SCREEN_1+  SCREEN_WIDTH*11,y
-    lda tile_map+TILE_MAP_WIDTH*12,x
+    lda tile_map+TILE_MAP_WIDTH* 8,x
     sta SCREEN_1+  SCREEN_WIDTH*12,y
-    lda tile_map+TILE_MAP_WIDTH*13,x
+    lda tile_map+TILE_MAP_WIDTH* 9,x
     sta SCREEN_1+  SCREEN_WIDTH*13,y
-    lda tile_map+TILE_MAP_WIDTH*14,x
+    lda tile_map+TILE_MAP_WIDTH*10,x
     sta SCREEN_1+  SCREEN_WIDTH*14,y
-    lda tile_map+TILE_MAP_WIDTH*15,x
+    lda tile_map+TILE_MAP_WIDTH*11,x
     sta SCREEN_1+  SCREEN_WIDTH*15,y
-    lda tile_map+TILE_MAP_WIDTH*16,x
+    lda tile_map+TILE_MAP_WIDTH*12,x
     sta SCREEN_1+  SCREEN_WIDTH*16,y
-    lda tile_map+TILE_MAP_WIDTH*17,x
+    lda tile_map+TILE_MAP_WIDTH*13,x
     sta SCREEN_1+  SCREEN_WIDTH*17,y
-    lda tile_map+TILE_MAP_WIDTH*18,x
+    lda tile_map+TILE_MAP_WIDTH*14,x
     sta SCREEN_1+  SCREEN_WIDTH*18,y
-    lda tile_map+TILE_MAP_WIDTH*19,x
+    lda tile_map+TILE_MAP_WIDTH*15,x
     sta SCREEN_1+  SCREEN_WIDTH*19,y
-    lda tile_map+TILE_MAP_WIDTH*20,x
+    lda tile_map+TILE_MAP_WIDTH*16,x
     sta SCREEN_1+  SCREEN_WIDTH*20,y
-    lda tile_map+TILE_MAP_WIDTH*21,x
+    lda tile_map+TILE_MAP_WIDTH*17,x
     sta SCREEN_1+  SCREEN_WIDTH*21,y
-    lda tile_map+TILE_MAP_WIDTH*22,x
+    lda tile_map+TILE_MAP_WIDTH*18,x
     sta SCREEN_1+  SCREEN_WIDTH*22,y
-    lda tile_map+TILE_MAP_WIDTH*23,x
+    lda tile_map+TILE_MAP_WIDTH*19,x
     sta SCREEN_1+  SCREEN_WIDTH*23,y
-    lda tile_map+TILE_MAP_WIDTH*24,x
+    lda tile_map+TILE_MAP_WIDTH*20,x
     sta SCREEN_1+  SCREEN_WIDTH*24,y
     inx
     iny
@@ -229,16 +223,24 @@ render_tile_map:
     jmp @screen_1
 
 @done:
-    lda #BORDER_SWAP_REQ    ; set border color while waiting for swap
-    sta VIC_BORDER
-    inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-:   lda SCREEN_SWAP_REQ     ; wait for request done
-    bne :-                  ; wait for 0
-    lda #BORDER_COLOR       ; restore border
+    ; swap screens
+    lda SCREEN_ACTIVE       ; load active screen
+    bne @to_screen_1        ; if screen 1 active
+@to_screen_0:
+    lda #SCREEN_0_D018      ; screen 0 active
+    inc SCREEN_ACTIVE
+    jmp @swap               ; continue to write to register
+@to_screen_1:
+    lda #SCREEN_1_D018      ; screen 1 active
+    dec SCREEN_ACTIVE
+@swap:
+    sta VIC_MEM_CTRL        ; write to register
+
+    ; restore border color
+    lda #BORDER_COLOR
     sta VIC_BORDER
 
 scroll_left:
-
     ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
@@ -251,13 +253,13 @@ scroll_left:
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
 
     ; wait for vblank
-    lda #BORDER_VBLANK
-    sta VIC_BORDER
+    ; lda #BORDER_VBLANK
+    ; sta VIC_BORDER
 :   lda VBLANK_DONE         ; wait for vblank 
     beq :-
     dec VBLANK_DONE         ; reset flag
-    lda #BORDER_COLOR
-    sta VIC_BORDER
+    ; lda #BORDER_COLOR
+    ; sta VIC_BORDER
 
     jmp scroll_left         ; scroll left
 
@@ -278,24 +280,6 @@ irq:
 
     lda #1
     sta VBLANK_DONE         ; set vblank done
- 
-    lda SCREEN_SWAP_REQ     ; check screen swap request flag
-    beq @done               ; no request active, continue to done
-
-    ; swap screens
-    lda SCREEN_ACTIVE       ; load active screen
-    bne @to_screen_1        ; if screen 1 active
-@to_screen_0:
-    lda #SCREEN_0_D018      ; screen 0 active
-    inc SCREEN_ACTIVE
-    jmp @swap               ; continue to write to register
-@to_screen_1:
-    lda #SCREEN_1_D018      ; screen 1 active
-    dec SCREEN_ACTIVE
-@swap:
-    sta VIC_MEM_CTRL        ; write to register
-    dec SCREEN_SWAP_REQ     ; clear screen swap request flag
-@done:
     asl $d019               ; acknowledge interrupt
 
     pla                     ; restore accumulator
