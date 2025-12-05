@@ -10,4 +10,6 @@ experiments with bare metal commodore 64
 * sprites with collision detection
 
 ## screenshots
+
 ![scroller](screenshots/1.png)
+![21 rows](screenshots/2.png)
