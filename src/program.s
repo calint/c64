@@ -92,11 +92,11 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
-@loop:                      ; wait until screen swap request is done
+@1:                         ; wait until screen swap request is done
     ; lda #2
     ; sta VIC_BORDER
     lda SCREEN_SWAP_REQ     ; load flag
-    bne @loop
+    bne @1
 
     ; lda #14
     ; sta VIC_BORDER
@@ -229,14 +229,14 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-@loop2:                     ; wait for swap to be done by the `irq`
+@2:                         ; wait for swap to be done by the `irq`
     lda SCREEN_SWAP_REQ     ; check status of flag
-    bne @loop2              ; wait until it is 0
+    bne @2                  ; wait until it is 0
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
-    bne @fine_scroll         ; no, fine scroll
+    bne @fine_scroll        ; no, fine scroll
     lda #7                  ; yes, set to maximum right
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
