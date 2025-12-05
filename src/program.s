@@ -1,10 +1,12 @@
+;-------------------------------------------------------------------------------
 ; mapped memory:
+;-------------------------------------------------------------------------------
 ; 0x0000 - 0x00ff: page zero
 ; 0x0400 - 0x07ff: default screen
 ; 0x1000 - 0x17ff: default character set
 ; 0x3C00 - 0x3fff: double buffer screen
 
-; see: https://sta.c64.org/cbm64mem.html
+; for more see: https://sta.c64.org/cbm64mem.html
 
 ;-------------------------------------------------------------------------------
 ; constants
@@ -23,7 +25,7 @@ SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 8         ; scroll delay
-TILE_MAP_WIDTH  = 256
+TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
@@ -41,7 +43,10 @@ start:
 ;-------------------------------------------------------------------------------
     sei                     ; disable interrupts
 
-    ; initiate for first render
+    ;
+    ; setup for first render
+    ;
+
     lda #7                  ; start at rightmost offset
     sta TILE_MAP_X_FINE     ; store
     lda #0                  ; 0 
@@ -87,24 +92,25 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
-wait_1:                     ; wait until screen swap request is done
+@loop:                      ; wait until screen swap request is done
     ; lda #2
     ; sta VIC_BORDER
     lda SCREEN_SWAP_REQ     ; load flag
-    bne wait_1
+    bne @loop
 
     ; lda #14
     ; sta VIC_BORDER
 
-render_tile_map_init:
     ldx TILE_MAP_X
     ldy #0
 
+    ; jump to unrolled loop for current screen
     lda SCREEN_ACTIVE
-    beq render_tile_map_screen_0
-    jmp render_tile_map_screen_1
+    beq @screen_0
+    jmp @screen_1
 
-render_tile_map_screen_0:
+@screen_0:
+    ; unroll loop and use cheaper instructions to render a column to SCREEN_0
     lda tile_map+TILE_MAP_WIDTH*0,x
     sta SCREEN_0+  SCREEN_WIDTH*0,y
     lda tile_map+TILE_MAP_WIDTH*1,x
@@ -158,12 +164,13 @@ render_tile_map_screen_0:
     inx
     iny
     cpy #SCREEN_WIDTH
-    beq jmp_to_render_tile_map_done
-    jmp render_tile_map_screen_0
-jmp_to_render_tile_map_done:
-    jmp render_tile_map_done 
+    beq @jmp_to_done
+    jmp @screen_0
+@jmp_to_done:
+    jmp @done 
 
-render_tile_map_screen_1:
+@screen_1:
+    ; unroll loop and use cheaper instructions to render a column to SCREEN_1
     lda tile_map+TILE_MAP_WIDTH*0,x
     sta SCREEN_1+  SCREEN_WIDTH*0,y
     lda tile_map+TILE_MAP_WIDTH*1,x
@@ -217,25 +224,25 @@ render_tile_map_screen_1:
     inx
     iny
     cpy #SCREEN_WIDTH
-    beq render_tile_map_done
-    jmp render_tile_map_screen_1
+    beq @done
+    jmp @screen_1
 
-render_tile_map_done:
+@done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-wait_2:                     ; wait for swap to be done by the `irq`
+@loop2:                     ; wait for swap to be done by the `irq`
     lda SCREEN_SWAP_REQ     ; check status of flag
-    bne wait_2              ; wait until it is 0
+    bne @loop2              ; wait until it is 0
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
-    bne fine_scroll         ; no, fine scroll
+    bne @fine_scroll         ; no, fine scroll
     lda #7                  ; yes, set to maximum right
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jmp render_tile_map     ; render screen to next screen
 
-fine_scroll:
+@fine_scroll:
     sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
     jsr delay               ; delay
