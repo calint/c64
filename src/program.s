@@ -229,11 +229,13 @@ render_tile_map:
     jmp @screen_1
 
 @done:
-    inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    lda #BORDER_SWAP_REQ    ; set border color while waiting for swap 
+    lda #BORDER_SWAP_REQ    ; set border color while waiting for swap
     sta VIC_BORDER
+
+    inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
+
     lda #BORDER_COLOR       ; restore border
     sta VIC_BORDER
 
