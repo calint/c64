@@ -28,6 +28,7 @@ SCREEN_BLANKS   = 4         ; number of blank rows at top
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
+BORDER_LOOP     = 1         ; white
 IRQ_RASTER_LINE = 250       ; start of bottom border
 
 ;-------------------------------------------------------------------------------
@@ -164,18 +165,32 @@ scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
-    bne @wait_vblank        ; if not 0 wait for vblank before next fine scroll
+    bpl @done               ; if not 0 wait for vblank before next fine scroll
     lda #7                  ; last pixel, set to maximum right for next frame
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jmp render_tile_map     ; render tile map to next screen
 
-@wait_vblank:
+@done:
  :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
     jmp scroll_left
+
+;-------------------------------------------------------------------------------
+loop:
+    lda #BORDER_LOOP
+    sta VIC_BORDER
+    ldy #2
+    ldx #0
+:   dex
+    bne :-
+    dey
+    bne :-
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+    rts
 
 ;-------------------------------------------------------------------------------
 irq:
