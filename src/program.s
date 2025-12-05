@@ -144,7 +144,7 @@ render_tile_map:
 
  :  lda VBLANK_DONE
     beq :-
-    dec VBLANK_DONE
+    lsr VBLANK_DONE
 
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
@@ -155,7 +155,7 @@ render_tile_map:
     jmp @swap               ; continue to write to register
 @to_screen_1:
     lda #SCREEN_1_D018      ; screen 1 active
-    dec SCREEN_ACTIVE
+    lsr SCREEN_ACTIVE
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
@@ -177,7 +177,7 @@ scroll_left:
 
  :  lda VBLANK_DONE
     beq :-
-    dec VBLANK_DONE
+    lsr VBLANK_DONE
 
 @done:
     jmp scroll_left
