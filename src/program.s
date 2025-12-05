@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------------
-; mapped memory:
+; mapped memory
 ;-------------------------------------------------------------------------------
-; 0x0000 - 0x00ff: page zero
+; 0x0002 - 0x00fe: page zero
 ; 0x0400 - 0x07ff: default screen
 ; 0x1000 - 0x17ff: default character set
 ; 0x3C00 - 0x3fff: double buffer screen
