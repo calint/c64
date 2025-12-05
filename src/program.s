@@ -245,7 +245,7 @@ scroll_left:
 :   lda VBLANK_DONE         ; wait for 1 
     beq :-
     dec VBLANK_DONE         ; reset flag
-    
+
     lda #BORDER_COLOR
     sta VIC_BORDER
 
@@ -276,10 +276,10 @@ delay:
 ;-------------------------------------------------------------------------------
 irq:
     pha                     ; push accumulator on the stack
-    
+
     lda #1
     sta VBLANK_DONE         ; set vblank done
-    
+ 
     lda SCREEN_SWAP_REQ     ; check screen swap request flag
     beq @done               ; no request active, continue to done
 
