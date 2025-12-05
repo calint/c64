@@ -254,13 +254,13 @@ delay:
     sta DELAY1
     lda #0
     sta DELAY2
-delay1:
+@1:
     dec DELAY1
-    bne delay1
+    bne @1
     lda #DELAY
     sta DELAY1
     dec DELAY2
-    bne delay1
+    bne @1
     rts
 ;-------------------------------------------------------------------------------
 
@@ -269,21 +269,21 @@ irq:
     pha                     ; push accumulator on the stack
 
     lda SCREEN_SWAP_REQ     ; check screen swap request flag
-    beq irq_done            ; no request active, continue to done
+    beq @irq_done            ; no request active, continue to done
 
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
-    bne swap_screen_1       ; if screen 1 active
+    bne @swap_screen_1       ; if screen 1 active
     lda #SCREEN_0_D018      ; screen 0 active
     inc SCREEN_ACTIVE
-    jmp swap_screen         ; continue to write to register
-swap_screen_1:
+    jmp @swap_screen         ; continue to write to register
+@swap_screen_1:
     lda #SCREEN_1_D018      ; screen 1 active
     dec SCREEN_ACTIVE
-swap_screen:
+@swap_screen:
     sta VIC_MEM_CTRL        ; write to register
     dec SCREEN_SWAP_REQ     ; clear screen swap request flag
-irq_done:
+@irq_done:
     asl $d019               ; acknowledge interrupt
 
     pla                     ; restore accumulator
