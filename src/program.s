@@ -244,7 +244,7 @@ scroll_left:
     lda #BORDER_VBLANK
     sta VIC_BORDER
 
-:   lda VBLANK_DONE         ; wait for 1 
+:   lda VBLANK_DONE         ; wait for vblank 
     beq :-
     dec VBLANK_DONE         ; reset flag
 
