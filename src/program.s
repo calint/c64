@@ -25,7 +25,6 @@ SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 SCREEN_BLANKS   = 4         ; number of blank rows at top
-DELAY           = 16        ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
@@ -33,11 +32,10 @@ BORDER_RENDER   = 0         ; black
 ;-------------------------------------------------------------------------------
 ; zero page variables
 ;-------------------------------------------------------------------------------
-DELAY1          = $fe       ; delay outer loop
-TILE_MAP_X      = $fd       ; tile map x offset in characters
-TILE_MAP_X_FINE = $fc       ; fine scroll of screen between 0 and 7
-SCREEN_ACTIVE   = $fb       ; active screen (0 or 1)
-VBLANK_DONE     = $fa       ; 1 when raster irq triggers
+TILE_MAP_X      = $fe       ; tile map x offset in characters
+TILE_MAP_X_FINE = $fd       ; fine scroll of screen between 0 and 7
+SCREEN_ACTIVE   = $fc       ; active screen (0 or 1)
+VBLANK_DONE     = $fb       ; 1 when raster irq triggers
 
 ;-------------------------------------------------------------------------------
 .export start
