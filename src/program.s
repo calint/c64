@@ -26,6 +26,10 @@ SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 DELAY           = 16        ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
+BORDER_COLOR    = 14        ; light blue
+BORDER_RENDER   = 0         ; black
+BORDER_SWAP     = 5         ; green
+BORDER_VBLANK   = 13        ; light green
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
@@ -93,6 +97,9 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
+    lda #BORDER_RENDER
+    sta VIC_BORDER
+
     ldx TILE_MAP_X
     ldy #0
 
@@ -220,15 +227,28 @@ render_tile_map:
     jmp @screen_1
 
 @done:
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
     lda #5                  ; make border green while waiting
     sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
-    lda #14                 ; restore border to light blue
+    lda #14                 ; restore border
     sta VIC_BORDER
 
 scroll_left:
+    ; wait for vblank
+    lda #BORDER_VBLANK
+    sta VIC_BORDER
+:   lda VBLANK_DONE         ; wait for 1 
+    beq :-
+    dec VBLANK_DONE         ; reset flag
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
+    ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
     bne :+                  ; no, fine scroll
@@ -238,15 +258,6 @@ scroll_left:
     jmp render_tile_map     ; render screen to next screen
 :   sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
-
-    ; wait for vblank
-    lda #6                  ; make border blue while waiting
-    sta VIC_BORDER
-:   lda VBLANK_DONE         ; wait for 1 
-    beq :-
-    dec VBLANK_DONE         ; reset flag
-    lda #14                 ; restore border to light blue
-    sta VIC_BORDER
 
     jmp scroll_left         ; scroll left
 
