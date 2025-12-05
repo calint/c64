@@ -51,8 +51,9 @@ start:
 
     lda #7                  ; start at rightmost offset
     sta TILE_MAP_X_FINE     ; store
-    lda #0                  ; 0 
+    lda #256-SCREEN_WIDTH
     sta TILE_MAP_X          ; start at leftmost map offset
+    lda #0                  ; 0 
     sta SCREEN_ACTIVE       ; active screen to 0
     sta VBLANK_DONE         ; vblank not done
 
@@ -160,6 +161,9 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
+    jmp scroll_right
+
+;-------------------------------------------------------------------------------
 scroll_left:
     ; shift screen by fine scroll or render new screen
     lda TILE_MAP_X_FINE     ; load fine scroll x
@@ -178,6 +182,27 @@ scroll_left:
     lsr VBLANK_DONE
 
     jmp scroll_left
+
+;-------------------------------------------------------------------------------
+scroll_right:
+    ; shift screen by fine scroll or render new screen
+    lda TILE_MAP_X_FINE     ; load fine scroll x
+    sta VIC_CTRL_2          ; store to chip address
+    inc TILE_MAP_X_FINE     ; decrease fine scroll by 1
+    cmp #7
+    bne @done               ; if not 0 wait for vblank before next fine scroll
+    lda #0                  ; last pixel, set to maximum right for next frame
+    sta TILE_MAP_X_FINE     ; store
+    dec TILE_MAP_X          ; scroll map left one character
+    jsr loop                ; run game loop
+    jmp render_tile_map     ; render tile map to next screen
+@done:
+    jsr loop                ; run game loop
+ :  lda VBLANK_DONE         ; wait for vblank
+    beq :-
+    lsr VBLANK_DONE
+
+    jmp scroll_right
 
 ;-------------------------------------------------------------------------------
 loop:

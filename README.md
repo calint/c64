@@ -12,4 +12,5 @@ experiments with bare metal commodore 64
 ## screenshots
 
 ![scroller](screenshots/1.png)
-![21 rows](screenshots/2.png)
+![25 rows](screenshots/2.png)
+![hello](screenshots/3.png)
