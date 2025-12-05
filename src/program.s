@@ -258,7 +258,7 @@ scroll_left:
     lda #7                  ; yes, set to maximum right
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
-    jmp render_tile_map     ; render screen to next screen
+    jmp render_tile_map     ; render tile map to next screen
 :   sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
 
