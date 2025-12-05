@@ -97,9 +97,11 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
+    ; set border color to illustrate duration of render
     lda #BORDER_RENDER
     sta VIC_BORDER
 
+    ; initiate tile map position and screen column
     ldx TILE_MAP_X
     ldy #0
 
@@ -227,24 +229,23 @@ render_tile_map:
     jmp @screen_1
 
 @done:
-    lda #BORDER_COLOR
-    sta VIC_BORDER
-
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    lda #BORDER_SWAP_REQ    ; make border green while waiting
+    lda #BORDER_SWAP_REQ    ; set border color while waiting for swap 
     sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
-    lda #14                 ; restore border
+    lda #BORDER_COLOR       ; restore border
     sta VIC_BORDER
 
 scroll_left:
     ; wait for vblank
     lda #BORDER_VBLANK
     sta VIC_BORDER
+
 :   lda VBLANK_DONE         ; wait for 1 
     beq :-
     dec VBLANK_DONE         ; reset flag
+    
     lda #BORDER_COLOR
     sta VIC_BORDER
 
