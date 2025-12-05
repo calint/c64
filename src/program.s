@@ -49,7 +49,7 @@ start:
     ; setup first render
     ;
 
-    lda #7                  ; start at rightmost offset
+    lda #0                  ; start at rightmost offset
     sta TILE_MAP_X_FINE     ; store
     lda #256-SCREEN_WIDTH
     sta TILE_MAP_X          ; start at leftmost map offset
@@ -191,9 +191,9 @@ scroll_right:
     inc TILE_MAP_X_FINE     ; decrease fine scroll by 1
     cmp #7
     bne @done               ; if not 0 wait for vblank before next fine scroll
-    lda #0                  ; last pixel, set to maximum right for next frame
+    lda #0                  ; last pixel, set to minimum left for next frame
     sta TILE_MAP_X_FINE     ; store
-    dec TILE_MAP_X          ; scroll map left one character
+    dec TILE_MAP_X          ; scroll map right one character
     jsr loop                ; run game loop
     jmp render_tile_map     ; render tile map to next screen
 @done:
