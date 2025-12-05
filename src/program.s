@@ -22,22 +22,18 @@ SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-DELAY           = 32        ; scroll delay
+DELAY           = 8         ; scroll delay
+TILE_MAP_WIDTH  = 256
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
 ;-------------------------------------------------------------------------------
 DELAY1               = $fe  ; delay outer loop
 DELAY2               = $fd  ; delay inner loop
-TILE_MAP_BASE        = $fb  ; address to base of tile map (2 bytes)
-TILE_MAP_X           = $fa  ; tile map x offset in characters
-TILE_MAP_X_FINE      = $f9  ; fine scroll of screen between 0 and 7
-TILE_MAP_ROW         = $f8  ; rendering tile map row number (y coordiante)
-TILE_MAP_COLUMN      = $f7  ; rendering tile map column (x coordinate)
-SCREEN_PTR           = $f5  ; pointer to screen address (2 bytes)
-SCREEN_COLUMN        = $f4  ; rendering screen column
-SCREEN_ACTIVE        = $f3  ; active screen (0 or 1)
-SCREEN_SWAP_REQ      = $f2  ; 1 when swap screen is requested, 0 when done
+TILE_MAP_X           = $fc  ; tile map x offset in characters
+TILE_MAP_X_FINE      = $fb  ; fine scroll of screen between 0 and 7
+SCREEN_ACTIVE        = $fa  ; active screen (0 or 1)
+SCREEN_SWAP_REQ      = $f9  ; 1 when swap screen is requested, 0 when done
 
 ;-------------------------------------------------------------------------------
 .export start
@@ -52,12 +48,10 @@ start:
     sta TILE_MAP_X          ; start at leftmost map offset
     sta SCREEN_ACTIVE       ; active screen to 0
     sta SCREEN_SWAP_REQ     ; swap screen request to 0
-    lda #<tile_map          ; load low byte of `tile_map` address
-    sta TILE_MAP_BASE       ; store 
-    lda #>tile_map          ; load high byte of `tile_map` address
-    sta TILE_MAP_BASE+1     ; store
 
+    ;
     ; setup interrupt
+    ;
 
     ; disable cia interrupts that might interfere
     lda #$7f                ; bit 7 = 0 means "disable" 
@@ -93,80 +87,144 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
-wait_for_screen_swap_done:  ; wait until screen swap request is done
+wait_1:                     ; wait until screen swap request is done
     ; lda #2
     ; sta VIC_BORDER
     lda SCREEN_SWAP_REQ     ; load flag
-    bne wait_for_screen_swap_done
+    bne wait_1
 
     ; lda #14
     ; sta VIC_BORDER
 
-    lda SCREEN_ACTIVE       ; set SCREEN_PTR to current screen
-    beq activate_screen_2
-activate_screen_1:
-    lda #<SCREEN_0
-    sta SCREEN_PTR
-    lda #>SCREEN_0
-    sta SCREEN_PTR+1
-    dec SCREEN_ACTIVE       ; set next active screen to 0
-    jmp screen_activated
-activate_screen_2:
-    lda #<SCREEN_1
-    sta SCREEN_PTR
-    lda #>SCREEN_1
-    sta SCREEN_PTR+1
-    inc SCREEN_ACTIVE       ; set next active screen to 1
-screen_activated:
-    ; reset current column
-    lda #0
-    sta SCREEN_COLUMN
- 
-    ; set offset in tile map
-    lda TILE_MAP_X
-    sta TILE_MAP_COLUMN
+render_tile_map_init:
+    ldx TILE_MAP_X
+    ldy #0
 
-    ; set tile map row to initial value (columns are the low byte 0-255)
-    lda #>tile_map
-    sta TILE_MAP_BASE+1
- 
-    ; initialize to number of rows to be rendered
-    lda #SCREEN_HEIGHT
-    sta TILE_MAP_ROW
+    lda SCREEN_ACTIVE
+    beq render_tile_map_screen_0
+    jmp render_tile_map_screen_1
 
-row_loop:
-    ldy TILE_MAP_COLUMN     ; load next character from tile map
-    lda (TILE_MAP_BASE),y   ; offset from base
-    ldy SCREEN_COLUMN       ; load column on screen to write the character to
-    cpy #SCREEN_WIDTH       ; check if done
-    beq end_of_row          ; done, next row or screen done
-    sta (SCREEN_PTR),y      ; store on current screen
-    inc TILE_MAP_COLUMN     ; next tile map column
-    inc SCREEN_COLUMN       ; next screen column
-    jmp row_loop            ; next character
-end_of_row:
-    inc TILE_MAP_BASE+1     ; increase high byte addressing next row
-    lda TILE_MAP_X          ; offset by x position in tile map
-    sta TILE_MAP_COLUMN     ; store
-    lda #0                  ; start at screen column 0
-    sta SCREEN_COLUMN       ; store
+render_tile_map_screen_0:
+    lda tile_map+TILE_MAP_WIDTH*0,x
+    sta SCREEN_0+  SCREEN_WIDTH*0,y
+    lda tile_map+TILE_MAP_WIDTH*1,x
+    sta SCREEN_0+  SCREEN_WIDTH*1,y
+    lda tile_map+TILE_MAP_WIDTH*2,x
+    sta SCREEN_0+  SCREEN_WIDTH*2,y
+    lda tile_map+TILE_MAP_WIDTH*3,x
+    sta SCREEN_0+  SCREEN_WIDTH*3,y
+    lda tile_map+TILE_MAP_WIDTH*4,x
+    sta SCREEN_0+  SCREEN_WIDTH*4,y
+    lda tile_map+TILE_MAP_WIDTH*5,x
+    sta SCREEN_0+  SCREEN_WIDTH*5,y
+    lda tile_map+TILE_MAP_WIDTH*6,x
+    sta SCREEN_0+  SCREEN_WIDTH*6,y
+    lda tile_map+TILE_MAP_WIDTH*7,x
+    sta SCREEN_0+  SCREEN_WIDTH*7,y
+    lda tile_map+TILE_MAP_WIDTH*8,x
+    sta SCREEN_0+  SCREEN_WIDTH*8,y
+    lda tile_map+TILE_MAP_WIDTH*9,x
+    sta SCREEN_0+  SCREEN_WIDTH*9,y
+    lda tile_map+TILE_MAP_WIDTH*10,x
+    sta SCREEN_0+  SCREEN_WIDTH*10,y
+    lda tile_map+TILE_MAP_WIDTH*11,x
+    sta SCREEN_0+  SCREEN_WIDTH*11,y
+    lda tile_map+TILE_MAP_WIDTH*12,x
+    sta SCREEN_0+  SCREEN_WIDTH*12,y
+    lda tile_map+TILE_MAP_WIDTH*13,x
+    sta SCREEN_0+  SCREEN_WIDTH*13,y
+    lda tile_map+TILE_MAP_WIDTH*14,x
+    sta SCREEN_0+  SCREEN_WIDTH*14,y
+    lda tile_map+TILE_MAP_WIDTH*15,x
+    sta SCREEN_0+  SCREEN_WIDTH*15,y
+    lda tile_map+TILE_MAP_WIDTH*16,x
+    sta SCREEN_0+  SCREEN_WIDTH*16,y
+    lda tile_map+TILE_MAP_WIDTH*17,x
+    sta SCREEN_0+  SCREEN_WIDTH*17,y
+    lda tile_map+TILE_MAP_WIDTH*18,x
+    sta SCREEN_0+  SCREEN_WIDTH*18,y
+    lda tile_map+TILE_MAP_WIDTH*19,x
+    sta SCREEN_0+  SCREEN_WIDTH*19,y
+    lda tile_map+TILE_MAP_WIDTH*20,x
+    sta SCREEN_0+  SCREEN_WIDTH*20,y
+    lda tile_map+TILE_MAP_WIDTH*21,x
+    sta SCREEN_0+  SCREEN_WIDTH*21,y
+    lda tile_map+TILE_MAP_WIDTH*22,x
+    sta SCREEN_0+  SCREEN_WIDTH*22,y
+    lda tile_map+TILE_MAP_WIDTH*23,x
+    sta SCREEN_0+  SCREEN_WIDTH*23,y
+    lda tile_map+TILE_MAP_WIDTH*24,x
+    sta SCREEN_0+  SCREEN_WIDTH*24,y
+    inx
+    iny
+    cpy #SCREEN_WIDTH
+    beq jmp_to_render_tile_map_done
+    jmp render_tile_map_screen_0
+jmp_to_render_tile_map_done:
+    jmp render_tile_map_done 
 
-    ; increase screen pointer by a screen width
-    clc
-    lda SCREEN_PTR
-    adc #SCREEN_WIDTH
-    sta SCREEN_PTR
-    lda SCREEN_PTR+1
-    adc #0
-    sta SCREEN_PTR+1
+render_tile_map_screen_1:
+    lda tile_map+TILE_MAP_WIDTH*0,x
+    sta SCREEN_1+  SCREEN_WIDTH*0,y
+    lda tile_map+TILE_MAP_WIDTH*1,x
+    sta SCREEN_1+  SCREEN_WIDTH*1,y
+    lda tile_map+TILE_MAP_WIDTH*2,x
+    sta SCREEN_1+  SCREEN_WIDTH*2,y
+    lda tile_map+TILE_MAP_WIDTH*3,x
+    sta SCREEN_1+  SCREEN_WIDTH*3,y
+    lda tile_map+TILE_MAP_WIDTH*4,x
+    sta SCREEN_1+  SCREEN_WIDTH*4,y
+    lda tile_map+TILE_MAP_WIDTH*5,x
+    sta SCREEN_1+  SCREEN_WIDTH*5,y
+    lda tile_map+TILE_MAP_WIDTH*6,x
+    sta SCREEN_1+  SCREEN_WIDTH*6,y
+    lda tile_map+TILE_MAP_WIDTH*7,x
+    sta SCREEN_1+  SCREEN_WIDTH*7,y
+    lda tile_map+TILE_MAP_WIDTH*8,x
+    sta SCREEN_1+  SCREEN_WIDTH*8,y
+    lda tile_map+TILE_MAP_WIDTH*9,x
+    sta SCREEN_1+  SCREEN_WIDTH*9,y
+    lda tile_map+TILE_MAP_WIDTH*10,x
+    sta SCREEN_1+  SCREEN_WIDTH*10,y
+    lda tile_map+TILE_MAP_WIDTH*11,x
+    sta SCREEN_1+  SCREEN_WIDTH*11,y
+    lda tile_map+TILE_MAP_WIDTH*12,x
+    sta SCREEN_1+  SCREEN_WIDTH*12,y
+    lda tile_map+TILE_MAP_WIDTH*13,x
+    sta SCREEN_1+  SCREEN_WIDTH*13,y
+    lda tile_map+TILE_MAP_WIDTH*14,x
+    sta SCREEN_1+  SCREEN_WIDTH*14,y
+    lda tile_map+TILE_MAP_WIDTH*15,x
+    sta SCREEN_1+  SCREEN_WIDTH*15,y
+    lda tile_map+TILE_MAP_WIDTH*16,x
+    sta SCREEN_1+  SCREEN_WIDTH*16,y
+    lda tile_map+TILE_MAP_WIDTH*17,x
+    sta SCREEN_1+  SCREEN_WIDTH*17,y
+    lda tile_map+TILE_MAP_WIDTH*18,x
+    sta SCREEN_1+  SCREEN_WIDTH*18,y
+    lda tile_map+TILE_MAP_WIDTH*19,x
+    sta SCREEN_1+  SCREEN_WIDTH*19,y
+    lda tile_map+TILE_MAP_WIDTH*20,x
+    sta SCREEN_1+  SCREEN_WIDTH*20,y
+    lda tile_map+TILE_MAP_WIDTH*21,x
+    sta SCREEN_1+  SCREEN_WIDTH*21,y
+    lda tile_map+TILE_MAP_WIDTH*22,x
+    sta SCREEN_1+  SCREEN_WIDTH*22,y
+    lda tile_map+TILE_MAP_WIDTH*23,x
+    sta SCREEN_1+  SCREEN_WIDTH*23,y
+    lda tile_map+TILE_MAP_WIDTH*24,x
+    sta SCREEN_1+  SCREEN_WIDTH*24,y
+    inx
+    iny
+    cpy #SCREEN_WIDTH
+    beq render_tile_map_done
+    jmp render_tile_map_screen_1
 
-    dec TILE_MAP_ROW        ; decrease number of rows to render
-    bne row_loop            ; if not finished then next row
-
+render_tile_map_done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-wait_1:                     ; wait for swap to be done by the `irq`
+wait_2:                     ; wait for swap to be done by the `irq`
     lda SCREEN_SWAP_REQ     ; check status of flag
-    bne wait_1              ; wait until it is 0
+    bne wait_2              ; wait until it is 0
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
@@ -210,9 +268,11 @@ irq:
     lda SCREEN_ACTIVE       ; load active screen
     bne swap_screen_1       ; if screen 1 active
     lda #SCREEN_0_D018      ; screen 0 active
+    inc SCREEN_ACTIVE
     jmp swap_screen         ; continue to write to register
 swap_screen_1:
     lda #SCREEN_1_D018      ; screen 1 active
+    dec SCREEN_ACTIVE
 swap_screen:
     sta VIC_MEM_CTRL        ; write to register
     dec SCREEN_SWAP_REQ     ; clear screen swap request flag
