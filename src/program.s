@@ -28,7 +28,7 @@ SCREEN_BLANKS   = 4         ; number of blank rows at top
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
-BORDER_LOOP     = 1         ; white
+BORDER_LOOP     = 9         ; brown
 IRQ_RASTER_LINE = 250       ; start of bottom border
 
 ;-------------------------------------------------------------------------------
@@ -169,10 +169,11 @@ scroll_left:
     lda #7                  ; last pixel, set to maximum right for next frame
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
+    jsr loop                ; run game loop
     jmp render_tile_map     ; render tile map to next screen
-
 @done:
- :  lda VBLANK_DONE
+    jsr loop                ; run game loop
+ :  lda VBLANK_DONE         ; wait for vblank
     beq :-
     lsr VBLANK_DONE
 
@@ -182,7 +183,7 @@ scroll_left:
 loop:
     lda #BORDER_LOOP
     sta VIC_BORDER
-    ldy #2
+    ldy #12
     ldx #0
 :   dex
     bne :-
