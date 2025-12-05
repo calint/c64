@@ -44,7 +44,7 @@ start:
     sei                     ; disable interrupts
 
     ;
-    ; setup for first render
+    ; setup first render
     ;
 
     lda #7                  ; start at rightmost offset
@@ -55,7 +55,7 @@ start:
     sta VBLANK_DONE         ; vblank not done
 
     ; clear top rows on screens
-    lda #160                 ; filled background (space)
+    lda #160                ; filled background (inverted space)
     ldx #0
 :   sta SCREEN_0,x
     inx
