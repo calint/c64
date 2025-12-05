@@ -92,11 +92,11 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
-@1:                         ; wait until screen swap request is done
+    ; wait until screen swap request is done
     ; lda #2
     ; sta VIC_BORDER
-    lda SCREEN_SWAP_REQ     ; load flag
-    bne @1
+ :  lda SCREEN_SWAP_REQ     ; load flag
+    bne :-
 
     ; lda #14
     ; sta VIC_BORDER
@@ -229,9 +229,9 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-@2:                         ; wait for swap to be done by the `irq`
-    lda SCREEN_SWAP_REQ     ; check status of flag
-    bne @2                  ; wait until it is 0
+    ; wait for swap to be done by the `irq`
+:   lda SCREEN_SWAP_REQ     ; check status of flag
+    bne :-                  ; wait until it is 0
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
@@ -254,13 +254,12 @@ delay:
     sta DELAY1
     lda #0
     sta DELAY2
-@1:
-    dec DELAY1
-    bne @1
+:   dec DELAY1
+    bne :-
     lda #DELAY
     sta DELAY1
     dec DELAY2
-    bne @1
+    bne :- 
     rts
 ;-------------------------------------------------------------------------------
 
@@ -269,21 +268,22 @@ irq:
     pha                     ; push accumulator on the stack
 
     lda SCREEN_SWAP_REQ     ; check screen swap request flag
-    beq @irq_done            ; no request active, continue to done
+    beq @done               ; no request active, continue to done
 
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
-    bne @swap_screen_1       ; if screen 1 active
+    bne @to_screen_1        ; if screen 1 active
+@to_screen_0:
     lda #SCREEN_0_D018      ; screen 0 active
     inc SCREEN_ACTIVE
-    jmp @swap_screen         ; continue to write to register
-@swap_screen_1:
+    jmp @swap               ; continue to write to register
+@to_screen_1:
     lda #SCREEN_1_D018      ; screen 1 active
     dec SCREEN_ACTIVE
-@swap_screen:
+@swap:
     sta VIC_MEM_CTRL        ; write to register
     dec SCREEN_SWAP_REQ     ; clear screen swap request flag
-@irq_done:
+@done:
     asl $d019               ; acknowledge interrupt
 
     pla                     ; restore accumulator
