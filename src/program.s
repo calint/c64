@@ -24,7 +24,7 @@ SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-DELAY           = 6         ; scroll delay
+DELAY           = 16        ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 
 ;-------------------------------------------------------------------------------
@@ -35,6 +35,7 @@ TILE_MAP_X      = $fd       ; tile map x offset in characters
 TILE_MAP_X_FINE = $fc       ; fine scroll of screen between 0 and 7
 SCREEN_ACTIVE   = $fb       ; active screen (0 or 1)
 SCREEN_SWAP_REQ = $fa       ; 1 when swap screen is requested, 0 when done
+VBLANK_DONE     = $f9       ; 1 when raster irq triggers
 
 ;-------------------------------------------------------------------------------
 .export start
@@ -52,6 +53,7 @@ start:
     sta TILE_MAP_X          ; start at leftmost map offset
     sta SCREEN_ACTIVE       ; active screen to 0
     sta SCREEN_SWAP_REQ     ; swap screen request to 0
+    sta VBLANK_DONE         ; vblank not done
 
     ;
     ; setup interrupt
@@ -219,7 +221,7 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
-    lda #6                  ; make border blue while waiting
+    lda #5                  ; make border blue while waiting
     sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
@@ -229,16 +231,23 @@ render_tile_map:
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     cmp #255                ; has it rolled over?
-    bne @fine_scroll        ; no, fine scroll
+    bne :+                  ; no, fine scroll
     lda #7                  ; yes, set to maximum right
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jmp render_tile_map     ; render screen to next screen
-
-@fine_scroll:
-    sta VIC_CTRL_2          ; store to chip address
+:   sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
-    jsr delay               ; delay
+
+    ; wait for vblank
+    lda #6                  ; make border blue while waiting
+    sta VIC_BORDER
+:   lda VBLANK_DONE         ; wait for 1 
+    beq :-
+    dec VBLANK_DONE         ; reset flag
+    lda #14                 ; restore border to light blue
+    sta VIC_BORDER
+
     jmp scroll_left         ; scroll left
 
 ;-------------------------------------------------------------------------------
@@ -255,7 +264,10 @@ delay:
 ;-------------------------------------------------------------------------------
 irq:
     pha                     ; push accumulator on the stack
-
+    
+    lda #1
+    sta VBLANK_DONE         ; set vblank done
+    
     lda SCREEN_SWAP_REQ     ; check screen swap request flag
     beq @done               ; no request active, continue to done
 
