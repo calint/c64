@@ -91,15 +91,6 @@ start:
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
-    ; wait until screen swap request is done
-    ; lda #2
-    ; sta VIC_BORDER
- :  lda SCREEN_SWAP_REQ     ; load flag
-    bne :-
-
-    ; lda #14
-    ; sta VIC_BORDER
-
     ldx TILE_MAP_X
     ldy #0
 
@@ -228,8 +219,12 @@ render_tile_map:
 
 @done:
     inc SCREEN_SWAP_REQ     ; request screen swap at next vblank
+    lda #6                  ; make border blue while waiting
+    sta VIC_BORDER
 :   lda SCREEN_SWAP_REQ     ; wait for request done
     bne :-                  ; wait for 0
+    lda #14                 ; restore border to light blue
+    sta VIC_BORDER
 
 scroll_left:
     lda TILE_MAP_X_FINE     ; load fine scroll x
