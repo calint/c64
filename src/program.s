@@ -24,18 +24,17 @@ SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-DELAY           = 8         ; scroll delay
+DELAY           = 6         ; scroll delay
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
 ;-------------------------------------------------------------------------------
-DELAY1               = $fe  ; delay outer loop
-DELAY2               = $fd  ; delay inner loop
-TILE_MAP_X           = $fc  ; tile map x offset in characters
-TILE_MAP_X_FINE      = $fb  ; fine scroll of screen between 0 and 7
-SCREEN_ACTIVE        = $fa  ; active screen (0 or 1)
-SCREEN_SWAP_REQ      = $f9  ; 1 when swap screen is requested, 0 when done
+DELAY1          = $fe       ; delay outer loop
+TILE_MAP_X      = $fd       ; tile map x offset in characters
+TILE_MAP_X_FINE = $fc       ; fine scroll of screen between 0 and 7
+SCREEN_ACTIVE   = $fb       ; active screen (0 or 1)
+SCREEN_SWAP_REQ = $fa       ; 1 when swap screen is requested, 0 when done
 
 ;-------------------------------------------------------------------------------
 .export start
@@ -249,15 +248,11 @@ scroll_left:
 
 ;-------------------------------------------------------------------------------
 delay:
-    lda #DELAY 
-    sta DELAY1
-    lda #0
-    sta DELAY2
-:   dec DELAY1
+    ldx #DELAY 
+    ldy #0
+:   dey
     bne :-
-    lda #DELAY
-    sta DELAY1
-    dec DELAY2
+    dex
     bne :- 
     rts
 ;-------------------------------------------------------------------------------
