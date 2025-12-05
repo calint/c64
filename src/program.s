@@ -223,6 +223,6 @@ irq_done:
     rti                     ; interrupt done
 ;-------------------------------------------------------------------------------
 
-.align $100         ; make 256 tiles row accessed by the lower byte 
-tile_map:
+.align $100                 ; make 256 tiles row accessed by the lower byte
+tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
