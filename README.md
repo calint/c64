@@ -9,6 +9,10 @@ experiments with bare metal commodore 64
 * control scroll with keyboard
 * sprites with collision detection
 
+## howto
+
+* use joystick to scroll tile map left or right one pixel per frame
+
 ## screenshots
 
 ![scroller](screenshots/1.png)
