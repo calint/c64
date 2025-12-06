@@ -144,20 +144,21 @@ render_tile_map:
     lda #BORDER_COLOR
     sta VIC_BORDER
 
+    ; wait for vblank
  :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
     ; swap screens
     lda SCREEN_ACTIVE       ; load active screen
-    bne @to_screen_1        ; if screen 1 active
+    bne @to_screen_1        ; if screen 1 active activate screen 0
 @to_screen_0:
-    lda #SCREEN_0_D018      ; screen 0 active
-    inc SCREEN_ACTIVE
+    lda #SCREEN_0_D018      ; activate screen 0
+    inc SCREEN_ACTIVE       ; next active screen 1
     jmp @swap               ; continue to write to register
 @to_screen_1:
-    lda #SCREEN_1_D018      ; screen 1 active
-    lsr SCREEN_ACTIVE
+    lda #SCREEN_1_D018      ; activate screen 1
+    lsr SCREEN_ACTIVE       ; next active screen 0
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
@@ -177,7 +178,9 @@ scroll_left:
     jmp render_tile_map     ; render tile map to next screen
 @done:
     jsr loop                ; run game loop
- :  lda VBLANK_DONE         ; wait for vblank
+ 
+    ; wait for vblank
+ :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
@@ -198,7 +201,9 @@ scroll_right:
     jmp render_tile_map     ; render tile map to next screen
 @done:
     jsr loop                ; run game loop
- :  lda VBLANK_DONE         ; wait for vblank
+ 
+    ; wait for vblank
+ :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
@@ -226,8 +231,8 @@ loop:
 irq:
     pha                     ; push accumulator on the stack
 
-    lda #1
-    sta VBLANK_DONE         ; set vblank done
+    lda #1                  ; set vblank done
+    sta VBLANK_DONE         ; store
     asl $d019               ; acknowledge interrupt
 
     pla                     ; restore accumulator
