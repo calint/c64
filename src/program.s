@@ -28,7 +28,7 @@ TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
 BORDER_LOOP     = 9         ; brown
-IRQ_RASTER_LINE = 250       ; start of bottom border
+IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
