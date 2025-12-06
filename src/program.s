@@ -24,7 +24,6 @@ SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
-SCREEN_BLANKS   = 4         ; number of blank rows at top
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
@@ -49,26 +48,12 @@ start:
     ; setup first render
     ;
 
-    lda #0                  ; start at rightmost offset
-    sta TILE_MAP_X_FINE     ; store
-    lda #256-SCREEN_WIDTH
-    sta TILE_MAP_X          ; start at leftmost map offset
-    lda #0                  ; 0 
-    sta SCREEN_ACTIVE       ; active screen to 0
+    lda #256-SCREEN_WIDTH   ; place at right most position in tile map
+    sta TILE_MAP_X
+    lda #0
+    sta TILE_MAP_X_FINE     ; start at left most pixel
+    sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
-
-    ; clear top rows on screens
-    lda #160                ; filled background (inverted space)
-    ldx #0
-:   sta SCREEN_0,x
-    inx
-    cpx #SCREEN_BLANKS*SCREEN_WIDTH
-    bne :-
-    ldx #0
-:   sta SCREEN_1,x
-    inx
-    cpx #SCREEN_BLANKS*SCREEN_WIDTH
-    bne :-
 
     ;
     ; setup interrupt
