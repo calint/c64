@@ -196,6 +196,12 @@ scroll_right:
 
 ;-------------------------------------------------------------------------------
 loop:
+    ; placeholder for game loop
+    ; total: 15,423 cycles
+    ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
+    ; ntsc: ~15.08 ms
+    ; pal: ~15.65 ms
+
     lda #BORDER_LOOP
     sta VIC_BORDER
     ldy #12
@@ -206,10 +212,6 @@ loop:
     bne :-
     lda #BORDER_COLOR
     sta VIC_BORDER
-    ; total: 15,423 cycles
-    ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
-    ; ntsc: ~15.08 ms
-    ; pal: ~15.65 ms
     rts
 
 ;-------------------------------------------------------------------------------
