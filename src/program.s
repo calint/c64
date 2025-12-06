@@ -108,6 +108,7 @@ render_tile_map:
     jmp @screen_1
 
 @screen_0:
+    ; generated unrolled loop with cheaper absolute indexing
     .include "../resources/screen_0.s"
     inx
     iny
@@ -118,6 +119,7 @@ render_tile_map:
     jmp @done 
 
 @screen_1:
+    ; generated unrolled loop with cheaper absolute indexing
     .include "../resources/screen_1.s"
     inx
     iny
