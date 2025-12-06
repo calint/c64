@@ -18,6 +18,7 @@ VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 VIC_BORDER      = $d020     ; vic-ii border color register
+VIC_DATA_PORT_B = $dc01     ; joystick 1
 SCREEN_0        = $0400     ; address of screen 0
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1        = $3c00     ; address of screen 1
@@ -147,7 +148,19 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
+;-------------------------------------------------------------------------------
+react_to_state:
+    lda VIC_DATA_PORT_B 
+    and #4
+    bne @right
+    jmp scroll_left
+@right:
+    lda VIC_DATA_PORT_B 
+    and #8
+    bne @done
     jmp scroll_right
+@done:
+    jmp scroll_none 
 
 ;-------------------------------------------------------------------------------
 scroll_left:
@@ -159,17 +172,17 @@ scroll_left:
     lda #7                  ; fine scroll is 0, set maximum right shift
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
-    jsr loop                ; run game loop
+    jsr update              ; update game state
     jmp render_tile_map     ; render tile map to next screen
 @done:
-    jsr loop                ; run game loop
+    jsr update              ; update game state
  
     ; wait for vblank
  :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
 
-    jmp scroll_left
+    jmp react_to_state
 
 ;-------------------------------------------------------------------------------
 scroll_right:
@@ -177,25 +190,39 @@ scroll_right:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
     inc TILE_MAP_X_FINE     ; decrease fine scroll by 1
-    cmp #7                  ; note: compares with last stored fine pixel scroll
+    cmp #7                  ; compares with last stored fine pixel scroll
     bne @done               ; if not 7 wait for vblank before next fine scroll
     lda #0                  ; last pixel, set to minimum left for next frame
     sta TILE_MAP_X_FINE     ; store
     dec TILE_MAP_X          ; scroll map right one character
-    jsr loop                ; run game loop
+    jsr update              ; update game state
     jmp render_tile_map     ; render tile map to next screen
 @done:
-    jsr loop                ; run game loop
+    jsr update              ; update game state
  
     ; wait for vblank
  :  lda VBLANK_DONE
     beq :-
     lsr VBLANK_DONE
-
-    jmp scroll_right
+ 
+    jmp react_to_state
 
 ;-------------------------------------------------------------------------------
-loop:
+scroll_none:
+    lda TILE_MAP_X_FINE     ; load fine scroll x
+    sta VIC_CTRL_2          ; store to chip address
+
+    jsr update              ; update game state
+ 
+    ; wait for vblank
+ :  lda VBLANK_DONE
+    beq :-
+    lsr VBLANK_DONE
+ 
+    jmp react_to_state
+
+;-------------------------------------------------------------------------------
+update:
     ; placeholder for game loop
     ; total: 15,423 cycles
     ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
@@ -204,6 +231,7 @@ loop:
 
     lda #BORDER_LOOP
     sta VIC_BORDER
+
     ldy #12
     ldx #0
 :   dex
@@ -212,6 +240,7 @@ loop:
     bne :-
     lda #BORDER_COLOR
     sta VIC_BORDER
+
     rts
 
 ;-------------------------------------------------------------------------------
