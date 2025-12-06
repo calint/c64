@@ -240,6 +240,7 @@ update:
     bne :-
     dey
     bne :-
+    
     lda #BORDER_COLOR
     sta VIC_BORDER
 
