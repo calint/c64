@@ -151,7 +151,10 @@ render_tile_map:
     sta VIC_MEM_CTRL        ; write to register
 
 ;-------------------------------------------------------------------------------
-react_to_state:
+; structure: `render` -> `game_loop` -> `update`
+; note: somewhat spaghetti due to the fine scroll vs full redraw setup
+;-------------------------------------------------------------------------------
+game_loop:
     lda VIC_DATA_PORT_B 
     and #4
     bne @right
@@ -179,12 +182,11 @@ scroll_left:
 @done:
     jsr update              ; update game state
  
-    ; wait for vblank
- :  lda VBLANK_DONE
+ :  lda VBLANK_DONE         ; wait for vblank
     beq :-
     lsr VBLANK_DONE
 
-    jmp react_to_state
+    jmp game_loop           ; continue game loop
 
 ;-------------------------------------------------------------------------------
 scroll_right:
@@ -202,12 +204,11 @@ scroll_right:
 @done:
     jsr update              ; update game state
  
-    ; wait for vblank
- :  lda VBLANK_DONE
+ :  lda VBLANK_DONE         ; wait for vblank 
     beq :-
     lsr VBLANK_DONE
  
-    jmp react_to_state
+    jmp game_loop           ; continue game loop
 
 ;-------------------------------------------------------------------------------
 scroll_none:
@@ -216,12 +217,11 @@ scroll_none:
 
     jsr update              ; update game state
  
-    ; wait for vblank
- :  lda VBLANK_DONE
+ :  lda VBLANK_DONE         ; wait for vblank
     beq :-
     lsr VBLANK_DONE
  
-    jmp react_to_state
+    jmp game_loop           ; continue game loop
 
 ;-------------------------------------------------------------------------------
 update:
