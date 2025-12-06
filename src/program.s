@@ -170,7 +170,7 @@ scroll_left:
     sta VIC_CTRL_2          ; store to chip address
     dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
     bpl @done               ; if not 0 wait for vblank before next fine scroll
-    lda #7                  ; last pixel, set to maximum right for next frame
+    lda #7                  ; fine scroll is 0, set maximum right shift
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jsr loop                ; run game loop
@@ -189,8 +189,8 @@ scroll_right:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
     inc TILE_MAP_X_FINE     ; decrease fine scroll by 1
-    cmp #7
-    bne @done               ; if not 0 wait for vblank before next fine scroll
+    cmp #7                  ; note: compares with last stored fine pixel scroll
+    bne @done               ; if not 7 wait for vblank before next fine scroll
     lda #0                  ; last pixel, set to minimum left for next frame
     sta TILE_MAP_X_FINE     ; store
     dec TILE_MAP_X          ; scroll map right one character
