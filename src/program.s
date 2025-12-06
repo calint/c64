@@ -156,8 +156,8 @@ render_tile_map:
 ;-------------------------------------------------------------------------------
 game_loop:
     lda VIC_DATA_PORT_B 
-    and #4
-    bne @right
+;    and #4
+;    bne @right
     jmp scroll_left
 @right:
     lda VIC_DATA_PORT_B 
@@ -259,7 +259,7 @@ irq:
 
 @not_raster:
  
-    lda #$FF                ; clear all interrupt flags (bits 0-3)
+    lda #$ff                ; clear all interrupt flags (bits 1-3)
     sta VIC_IRQ_REG         ; write to register 
 
     pla                     ; restore accumulator
