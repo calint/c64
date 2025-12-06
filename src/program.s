@@ -247,11 +247,19 @@ update:
 
 ;-------------------------------------------------------------------------------
 irq:
+    sei                     ; don't allow nested interrupts
     pha                     ; push accumulator on the stack
 
+    lda VIC_IRQ_REG         ; read interrupt status register
+    and #1                  ; check bit 0 (raster interrupt)
+    beq @not_raster         ; if not set, not a raster interrupt
     lda #1                  ; set vblank done
     sta VBLANK_DONE         ; store
-    asl $d019               ; acknowledge interrupt
+
+@not_raster:
+ 
+    lda #$FF                ; clear all interrupt flags (bits 0-3)
+    sta VIC_IRQ_REG         ; write to register 
 
     pla                     ; restore accumulator
     rti                     ; interrupt done
