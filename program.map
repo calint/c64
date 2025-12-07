@@ -2,6 +2,7 @@ Modules list:
 -------------
 program.o:
     CODE              Offs=000000  Size=000272  Align=00001  Fill=0000
+    ZEROPAGE          Offs=000000  Size=000004  Align=00001  Fill=0000
     SPRITES_DATA      Offs=000000  Size=00003F  Align=00001  Fill=0000
     SCREEN_1          Offs=000000  Size=000400  Align=00001  Fill=0000
     TILE_MAP          Offs=000000  Size=001900  Align=00001  Fill=0000
@@ -15,6 +16,7 @@ Segment list:
 -------------
 Name                   Start     End    Size  Align
 ----------------------------------------------------
+ZEROPAGE              000002  000005  000004  00001
 LOADADDR              0007FF  000800  000002  00001
 EXEHDR                000801  00080C  00000C  00001
 CODE                  00080D  000A7E  000272  00001

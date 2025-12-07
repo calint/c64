@@ -46,9 +46,8 @@ VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SPRITE_IX_OFST  = $03f8     ; sprites data index offset from screen address
-SCREEN_0        = $0400     ; address of screen 0
+SCREEN_0        = $0400     ; address of screen 0 (SCREEN_1 defined by linker)
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
-SCREEN_1        = $3c00     ; address of screen 1
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
@@ -66,12 +65,14 @@ JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 ;-------------------------------------------------------------------------------
 ; zero page variables
 ;-------------------------------------------------------------------------------
-TILE_MAP_X      = $fe       ; tile map x offset in characters
-TILE_MAP_X_FINE = $fd       ; fine scroll of screen between 0 and 7
-SCREEN_ACTIVE   = $fc       ; active screen (0 or 1)
-VBLANK_DONE     = $fb       ; 1 when raster irq triggers
+.segment "ZEROPAGE"
+TILE_MAP_X:      .res 1     ; tile map x offset in characters
+TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
+SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
+VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 
 ;-------------------------------------------------------------------------------
+.segment "CODE"
 .export start
 start:
 ;-------------------------------------------------------------------------------
@@ -361,10 +362,10 @@ sprite_0_data:
 ;-------------------------------------------------------------------------------
 .segment "SCREEN_1"
 .org $3c00
-screen_1:
+SCREEN_1:
 .res $400
 
-.out .sprintf("     screen_1: $%04X", screen_1)
+.out .sprintf("     screen_1: $%04X", SCREEN_1)
 
 ;-------------------------------------------------------------------------------
 .segment "TILE_MAP"
