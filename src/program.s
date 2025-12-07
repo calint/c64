@@ -49,7 +49,7 @@ SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
-BORDER_LOOP     = 9         ; brown
+BORDER_UPDATE   = 9         ; brown
 IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
@@ -258,7 +258,7 @@ update:
     ; ntsc: ~15.08 ms
     ; pal: ~15.65 ms
 
-    lda #BORDER_LOOP
+    lda #BORDER_UPDATE
     sta VIC_BORDER
 
     ldy #12
