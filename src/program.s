@@ -74,11 +74,11 @@ SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
 VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 
 .segment "EXEHDR"
-    .word $080B          ; Pointer to next BASIC line
-    .word 10             ; Line number
-    .byte $9E            ; SYS token
-    .byte "22784", 0     ; SYS 22784 ($5900 in decimal)
-    .word 0              ; End of BASIC program
+.word $080b                 ; pointer to next basic line
+.word 10                    ; line number
+.byte $9e                   ; sys token
+.byte "22784", 0            ; sys 22784 ($5900 in decimal)
+.word 0                     ; end of basic program
 
 ;-------------------------------------------------------------------------------
 ; .segment "CODE"
@@ -132,7 +132,7 @@ tile_map:                   ; the tile map included from resources
 .out .sprintf("     tile_map: $%04X", tile_map)
 
 ;-------------------------------------------------------------------------------
-.assert * <= $5900, error, "segment overflows into PROGRAM"
+.assert * <= $5900, error, "segment overflows into CODE"
 .segment "CODE"
 .org $5900
 program:
