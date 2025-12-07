@@ -101,6 +101,8 @@ SCREEN_0:
 .assert * = $80e, error, "segment BASIC has unexpected size"
 
 ;-------------------------------------------------------------------------------
+; sprites data
+;-------------------------------------------------------------------------------
 .assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
 .org $3a00
 .segment "SPRITES_DATA"
@@ -130,6 +132,8 @@ sprite_0_data:
 .out .sprintf("sprite_0_data: $%04X", sprite_0_data)
 
 ;-------------------------------------------------------------------------------
+; screen 1
+;-------------------------------------------------------------------------------
 .assert * <= $3c00, error, "segment overflows into SCREEN_1"
 .org $3c00
 .segment "SCREEN_1"
@@ -138,6 +142,8 @@ SCREEN_1:
 .out .sprintf("     screen_1: $%04X", SCREEN_1)
 
 ;-------------------------------------------------------------------------------
+; tile map;
+;-------------------------------------------------------------------------------
 .assert * <= $4000, error, "segment overflows into TILE_MAP"
 .segment "TILE_MAP"
 .org $4000
@@ -145,6 +151,8 @@ tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
 .out .sprintf("     tile_map: $%04X", tile_map)
 
+;-------------------------------------------------------------------------------
+; program
 ;-------------------------------------------------------------------------------
 .assert * <= $5900, error, "segment overflows into CODE"
 .org $5900
@@ -280,6 +288,7 @@ render_tile_map:
     lsr SCREEN_ACTIVE       ; next active screen 0
 @swap:
     sta VIC_MEM_CTRL        ; write to register
+    ; fallthrough to `game_loop`
 
 ;-------------------------------------------------------------------------------
 ; structure: `render` -> `game_loop` -> `update`
@@ -297,7 +306,6 @@ game_loop:
     jmp scroll_right
 @done:
     jmp scroll_none 
-
 ;-------------------------------------------------------------------------------
 scroll_left:
     ; shift screen by fine scroll or render new screen
@@ -353,7 +361,6 @@ scroll_none:
     lsr VBLANK_DONE
  
     jmp game_loop           ; continue game loop
-
 ;-------------------------------------------------------------------------------
 update:
     ; placeholder for game loop
@@ -381,7 +388,6 @@ update:
     sta VIC_BORDER
 
     rts
-
 ;-------------------------------------------------------------------------------
 irq:
     sei                     ; don't allow nested interrupts
@@ -401,8 +407,6 @@ irq:
     pla                     ; restore accumulator
     rti                     ; interrupt done
 ;-------------------------------------------------------------------------------
-
-;-------------------------------------------------------------------------------
 nmi:
     rti
-
+;-------------------------------------------------------------------------------
