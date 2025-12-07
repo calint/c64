@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------------
 ; mapped memory
 ;-------------------------------------------------------------------------------
-; 0x0002 - 0x00fe: page zero
+; 0x0002 - 0x00ff: page zero
 ; 0x0400 - 0x07e7: default screen
 ; 0x07f8 - 0x07ff: sprites data index to address >> 6 when screen 0 is active
 ; 0x0800 - 0x0800; 0 so basic program can run
@@ -74,21 +74,28 @@ SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
 VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 
 ;-------------------------------------------------------------------------------
-; basic stub to jump to $5900
+; program header
 ;-------------------------------------------------------------------------------
-.segment "EXEHDR"
-;.word $0801                 ; load address 
+.org $0000
+.segment "HEADER"
+.word $0801                ; prg load address hard-coded
+
+;-------------------------------------------------------------------------------
+; basic stub to jump to $5900: 10 sys 22784
+;-------------------------------------------------------------------------------
+.org $0801
+.segment "BASIC"
 .word $080b                 ; pointer to next basic line
 .word 10                    ; line number
 .byte $9e                   ; sys token
 .byte "22784", 0            ; sys 22784 ($5900 in decimal)
 .word 0                     ; end of basic program
-.assert * > $80d, error, "segment EXEHDR has unexpected size"
+.assert * = $80e, error, "segment BASIC has unexpected size"
 
 ;-------------------------------------------------------------------------------
 .assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
-.segment "SPRITES_DATA"
 .org $3a00
+.segment "SPRITES_DATA"
 sprite_0_data:
     ; 63 bytes of sprite data (21 rows × 3 bytes)
     .byte %00000000, %00000000, %00000000  ; row 0
@@ -116,8 +123,8 @@ sprite_0_data:
 
 ;-------------------------------------------------------------------------------
 .assert * <= $3c00, error, "segment overflows into SCREEN_1"
-.segment "SCREEN_1"
 .org $3c00
+.segment "SCREEN_1"
 SCREEN_1:
     .res $400
 .out .sprintf("     screen_1: $%04X", SCREEN_1)
@@ -132,8 +139,8 @@ tile_map:                   ; the tile map included from resources
 
 ;-------------------------------------------------------------------------------
 .assert * <= $5900, error, "segment overflows into CODE"
-.segment "CODE"
 .org $5900
+.segment "CODE"
 program:
     sei                     ; disable interrupts
 
