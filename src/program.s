@@ -329,8 +329,8 @@ irq:
 nmi:
     rti
 
-.assert * <= $3a00, error, "CODE segment overflow into SPRITES_DATA!"
 ;-------------------------------------------------------------------------------
+.assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
 .segment "SPRITES_DATA"
 .org $3a00
 sprite_0_data:
@@ -356,22 +356,19 @@ sprite_0_data:
     .byte %00000111, %11111110, %00000000  ; row 18
     .byte %00000001, %11111000, %00000000  ; row 19
     .byte %00000000, %00000000, %00000000  ; row 20
-
 .out .sprintf("sprite_0_data: $%04X", sprite_0_data)
-
 ;-------------------------------------------------------------------------------
+.assert * <= $3c00, error, "segment overflows into SCREEN_1"
 .segment "SCREEN_1"
 .org $3c00
 SCREEN_1:
-.res $400
-
+    .res $400
 .out .sprintf("     screen_1: $%04X", SCREEN_1)
-
 ;-------------------------------------------------------------------------------
+.assert * <= $4000, error, "segment overflows into TILE_MAP"
 .segment "TILE_MAP"
 .org $4000
 tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
-
 .out .sprintf("     tile_map: $%04X", tile_map)
-
+;-------------------------------------------------------------------------------
