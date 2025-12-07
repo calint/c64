@@ -18,6 +18,7 @@ VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 VIC_BORDER      = $d020     ; vic-ii border color register
+VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SCREEN_0        = $0400     ; address of screen 0
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
@@ -155,12 +156,12 @@ render_tile_map:
 ; note: somewhat spaghetti due to the fine scroll vs full redraw setup
 ;-------------------------------------------------------------------------------
 game_loop:
-    lda VIC_DATA_PORT_B 
+    lda VIC_DATA_PORT_A 
     and #4
     bne @right
     jmp scroll_left
 @right:
-    lda VIC_DATA_PORT_B 
+    lda VIC_DATA_PORT_A 
     and #8
     bne @done
     jmp scroll_right

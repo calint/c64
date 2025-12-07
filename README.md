@@ -11,7 +11,7 @@ experiments with bare metal commodore 64
 
 ## howto
 
-* use joystick to scroll tile map left or right one pixel per frame
+* use joystick on port 2 to scroll tile map left or right one pixel per frame
 
 ## screenshots
 
