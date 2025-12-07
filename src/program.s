@@ -156,8 +156,8 @@ render_tile_map:
 ;-------------------------------------------------------------------------------
 game_loop:
     lda VIC_DATA_PORT_B 
-;    and #4
-;    bne @right
+    and #4
+    bne @right
     jmp scroll_left
 @right:
     lda VIC_DATA_PORT_B 
