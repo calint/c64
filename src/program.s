@@ -51,20 +51,21 @@ start:
 ;-------------------------------------------------------------------------------
     sei                     ; disable interrupts
 
-    ;
-    ; setup first render
-    ;
+    ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
+    lda #%00110101          ; see https://sta.c64.org/cbm64mem.html
+    sta $01
 
-    lda #256-SCREEN_WIDTH   ; place at right most position in tile map
-    sta TILE_MAP_X
-    lda #0
-    sta TILE_MAP_X_FINE     ; start at left most pixel
-    sta SCREEN_ACTIVE       ; active screen  0
-    sta VBLANK_DONE         ; vblank not done
+    ; install interrupt handler
+    lda #<irq               ; hardware irq vector low byte
+    sta $fffe               ; store
+    lda #>irq               ; hardware irq vector high byte
+    sta $ffff               ; store
 
-    ;
-    ; setup interrupt
-    ;
+    ; install non-maskable interrupt handler
+    lda #<nmi               ;
+    sta $fffa               ; NMI vector low byte
+    lda #>nmi               ;
+    sta $fffb               ; NMI vector high byte
 
     ; disable cia interrupts that might interfere
     lda #$7f                ; bit 7 = 0 means "disable" 
@@ -72,16 +73,6 @@ start:
     sta $dd0d               ; disable cia 2 interrupts
     lda $dc0d               ; acknowledge cia 1 interrupts
     lda $dd0d               ; acknowledge cia 2 interrupts
-
-    ; enable write to $fffe/$ffff (all ram mode)
-    lda #$35                ; i/o visible, ram at $a000-$ffff
-    sta $01
-
-    ; install irq vector at hardware vector
-    lda #<irq               ; hardware irq vector low byte
-    sta $fffe               ; store
-    lda #>irq               ; hardware irq vector high byte
-    sta $ffff               ; store
 
     ; setup which raster line to generate irq
     lda VIC_CTRL_1          ; ensure 9'th bit of raster = 0
@@ -96,8 +87,18 @@ start:
     lda #1                  ; enable raster irq (bit 0 = raster interrupt)
     sta VIC_IRQ_ENABLE      ; write
 
-    cli                     ; enable interrupts
+    ;
+    ; setup first render
+    ;
 
+    lda #256-SCREEN_WIDTH   ; place at right most position in tile map
+    sta TILE_MAP_X
+    lda #0
+    sta TILE_MAP_X_FINE     ; start at left most pixel
+    sta SCREEN_ACTIVE       ; active screen  0
+    sta VBLANK_DONE         ; vblank not done
+
+    cli                     ; enable interrupts
 ;-------------------------------------------------------------------------------
 render_tile_map:
     ; set border color to illustrate duration of render
@@ -272,6 +273,11 @@ irq:
     rti                     ; interrupt done
 ;-------------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------------
+nmi:
+    rti
+
+;-------------------------------------------------------------------------------
 .align $100                 ; make 256 tiles row accessed by the lower byte
 tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
