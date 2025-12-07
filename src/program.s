@@ -15,7 +15,6 @@
 ;-------------------------------------------------------------------------------
 ; constants
 ;-------------------------------------------------------------------------------
-VIC_SPRITE_IX   = $07f8     ; vic-ii sprites data index to address >> 6
 VIC_SPRITE_0_X  = $d000     ; vic-ii sprite 0 x lower 8 bits
 VIC_SPRITE_0_Y  = $d001     ; vic-ii sprite 0 y
 VIC_SPRITE_1_X  = $d002     ; vic-ii sprite 1 x lower 8 bits
@@ -32,7 +31,7 @@ VIC_SPRITE_6_X  = $d00c     ; vic-ii sprite 6 x lower 8 bits
 VIC_SPRITE_6_Y  = $d00d     ; vic-ii sprite 6 y
 VIC_SPRITE_7_X  = $d00e     ; vic-ii sprite 7 x lower 8 bits
 VIC_SPRITE_7_Y  = $d00f     ; vic-ii sprite 7 y
-VIC_SPRITES_X8  = $d010     ; vic-ii 8'th bit of x for sprites 0-7
+VIC_SPRITES_8X  = $d010     ; vic-ii 8'th bit of x for sprites 0-7
 VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_RASTER_REG  = $d012     ; vic-ii raster register
 VIC_SPRITE_ENBL = $d015     ; vic-ii sprite enable bits
@@ -46,6 +45,7 @@ VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
+SPRITE_IX_OFST  = $03f8     ; sprites data index offset from screen address
 SCREEN_0        = $0400     ; address of screen 0
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1        = $3c00     ; address of screen 1
@@ -137,8 +137,9 @@ start:
     ;sta VIC_SPRITES_X8
     lda #8                  ; color
     sta VIC_SPRITE_COLR+0   ; sprite 0
-    lda #$80                ; 0x80 << 6 = 0x2000
-    sta VIC_SPRITE_IX
+    lda #(sprite_0_data/64)
+    sta SCREEN_0+SPRITE_IX_OFST
+    sta SCREEN_1+SPRITE_IX_OFST
     lda #1                  ; double size sprite 0
     sta VIC_SPRITE_DBLX
     sta VIC_SPRITE_DBLY
@@ -286,7 +287,7 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    inc VIC_SPRITE_IX
+;    inc VIC_SPRITE_IX
     inc VIC_SPRITE_0_X
     inc VIC_SPRITE_0_Y
     inc VIC_SPRITE_COLR
@@ -327,9 +328,49 @@ irq:
 nmi:
     rti
 
+.assert * <= $3a00, error, "CODE segment overflow into SPRITES_DATA!"
 ;-------------------------------------------------------------------------------
-.align $100                 ; make 256 tiles row accessed by the lower byte
+.segment "SPRITES_DATA"
+.org $3a00
+sprite_0_data:
+    ; 63 bytes of sprite data (21 rows × 3 bytes)
+    .byte %00000000, %00000000, %00000000  ; row 0
+    .byte %00000001, %11111000, %00000000  ; row 1
+    .byte %00000111, %11111110, %00000000  ; row 2
+    .byte %00001111, %11111111, %00000000  ; row 3
+    .byte %00011111, %11111111, %10000000  ; row 4
+    .byte %00111111, %11111111, %11000000  ; row 5
+    .byte %01111111, %11111111, %11100000  ; row 6
+    .byte %01111111, %11111111, %11100000  ; row 7
+    .byte %11111111, %11111111, %11110000  ; row 8
+    .byte %11111111, %11111111, %11110000  ; row 9
+    .byte %11111111, %11111111, %11110000  ; row 10
+    .byte %11111111, %11111111, %11110000  ; row 11
+    .byte %11111111, %11111111, %11110000  ; row 12
+    .byte %01111111, %11111111, %11100000  ; row 13
+    .byte %01111111, %11111111, %11100000  ; row 14
+    .byte %00111111, %11111111, %11000000  ; row 15
+    .byte %00011111, %11111111, %10000000  ; row 16
+    .byte %00001111, %11111111, %00000000  ; row 17
+    .byte %00000111, %11111110, %00000000  ; row 18
+    .byte %00000001, %11111000, %00000000  ; row 19
+    .byte %00000000, %00000000, %00000000  ; row 20
+
+.out .sprintf("sprite_0_data: $%04X", sprite_0_data)
+
+;-------------------------------------------------------------------------------
+.segment "SCREEN_1"
+.org $3c00
+screen_1:
+.res $400
+
+.out .sprintf("     screen_1: $%04X", screen_1)
+
+;-------------------------------------------------------------------------------
+.segment "TILE_MAP"
+.org $4000
 tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
 
-.assert * < $3c00, error, "CODE segment overflow into screen buffer at $3c00!"
+.out .sprintf("     tile_map: $%04X", tile_map)
+
