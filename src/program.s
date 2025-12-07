@@ -48,7 +48,6 @@ VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SPRITE_IX_OFST  = $03f8     ; sprites data index offset from screen address
-SCREEN_0        = $0400     ; address of screen 0 (SCREEN_1 defined by linker)
 SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
 SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
 SCREEN_WIDTH    = 40        ; screen width in characters
@@ -79,6 +78,14 @@ VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 .org $0000
 .segment "HEADER"
 .word $0801                ; prg load address hard-coded
+
+;-------------------------------------------------------------------------------
+; screen 0
+;-------------------------------------------------------------------------------
+.org $0400
+.segment "SCREEN_0"
+SCREEN_0:
+.res 1000
 
 ;-------------------------------------------------------------------------------
 ; basic stub to jump to $5900: 10 sys 22784
