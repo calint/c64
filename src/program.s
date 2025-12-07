@@ -3,6 +3,10 @@
 ;-------------------------------------------------------------------------------
 ; 0x0002 - 0x00fe: page zero
 ; 0x0400 - 0x07ff: default screen
+; 0x07e8 - 0x07f7: unused
+; 0x07f8 - 0x07ff: sprites data index to address >> 6
+; 0x0800 - 0x0800; 0 so basic program can run
+; 0x0801 - 0x9fff: program area (38911 bytes)
 ; 0x1000 - 0x17ff: default character set
 ; 0x3C00 - 0x3fff: double buffer screen
 
@@ -11,6 +15,7 @@
 ;-------------------------------------------------------------------------------
 ; constants
 ;-------------------------------------------------------------------------------
+VIC_SPRITE_IX   = $07f8     ; vic-ii sprites data index to address >> 6
 VIC_SPRITE_0_X  = $d000     ; vic-ii sprite 0 x lower 8 bits
 VIC_SPRITE_0_Y  = $d001     ; vic-ii sprite 0 y
 VIC_SPRITE_1_X  = $d002     ; vic-ii sprite 1 x lower 8 bits
@@ -38,6 +43,7 @@ VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 VIC_SPRITE_DBLX = $d01d     ; vic-ii double sprites width bits
 VIC_BORDER      = $d020     ; vic-ii border color register
+VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SCREEN_0        = $0400     ; address of screen 0
@@ -117,6 +123,25 @@ start:
     sta TILE_MAP_X_FINE     ; start at left most pixel
     sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
+
+    ;
+    ; sprites
+    ;
+    lda #%00000001
+    sta VIC_SPRITE_ENBL
+    lda #32                 ; left edge in 38 column display
+    sta VIC_SPRITE_0_X
+    lda #50                 ; top y
+    sta VIC_SPRITE_0_Y
+    ;lda #%00000001
+    ;sta VIC_SPRITES_X8
+    lda #8                  ; color
+    sta VIC_SPRITE_COLR+0   ; sprite 0
+    lda #$80                ; 0x80 << 6 = 0x2000
+    sta VIC_SPRITE_IX
+    lda #1                  ; double size sprite 0
+    sta VIC_SPRITE_DBLX
+    sta VIC_SPRITE_DBLY
 
     cli                     ; enable interrupts
 ;-------------------------------------------------------------------------------
@@ -261,12 +286,17 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ldy #12
-    ldx #0
-:   dex
-    bne :-
-    dey
-    bne :-
+    inc VIC_SPRITE_IX
+    inc VIC_SPRITE_0_X
+    inc VIC_SPRITE_0_Y
+    inc VIC_SPRITE_COLR
+
+;     ldy #12
+;     ldx #0
+; :   dex
+;     bne :-
+;     dey
+;     bne :-
     
     lda #BORDER_COLOR
     sta VIC_BORDER
@@ -301,3 +331,5 @@ nmi:
 .align $100                 ; make 256 tiles row accessed by the lower byte
 tile_map:                   ; the tile map included from resources
     .include "../resources/tile_map.s"
+
+.assert * < $3c00, error, "CODE segment overflow into screen buffer at $3c00!"
