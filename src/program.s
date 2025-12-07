@@ -31,8 +31,11 @@ BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
 BORDER_LOOP     = 9         ; brown
 IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
-JOYSTICK_UP     = 4         ; bit when joystick is up
-JOYSTICK_DOWN   = 8         ; bit when joystick is down
+JOYSTICK_UP     = 1         ; bit when joystick is up
+JOYSTICK_DOWN   = 2         ; bit when joystick is down
+JOYSTICK_LEFT   = 4         ; bit when joystick is left
+JOYSTICK_RIGHT  = 8         ; bit when joystick is right
+JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 
 ;-------------------------------------------------------------------------------
 ; zero page variables
@@ -159,12 +162,12 @@ render_tile_map:
 ;-------------------------------------------------------------------------------
 game_loop:
     lda VIC_DATA_PORT_A 
-    and #JOYSTICK_UP
+    and #JOYSTICK_LEFT
     bne @right
     jmp scroll_left
 @right:
     lda VIC_DATA_PORT_A 
-    and #JOYSTICK_DOWN
+    and #JOYSTICK_RIGHT
     bne @done
     jmp scroll_right
 @done:
