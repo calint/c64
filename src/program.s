@@ -142,7 +142,7 @@ SCREEN_1:
 .out .sprintf("     screen_1: $%04X", SCREEN_1)
 
 ;-------------------------------------------------------------------------------
-; tile map;
+; tile map
 ;-------------------------------------------------------------------------------
 .assert * <= $4000, error, "segment overflows into TILE_MAP"
 .segment "TILE_MAP"
