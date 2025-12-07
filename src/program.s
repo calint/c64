@@ -217,6 +217,9 @@ program:
     lda #1                  ; double size sprite 0
     sta VIC_SPRITE_DBLX
     sta VIC_SPRITE_DBLY
+    ldx #0
+    lda #0
+    sta $d800,x             ; top left color 0
 
     cli                     ; enable interrupts
 ;-------------------------------------------------------------------------------
