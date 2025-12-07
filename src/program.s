@@ -11,12 +11,32 @@
 ;-------------------------------------------------------------------------------
 ; constants
 ;-------------------------------------------------------------------------------
+VIC_SPRITE_0_X  = $d000     ; vic-ii sprite 0 x lower 8 bits
+VIC_SPRITE_0_Y  = $d001     ; vic-ii sprite 0 y
+VIC_SPRITE_1_X  = $d002     ; vic-ii sprite 1 x lower 8 bits
+VIC_SPRITE_1_Y  = $d003     ; vic-ii sprite 1 y
+VIC_SPRITE_2_X  = $d004     ; vic-ii sprite 2 x lower 8 bits
+VIC_SPRITE_2_Y  = $d005     ; vic-ii sprite 2 y
+VIC_SPRITE_3_X  = $d006     ; vic-ii sprite 3 x lower 8 bits
+VIC_SPRITE_3_Y  = $d007     ; vic-ii sprite 3 y
+VIC_SPRITE_4_X  = $d008     ; vic-ii sprite 4 x lower 8 bits
+VIC_SPRITE_4_Y  = $d009     ; vic-ii sprite 4 y
+VIC_SPRITE_5_X  = $d00a     ; vic-ii sprite 5 x lower 8 bits
+VIC_SPRITE_5_Y  = $d00b     ; vic-ii sprite 5 y
+VIC_SPRITE_6_X  = $d00c     ; vic-ii sprite 6 x lower 8 bits
+VIC_SPRITE_6_Y  = $d00d     ; vic-ii sprite 6 y
+VIC_SPRITE_7_X  = $d00e     ; vic-ii sprite 7 x lower 8 bits
+VIC_SPRITE_7_Y  = $d00f     ; vic-ii sprite 7 y
+VIC_SPRITES_X8  = $d010     ; vic-ii 8'th bit of x for sprites 0-7
 VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_RASTER_REG  = $d012     ; vic-ii raster register
+VIC_SPRITE_ENBL = $d015     ; vic-ii sprite enable bits
 VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
+VIC_SPRITE_DBLY = $d017     ; vic-ii double sprites height bits
 VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
+VIC_SPRITE_DBLX = $d01d     ; vic-ii double sprites width bits
 VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
