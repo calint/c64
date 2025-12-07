@@ -2,13 +2,15 @@
 ; mapped memory
 ;-------------------------------------------------------------------------------
 ; 0x0002 - 0x00fe: page zero
-; 0x0400 - 0x07ff: default screen
-; 0x07e8 - 0x07f7: unused
-; 0x07f8 - 0x07ff: sprites data index to address >> 6
+; 0x0400 - 0x07e7: default screen
+; 0x07f8 - 0x07ff: sprites data index to address >> 6 when screen 0 is active
 ; 0x0800 - 0x0800; 0 so basic program can run
-; 0x0801 - 0x9fff: program area (38911 bytes)
+; 0x0801 - 0x080d: basic stub to jump to $5900
 ; 0x1000 - 0x17ff: default character set
-; 0x3C00 - 0x3fff: double buffer screen
+; 0x3c00 - 0x3fe7: double buffer screen
+; 0x3ff8 - 0x3fff: sprites data index to address >> 2 when screen 1 is active
+; 0x4000 - 0x58ff: tile map
+; 0x5900 -       : program
 
 ; for more see: https://sta.c64.org/cbm64mem.html
 
@@ -71,11 +73,69 @@ TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
 SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
 VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 
+.segment "EXEHDR"
+    .word $080B          ; Pointer to next BASIC line
+    .word 10             ; Line number
+    .byte $9E            ; SYS token
+    .byte "22784", 0     ; SYS 22784 ($5900 in decimal)
+    .word 0              ; End of BASIC program
+
 ;-------------------------------------------------------------------------------
+; .segment "CODE"
+; .export start
+; start:
+;     jmp program
+
+;-------------------------------------------------------------------------------
+.assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
+.segment "SPRITES_DATA"
+.org $3a00
+sprite_0_data:
+    ; 63 bytes of sprite data (21 rows × 3 bytes)
+    .byte %00000000, %00000000, %00000000  ; row 0
+    .byte %00000001, %11111000, %00000000  ; row 1
+    .byte %00000111, %11111110, %00000000  ; row 2
+    .byte %00001111, %11111111, %00000000  ; row 3
+    .byte %00011111, %11111111, %10000000  ; row 4
+    .byte %00111111, %11111111, %11000000  ; row 5
+    .byte %01111111, %11111111, %11100000  ; row 6
+    .byte %01111111, %11111111, %11100000  ; row 7
+    .byte %11111111, %11111111, %11110000  ; row 8
+    .byte %11111111, %11111111, %11110000  ; row 9
+    .byte %11111111, %11111111, %11110000  ; row 10
+    .byte %11111111, %11111111, %11110000  ; row 11
+    .byte %11111111, %11111111, %11110000  ; row 12
+    .byte %01111111, %11111111, %11100000  ; row 13
+    .byte %01111111, %11111111, %11100000  ; row 14
+    .byte %00111111, %11111111, %11000000  ; row 15
+    .byte %00011111, %11111111, %10000000  ; row 16
+    .byte %00001111, %11111111, %00000000  ; row 17
+    .byte %00000111, %11111110, %00000000  ; row 18
+    .byte %00000001, %11111000, %00000000  ; row 19
+    .byte %00000000, %00000000, %00000000  ; row 20
+.out .sprintf("sprite_0_data: $%04X", sprite_0_data)
+
+;-------------------------------------------------------------------------------
+.assert * <= $3c00, error, "segment overflows into SCREEN_1"
+.segment "SCREEN_1"
+.org $3c00
+SCREEN_1:
+    .res $400
+.out .sprintf("     screen_1: $%04X", SCREEN_1)
+
+;-------------------------------------------------------------------------------
+.assert * <= $4000, error, "segment overflows into TILE_MAP"
+.segment "TILE_MAP"
+.org $4000
+tile_map:                   ; the tile map included from resources
+    .include "../resources/tile_map.s"
+.out .sprintf("     tile_map: $%04X", tile_map)
+
+;-------------------------------------------------------------------------------
+.assert * <= $5900, error, "segment overflows into PROGRAM"
 .segment "CODE"
-.export start
-start:
-;-------------------------------------------------------------------------------
+.org $5900
+program:
     sei                     ; disable interrupts
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
@@ -329,46 +389,3 @@ irq:
 nmi:
     rti
 
-;-------------------------------------------------------------------------------
-.assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
-.segment "SPRITES_DATA"
-.org $3a00
-sprite_0_data:
-    ; 63 bytes of sprite data (21 rows × 3 bytes)
-    .byte %00000000, %00000000, %00000000  ; row 0
-    .byte %00000001, %11111000, %00000000  ; row 1
-    .byte %00000111, %11111110, %00000000  ; row 2
-    .byte %00001111, %11111111, %00000000  ; row 3
-    .byte %00011111, %11111111, %10000000  ; row 4
-    .byte %00111111, %11111111, %11000000  ; row 5
-    .byte %01111111, %11111111, %11100000  ; row 6
-    .byte %01111111, %11111111, %11100000  ; row 7
-    .byte %11111111, %11111111, %11110000  ; row 8
-    .byte %11111111, %11111111, %11110000  ; row 9
-    .byte %11111111, %11111111, %11110000  ; row 10
-    .byte %11111111, %11111111, %11110000  ; row 11
-    .byte %11111111, %11111111, %11110000  ; row 12
-    .byte %01111111, %11111111, %11100000  ; row 13
-    .byte %01111111, %11111111, %11100000  ; row 14
-    .byte %00111111, %11111111, %11000000  ; row 15
-    .byte %00011111, %11111111, %10000000  ; row 16
-    .byte %00001111, %11111111, %00000000  ; row 17
-    .byte %00000111, %11111110, %00000000  ; row 18
-    .byte %00000001, %11111000, %00000000  ; row 19
-    .byte %00000000, %00000000, %00000000  ; row 20
-.out .sprintf("sprite_0_data: $%04X", sprite_0_data)
-;-------------------------------------------------------------------------------
-.assert * <= $3c00, error, "segment overflows into SCREEN_1"
-.segment "SCREEN_1"
-.org $3c00
-SCREEN_1:
-    .res $400
-.out .sprintf("     screen_1: $%04X", SCREEN_1)
-;-------------------------------------------------------------------------------
-.assert * <= $4000, error, "segment overflows into TILE_MAP"
-.segment "TILE_MAP"
-.org $4000
-tile_map:                   ; the tile map included from resources
-    .include "../resources/tile_map.s"
-.out .sprintf("     tile_map: $%04X", tile_map)
-;-------------------------------------------------------------------------------
