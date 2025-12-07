@@ -90,6 +90,7 @@ SCREEN_0:
 ;-------------------------------------------------------------------------------
 ; basic stub to jump to $5900: 10 sys 22784
 ;-------------------------------------------------------------------------------
+.assert * <= $0801, error, "segment overflows into BASIC"
 .org $0801
 .segment "BASIC"
 .word $080b                 ; pointer to next basic line
