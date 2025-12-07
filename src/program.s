@@ -73,18 +73,17 @@ TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
 SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
 VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 
+;-------------------------------------------------------------------------------
+; basic stub to jump to $5900
+;-------------------------------------------------------------------------------
 .segment "EXEHDR"
+;.word $0801                 ; load address 
 .word $080b                 ; pointer to next basic line
 .word 10                    ; line number
 .byte $9e                   ; sys token
 .byte "22784", 0            ; sys 22784 ($5900 in decimal)
 .word 0                     ; end of basic program
-
-;-------------------------------------------------------------------------------
-; .segment "CODE"
-; .export start
-; start:
-;     jmp program
+.assert * > $80d, error, "segment EXEHDR has unexpected size"
 
 ;-------------------------------------------------------------------------------
 .assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
