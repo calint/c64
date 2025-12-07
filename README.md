@@ -6,7 +6,7 @@ experiments with bare metal commodore 64
 
 * horizontal smooth scrolling tile map
 * edit tile map with tiled
-* control scroll with keyboard
+* control scroll by user
 * sprites with collision detection
 
 ## howto
