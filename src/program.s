@@ -56,6 +56,7 @@ TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = 14        ; light blue
 BORDER_RENDER   = 0         ; black
 BORDER_UPDATE   = 9         ; brown
+BORDER_LOOP     = 2         ; red
 IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
@@ -207,29 +208,6 @@ program:
     sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
 
-    ;
-    ; sprites
-    ;
-    lda #%00000001
-    sta VIC_SPRITE_ENBL
-    lda #32                 ; left edge in 38 column display
-    sta VIC_SPRITE_0_X
-    lda #50                 ; top y
-    sta VIC_SPRITE_0_Y
-    ;lda #%00000001
-    ;sta VIC_SPRITES_X8
-    lda #8                  ; color
-    sta VIC_SPRITE_COLR+0   ; sprite 0
-    lda #(sprite_0_data/64)
-    sta SCREEN_0+SPRITE_IX_OFST
-    sta SCREEN_1+SPRITE_IX_OFST
-    lda #1                  ; double size sprite 0
-    sta VIC_SPRITE_DBLX
-    sta VIC_SPRITE_DBLY
-    ldx #0
-    lda #0
-    sta $d800,x             ; top left color 0
-
     cli                     ; enable interrupts
 ;-------------------------------------------------------------------------------
 render_tile_map:
@@ -295,6 +273,11 @@ render_tile_map:
 ; note: somewhat spaghetti due to the fine scroll vs full redraw setup
 ;-------------------------------------------------------------------------------
 game_loop:
+    lda #BORDER_LOOP
+    sta VIC_BORDER
+
+    jsr sprites_state_update
+
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
     bne @right
@@ -305,6 +288,10 @@ game_loop:
     bne @done
     jmp scroll_right
 @done:
+
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
     jmp scroll_none 
 ;-------------------------------------------------------------------------------
 scroll_left:
@@ -362,6 +349,56 @@ scroll_none:
  
     jmp game_loop           ; continue game loop
 ;-------------------------------------------------------------------------------
+sprites_state:
+    ; x, y, data, color
+    .byte  30,  50, sprite_0_data>>6, 1
+    .byte  90, 150, sprite_0_data>>6, 2
+    .res 32-4*2
+sprites_x8:
+    .byte 0
+sprites_enable:
+    .byte %00000011
+sprites_double_width:
+    .byte %00000001
+sprites_double_height:
+    .byte %00000001
+
+sprites_state_update:
+    pha
+
+    lda sprites_state+0
+    sta VIC_SPRITE_0_X
+    lda sprites_state+1
+    sta VIC_SPRITE_0_Y
+    lda sprites_state+2
+    sta SCREEN_0+SPRITE_IX_OFST+0
+    sta SCREEN_1+SPRITE_IX_OFST+0
+    lda sprites_state+3
+    sta VIC_SPRITE_COLR+0
+
+    lda sprites_state+4
+    sta VIC_SPRITE_1_X
+    lda sprites_state+5
+    sta VIC_SPRITE_1_Y
+    lda sprites_state+6
+    sta SCREEN_0+SPRITE_IX_OFST+1
+    sta SCREEN_1+SPRITE_IX_OFST+1
+    lda sprites_state+7
+    sta VIC_SPRITE_COLR+1
+
+    lda sprites_enable
+    sta VIC_SPRITE_ENBL
+    lda sprites_double_width
+    sta VIC_SPRITE_DBLX
+    lda sprites_double_height
+    sta VIC_SPRITE_DBLY
+    lda sprites_x8
+    sta VIC_SPRITES_8X
+
+    pla
+    rts
+
+;-------------------------------------------------------------------------------
 update:
     ; placeholder for game loop
     ; total: 15,423 cycles
@@ -372,10 +409,14 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-;    inc VIC_SPRITE_IX
-    inc VIC_SPRITE_0_X
-    inc VIC_SPRITE_0_Y
-    inc VIC_SPRITE_COLR
+
+    ; increase x, y, sprtite 0
+    inc sprites_state+0
+    inc sprites_state+1
+
+    ; dec x, y, sprtite 0
+    dec sprites_state+4
+    dec sprites_state+5
 
 ;     ldy #12
 ;     ldx #0
