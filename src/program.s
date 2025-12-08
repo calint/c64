@@ -7,6 +7,7 @@
 ; 0x0800 - 0x0800; 0 so basic program can run
 ; 0x0801 - 0x080d: basic stub to jump to $5900
 ; 0x1000 - 0x17ff: default character set
+; 0x1800 - 0x1fff: alternate character set
 ; 0x3c00 - 0x3fe7: double buffer screen
 ; 0x3ff8 - 0x3fff: sprites data index to address >> 2 when screen 1 is active
 ; 0x4000 - 0x58ff: tile map
@@ -104,11 +105,7 @@ SCREEN_0:
 ;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
-; .align 64  note: align does not work, it places the data at $0841
-;.res 50, 0 ; note: manual padding to place data at 64 byte boundary
-;
-; 0x3c00 - 0x2000 = 7168N / 64 = 112 sprites
-;
+; 0x3c00 - 0x2000 = 7168 / 64 = 112 sprites
 .assert * <= $2000, error, "segment overflows into SPRITES_DATA"
 .org $2000
 .segment "SPRITES_DATA"
