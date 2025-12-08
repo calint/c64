@@ -129,7 +129,7 @@ charset_1:
 .org $2000
 .segment "CHARSET_2"
 charset_3:
-    .incbin "../resources/charset_2.bin"
+    .include "../resources/charset_2.s"
 
 ;-------------------------------------------------------------------------------
 ; charset 4 (can be modified)
