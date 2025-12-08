@@ -303,7 +303,7 @@ game_loop:
     sta VIC_SPRITE_DBLX
     lda sprites_double_height
     sta VIC_SPRITE_DBLY
-    lda sprites_x8
+    lda sprites_msb_x
     sta VIC_SPRITES_8X
 
     lda VIC_DATA_PORT_A 
@@ -377,20 +377,6 @@ scroll_none:
  
     jmp game_loop           ; continue game loop
 ;-------------------------------------------------------------------------------
-sprites_state:
-    ; x, y, data, color
-    .byte  30,  50, sprite_0_data>>6, 1
-    .byte  90, 150, sprite_0_data>>6, 2
-    .res 32-4*2
-sprites_x8: ; 8'th bit of x-coordinate
-    .byte %00000000
-sprites_enable:
-    .byte %00000011
-sprites_double_width:
-    .byte %00000001
-sprites_double_height:
-    .byte %00000001
-;-------------------------------------------------------------------------------
 update:
     ; placeholder for game loop
     ; total: 15,423 cycles
@@ -442,4 +428,18 @@ irq:
 ;-------------------------------------------------------------------------------
 nmi:
     rti
+;-------------------------------------------------------------------------------
+sprites_state:
+    ; x, y, data, color
+    .byte  30,  50, sprite_0_data>>6, 1
+    .byte  90, 150, sprite_0_data>>6, 2
+    .res 32-4*2
+sprites_msb_x: ; 8'th bit of x-coordinate
+    .byte %00000000
+sprites_enable:
+    .byte %00000011
+sprites_double_width:
+    .byte %00000001
+sprites_double_height:
+    .byte %00000001
 ;-------------------------------------------------------------------------------
