@@ -382,8 +382,8 @@ sprites_state:
     .byte  30,  50, sprite_0_data>>6, 1
     .byte  90, 150, sprite_0_data>>6, 2
     .res 32-4*2
-sprites_x8:
-    .byte 0
+sprites_x8: ; 8'th bit of x-coordinate
+    .byte %00000000
 sprites_enable:
     .byte %00000011
 sprites_double_width:
