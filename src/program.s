@@ -105,7 +105,7 @@ SCREEN_0:
 .assert * = $80e, error, "segment BASIC has unexpected size"
 
 ;-------------------------------------------------------------------------------
-; charset 0
+; charset 0 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
 .assert * <= $1000, error, "segment overflows into CHARSET_0"
 .org $1000
@@ -114,7 +114,7 @@ charset_0:
     .res $0800
 
 ;-------------------------------------------------------------------------------
-; charset 1
+; charset 1 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
 .assert * <= $1800, error, "segment overflows into CHARSET_1"
 .org $1800
@@ -123,13 +123,22 @@ charset_1:
     .res $0800
 
 ;-------------------------------------------------------------------------------
-; custom charset
+; charset 2 (can be modified)
 ;-------------------------------------------------------------------------------
-.assert * <= $2000, error, "segment overflows into CHARSET"
+.assert * <= $2000, error, "segment overflows into CHARSET_2"
 .org $2000
-.segment "CHARSET"
-charset:
-    .incbin "../resources/charset.bin"
+.segment "CHARSET_2"
+charset_3:
+    .incbin "../resources/charset_2.bin"
+
+;-------------------------------------------------------------------------------
+; charset 4 (can be modified)
+;-------------------------------------------------------------------------------
+.assert * <= $2800, error, "segment overflows into CHARSET_3"
+.org $2800
+.segment "CHARSET_3"
+charset_4:
+    .incbin "../resources/charset_3.bin"
 
 ;-------------------------------------------------------------------------------
 ; sprites data
