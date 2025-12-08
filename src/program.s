@@ -228,7 +228,7 @@ program:
     sta TILE_MAP_X_FINE     ; start at left most pixel
     sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
-
+ 
     cli                     ; enable interrupts
 ;-------------------------------------------------------------------------------
 render_tile_map:
