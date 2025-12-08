@@ -49,8 +49,8 @@ VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SPRITE_IX_OFST  = $03f8     ; sprites data index offset from screen address
-SCREEN_0_D018   = %00010100 ; screen at $0400 char map at $1000
-SCREEN_1_D018   = %11110100 ; screen at $3C00 char map at $1000 
+SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
+SCREEN_1_D018   = %11111000 ; screen at $3C00 char map at $2000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
@@ -121,11 +121,20 @@ charset_1:
     .res $0800
 
 ;-------------------------------------------------------------------------------
+; custom charset
+;-------------------------------------------------------------------------------
+.assert * <= $2000, error, "segment overflows into CHARSET"
+.org $2000
+.segment "CHARSET"
+charset:
+    .incbin "../resources/charset.bin"
+
+;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
-; 0x3c00 - 0x2000 = 7168 / 64 = 112 sprites
-.assert * <= $2000, error, "segment overflows into SPRITES_DATA"
-.org $2000
+; 0x3c00 - 0x3000 = 3072 / 64 = 48 sprites
+.assert * <= $3000, error, "segment overflows into SPRITES_DATA"
+.org $3000
 .segment "SPRITES_DATA"
 sprite_0_data:
     ; 63 bytes of sprite data (21 rows × 3 bytes)
@@ -537,3 +546,4 @@ sprites_double_width:
 sprites_double_height:
     .byte %00000001
 ;-------------------------------------------------------------------------------
+.assert * <= $d000, error, "segment overflows into I/O"
