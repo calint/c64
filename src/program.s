@@ -106,7 +106,11 @@ SCREEN_0:
 ;-------------------------------------------------------------------------------
 ; .align 64  note: align does not work, it places the data at $0841
 ;.res 50, 0 ; note: manual padding to place data at 64 byte boundary
-.org $0840
+;
+; 0x3c00 - 0x2000 = 7168N / 64 = 112 sprites
+;
+.assert * <= $2000, error, "segment overflows into SPRITES_DATA"
+.org $2000
 .segment "SPRITES_DATA"
 sprite_0_data:
     ; 63 bytes of sprite data (21 rows × 3 bytes)
