@@ -276,7 +276,35 @@ game_loop:
     lda #BORDER_LOOP
     sta VIC_BORDER
 
-    jsr sprites_state_update
+    ; update sprites
+    lda sprites_state+0
+    sta VIC_SPRITE_0_X
+    lda sprites_state+1
+    sta VIC_SPRITE_0_Y
+    lda sprites_state+2
+    sta SCREEN_0+SPRITE_IX_OFST+0
+    sta SCREEN_1+SPRITE_IX_OFST+0
+    lda sprites_state+3
+    sta VIC_SPRITE_COLR+0
+
+    lda sprites_state+4
+    sta VIC_SPRITE_1_X
+    lda sprites_state+5
+    sta VIC_SPRITE_1_Y
+    lda sprites_state+6
+    sta SCREEN_0+SPRITE_IX_OFST+1
+    sta SCREEN_1+SPRITE_IX_OFST+1
+    lda sprites_state+7
+    sta VIC_SPRITE_COLR+1
+
+    lda sprites_enable
+    sta VIC_SPRITE_ENBL
+    lda sprites_double_width
+    sta VIC_SPRITE_DBLX
+    lda sprites_double_height
+    sta VIC_SPRITE_DBLY
+    lda sprites_x8
+    sta VIC_SPRITES_8X
 
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
@@ -362,42 +390,6 @@ sprites_double_width:
     .byte %00000001
 sprites_double_height:
     .byte %00000001
-
-sprites_state_update:
-    pha
-
-    lda sprites_state+0
-    sta VIC_SPRITE_0_X
-    lda sprites_state+1
-    sta VIC_SPRITE_0_Y
-    lda sprites_state+2
-    sta SCREEN_0+SPRITE_IX_OFST+0
-    sta SCREEN_1+SPRITE_IX_OFST+0
-    lda sprites_state+3
-    sta VIC_SPRITE_COLR+0
-
-    lda sprites_state+4
-    sta VIC_SPRITE_1_X
-    lda sprites_state+5
-    sta VIC_SPRITE_1_Y
-    lda sprites_state+6
-    sta SCREEN_0+SPRITE_IX_OFST+1
-    sta SCREEN_1+SPRITE_IX_OFST+1
-    lda sprites_state+7
-    sta VIC_SPRITE_COLR+1
-
-    lda sprites_enable
-    sta VIC_SPRITE_ENBL
-    lda sprites_double_width
-    sta VIC_SPRITE_DBLX
-    lda sprites_double_height
-    sta VIC_SPRITE_DBLY
-    lda sprites_x8
-    sta VIC_SPRITES_8X
-
-    pla
-    rts
-
 ;-------------------------------------------------------------------------------
 update:
     ; placeholder for game loop
