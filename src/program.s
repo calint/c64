@@ -2,14 +2,16 @@
 ; mapped memory
 ;-------------------------------------------------------------------------------
 ; 0x0002 - 0x00ff: page zero
-; 0x0400 - 0x07e7: default screen
-; 0x07f8 - 0x07ff: sprites data index to address >> 6 when screen 0 is active
+; 0x0400 - 0x07e7: default screen (screen 0)
+; 0x07f8 - 0x07ff: sprites data index to address/64 when screen 0 is active
 ; 0x0800 - 0x0800; 0 so basic program can run
 ; 0x0801 - 0x080d: basic stub to jump to $5900
-; 0x1000 - 0x17ff: default character set
-; 0x1800 - 0x1fff: alternate character set
-; 0x3c00 - 0x3fe7: double buffer screen
-; 0x3ff8 - 0x3fff: sprites data index to address >> 2 when screen 1 is active
+; 0x1000 - 0x17ff: default character set (note: vic-ii chip sees rom data)
+; 0x1800 - 0x1fff: alternate character set (note: vic-ii chip sees rom data)
+; 0x2000 - 0x2fff: 2 custom character sets
+; 0x3000 - 0x3bff: 48 sprite definition data
+; 0x3c00 - 0x3fe7: double buffer screen (screen 1)
+; 0x3ff8 - 0x3fff: sprites data index to address/64 when screen 1 is active
 ; 0x4000 - 0x58ff: tile map
 ; 0x5900 -       : program
 
