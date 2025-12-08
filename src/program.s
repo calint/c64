@@ -104,8 +104,9 @@ SCREEN_0:
 ;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
-.assert * <= $3a00, error, "segment overflows into SPRITES_DATA"
-.org $3a00
+; .align 64  note: align does not work, it places the data at $0841
+;.res 50, 0 ; note: manual padding to place data at 64 byte boundary
+.org $0840
 .segment "SPRITES_DATA"
 sprite_0_data:
     ; 63 bytes of sprite data (21 rows × 3 bytes)
@@ -130,6 +131,7 @@ sprite_0_data:
     .byte %00000111, %11111110, %00000000  ; row 18
     .byte %00000001, %11111000, %00000000  ; row 19
     .byte %00000000, %00000000, %00000000  ; row 20
+    .byte 0
 .out .sprintf("sprite_0_data: $%04X", sprite_0_data)
 
 ;-------------------------------------------------------------------------------
@@ -276,7 +278,7 @@ game_loop:
     lda #BORDER_LOOP
     sta VIC_BORDER
 
-    ; update sprites
+    ; sprite 0
     lda sprites_state+0
     sta VIC_SPRITE_0_X
     lda sprites_state+1
@@ -286,7 +288,8 @@ game_loop:
     sta SCREEN_1+SPRITE_IX_OFST+0
     lda sprites_state+3
     sta VIC_SPRITE_COLR+0
-
+ 
+    ; sprite 1
     lda sprites_state+4
     sta VIC_SPRITE_1_X
     lda sprites_state+5
@@ -296,7 +299,74 @@ game_loop:
     sta SCREEN_1+SPRITE_IX_OFST+1
     lda sprites_state+7
     sta VIC_SPRITE_COLR+1
+ 
+    ; sprite 2
+    lda sprites_state+8
+    sta VIC_SPRITE_2_X
+    lda sprites_state+9
+    sta VIC_SPRITE_2_Y
+    lda sprites_state+10
+    sta SCREEN_0+SPRITE_IX_OFST+2
+    sta SCREEN_1+SPRITE_IX_OFST+2
+    lda sprites_state+11
+    sta VIC_SPRITE_COLR+2
 
+    ; sprite 3
+    lda sprites_state+12
+    sta VIC_SPRITE_3_X
+    lda sprites_state+13
+    sta VIC_SPRITE_3_Y
+    lda sprites_state+14
+    sta SCREEN_0+SPRITE_IX_OFST+3
+    sta SCREEN_1+SPRITE_IX_OFST+3
+    lda sprites_state+15
+    sta VIC_SPRITE_COLR+3
+
+    ; sprite 4
+    lda sprites_state+16
+    sta VIC_SPRITE_4_X
+    lda sprites_state+17
+    sta VIC_SPRITE_4_Y
+    lda sprites_state+18
+    sta SCREEN_0+SPRITE_IX_OFST+4
+    sta SCREEN_1+SPRITE_IX_OFST+4
+    lda sprites_state+19
+    sta VIC_SPRITE_COLR+4
+
+    ; sprite 5
+    lda sprites_state+20
+    sta VIC_SPRITE_5_X
+    lda sprites_state+21
+    sta VIC_SPRITE_5_Y
+    lda sprites_state+22
+    sta SCREEN_0+SPRITE_IX_OFST+5
+    sta SCREEN_1+SPRITE_IX_OFST+5
+    lda sprites_state+23
+    sta VIC_SPRITE_COLR+5
+ 
+    ; sprite 6
+    lda sprites_state+24
+    sta VIC_SPRITE_6_X
+    lda sprites_state+25
+    sta VIC_SPRITE_6_Y
+    lda sprites_state+26
+    sta SCREEN_0+SPRITE_IX_OFST+6
+    sta SCREEN_1+SPRITE_IX_OFST+6
+    lda sprites_state+27
+    sta VIC_SPRITE_COLR+6
+
+    ; sprite 7
+    lda sprites_state+28
+    sta VIC_SPRITE_7_X
+    lda sprites_state+29
+    sta VIC_SPRITE_7_Y
+    lda sprites_state+30
+    sta SCREEN_0+SPRITE_IX_OFST+7
+    sta SCREEN_1+SPRITE_IX_OFST+7
+    lda sprites_state+31
+    sta VIC_SPRITE_COLR+7
+
+    ; sprites state
     lda sprites_enable
     sta VIC_SPRITE_ENBL
     lda sprites_double_width
@@ -306,6 +376,7 @@ game_loop:
     lda sprites_msb_x
     sta VIC_SPRITES_8X
 
+    ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
     bne @right
@@ -432,12 +503,16 @@ nmi:
 sprites_state:
     ; x, y, data, color
     .byte  30,  50, sprite_0_data>>6, 1
-    .byte  90, 150, sprite_0_data>>6, 2
-    .res 32-4*2
+    .byte  90, 100, sprite_0_data>>6, 2
+    .byte 110, 110, sprite_0_data>>6, 3
+    .byte 120, 120, sprite_0_data>>6, 4
+    .byte 130, 130, sprite_0_data>>6, 5
+    .byte 140, 140, sprite_0_data>>6, 6
+    .byte 150, 150, sprite_0_data>>6, 7
 sprites_msb_x: ; 8'th bit of x-coordinate
     .byte %00000000
 sprites_enable:
-    .byte %00000011
+    .byte %11111111
 sprites_double_width:
     .byte %00000001
 sprites_double_height:
