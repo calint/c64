@@ -76,17 +76,19 @@ JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 header:
 .out .sprintf("       header: $%04X", header)
 .word $0801                ; prg load address hard-coded
+
 ;-------------------------------------------------------------------------------
-; zero page variables
+; zero page
 ;-------------------------------------------------------------------------------
 .org $0002
 .segment "ZEROPAGE"
 zp:
 .out .sprintf("    zero page: $%04X", zp)
-TILE_MAP_X:      .res 1     ; tile map x offset in characters
-TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
-SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
-VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
+tile_map_x:      .res 1     ; tile map x offset in characters
+tile_map_x_fine: .res 1     ; fine scroll of screen between 0 and 7
+screen_active:   .res 1     ; active screen (0 or 1)
+vblank_done:     .res 1     ; 1 when raster irq triggers
+
 ;-------------------------------------------------------------------------------
 ; stack
 ;-------------------------------------------------------------------------------
@@ -95,6 +97,7 @@ VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 stack:
 .out .sprintf("        stack: $%04X", stack)
 .res 256
+
 ;-------------------------------------------------------------------------------
 ; screen 0
 ;-------------------------------------------------------------------------------
@@ -103,6 +106,7 @@ stack:
 screen_0:
 .out .sprintf("     screen_0: $%04X", screen_0)
 .res 1000
+
 ;-------------------------------------------------------------------------------
 ; basic stub to jump to $5900: 10 sys 22784
 ;-------------------------------------------------------------------------------
@@ -117,6 +121,7 @@ basic:
 .byte "22784", 0            ; sys 22784 ($5900 in decimal)
 .word 0                     ; end of basic program
 .assert * = $80e, error, "segment BASIC has unexpected size"
+
 ;-------------------------------------------------------------------------------
 ; charset 0 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
@@ -126,6 +131,7 @@ basic:
 charset_0:
 .out .sprintf("    charset_0: $%04X", charset_0)
     .res $0800
+
 ;-------------------------------------------------------------------------------
 ; charset 1 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
@@ -135,6 +141,7 @@ charset_0:
 charset_1:
 .out .sprintf("    charset_1: $%04X", charset_1)
     .res $0800
+
 ;-------------------------------------------------------------------------------
 ; charset 2 (can be modified)
 ;-------------------------------------------------------------------------------
@@ -144,6 +151,7 @@ charset_1:
 charset_2:
 .out .sprintf("    charset_2: $%04X", charset_2)
     .include "../resources/charset_2.s"
+
 ;-------------------------------------------------------------------------------
 ; charset 4 (can be modified)
 ;-------------------------------------------------------------------------------
@@ -153,6 +161,7 @@ charset_2:
 charset_3:
 .out .sprintf("    charset_3: $%04X", charset_3)
     .incbin "../resources/charset_3.bin"
+
 ;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
@@ -259,20 +268,32 @@ program:
 
     ;lda #256-SCREEN_WIDTH   ; place at right most position in tile map
     lda #0
-    sta TILE_MAP_X_FINE     ; start at left most pixel
+    sta tile_map_x_fine     ; start at left most pixel
     lda #0
-    sta TILE_MAP_X
-    sta SCREEN_ACTIVE       ; active screen  0
-    sta VBLANK_DONE         ; vblank not done
+    sta tile_map_x
+    sta screen_active       ; active screen  0
+    sta vblank_done         ; vblank not done
  
-    ; lda TILE_MAP_X_FINE     ; load fine scroll x
+    ; lda tile_map_x_fine     ; load fine scroll x
     ; sta VIC_CTRL_2          ; store to chip address
     ;
     ; lda #SCREEN_0_D018      ; activate screen 0
     ; sta VIC_MEM_CTRL        ; write to register
 
     cli                     ; enable interrupts
-    ; fallthrough
+
+    ; note: fallthrough ok
+
+;-------------------------------------------------------------------------------
+; Flow:
+; 1. `render_tile_map`
+; 2. `game_loop`
+; 3. `update`
+; 4. in case screen needs redraw 1 else 2
+;
+; note: somewhat spaghetti due to the fine scroll vs full redraw cycle
+;-------------------------------------------------------------------------------
+
 ;-------------------------------------------------------------------------------
 render_tile_map:
     ; set border color to illustrate duration of render
@@ -280,11 +301,11 @@ render_tile_map:
     sta VIC_BORDER
 
     ; initiate tile map position and screen column
-    ldx TILE_MAP_X
+    ldx tile_map_x
     ldy #0
 
     ; jump to unrolled loop for current screen
-    lda SCREEN_ACTIVE
+    lda screen_active
     beq @screen_0
     jmp @screen_1
 
@@ -314,20 +335,20 @@ render_tile_map:
     sta VIC_BORDER
 
     ; wait for vblank
- :  lda VBLANK_DONE
+ :  lda vblank_done
     beq :-
-    lsr VBLANK_DONE
+    lsr vblank_done
 
     ; swap screens
-    lda SCREEN_ACTIVE       ; load active screen
+    lda screen_active       ; load active screen
     bne @to_screen_1        ; if screen 1 active activate screen 0
 @to_screen_0:
     lda #SCREEN_0_D018      ; activate screen 0
-    inc SCREEN_ACTIVE       ; next active screen 1
+    inc screen_active       ; next active screen 1
     jmp @swap               ; continue to write to register
 @to_screen_1:
     lda #SCREEN_1_D018      ; activate screen 1
-    lsr SCREEN_ACTIVE       ; next active screen 0
+    lsr screen_active       ; next active screen 0
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
@@ -336,13 +357,10 @@ render_tile_map:
     jmp game_loop_no_vblank_wait
 
 ;-------------------------------------------------------------------------------
-; structure: `render` -> `game_loop` -> `update`
-; note: somewhat spaghetti due to the fine scroll vs full redraw setup
-;-------------------------------------------------------------------------------
 game_loop:
- :  lda VBLANK_DONE         ; wait for vblank 
+ :  lda vblank_done         ; wait for vblank 
     beq :-
-    lsr VBLANK_DONE
+    lsr vblank_done
 
 game_loop_no_vblank_wait:
     lda #BORDER_LOOP
@@ -462,16 +480,17 @@ game_loop_no_vblank_wait:
     sta VIC_BORDER
 
     jmp scroll_none 
+
 ;-------------------------------------------------------------------------------
 scroll_left:
     ; shift screen by fine scroll or render new screen
-    lda TILE_MAP_X_FINE     ; load fine scroll x
+    lda tile_map_x_fine     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
-    dec TILE_MAP_X_FINE     ; decrease fine scroll by 1
+    dec tile_map_x_fine     ; decrease fine scroll by 1
     bpl @done               ; if not 0 wait for vblank before next fine scroll
     lda #7                  ; fine scroll is 0, set maximum right shift
-    sta TILE_MAP_X_FINE     ; store
-    inc TILE_MAP_X          ; scroll map left one character
+    sta tile_map_x_fine     ; store
+    inc tile_map_x          ; scroll map left one character
     jsr update              ; update game state
     jmp render_tile_map     ; render tile map to next screen (then `game_loop`)
 @done:
@@ -481,14 +500,14 @@ scroll_left:
 ;-------------------------------------------------------------------------------
 scroll_right:
     ; shift screen by fine scroll or render new screen
-    lda TILE_MAP_X_FINE     ; load fine scroll x
+    lda tile_map_x_fine     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
-    inc TILE_MAP_X_FINE     ; decrease fine scroll by 1
+    inc tile_map_x_fine     ; decrease fine scroll by 1
     cmp #7                  ; compares with last stored fine pixel scroll
     bne @done               ; if not 7 wait for vblank before next fine scroll
     lda #0                  ; last pixel, set to minimum left for next frame
-    sta TILE_MAP_X_FINE     ; store
-    dec TILE_MAP_X          ; scroll map right one character
+    sta tile_map_x_fine     ; store
+    dec tile_map_x          ; scroll map right one character
     jsr update              ; update game state
     jmp render_tile_map     ; render tile map to next screen (then `game_loop`)
 @done:
@@ -497,10 +516,11 @@ scroll_right:
 
 ;-------------------------------------------------------------------------------
 scroll_none:
-    lda TILE_MAP_X_FINE     ; load fine scroll x
+    lda tile_map_x_fine     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
     jsr update              ; update game state
     jmp game_loop           ; continue game loop
+
 ;-------------------------------------------------------------------------------
 update:
     ; placeholder for game loop
@@ -540,7 +560,7 @@ irq:
     and #1                  ; check bit 0 (raster interrupt)
     beq @not_raster         ; if not set, not a raster interrupt
     lda #1                  ; set vblank done
-    sta VBLANK_DONE         ; store
+    sta vblank_done         ; store
 
 @not_raster:
  
