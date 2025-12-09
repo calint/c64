@@ -81,29 +81,31 @@ VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 ;-------------------------------------------------------------------------------
 .org $0000
 .segment "HEADER"
+header:
 .word $0801                ; prg load address hard-coded
-
+.out .sprintf("       header: $%04X", header)
 ;-------------------------------------------------------------------------------
 ; screen 0
 ;-------------------------------------------------------------------------------
 .org $0400
 .segment "SCREEN_0"
-SCREEN_0:
+screen_0:
+.out .sprintf("     screen_0: $%04X", screen_0)
 .res 1000
-
 ;-------------------------------------------------------------------------------
 ; basic stub to jump to $5900: 10 sys 22784
 ;-------------------------------------------------------------------------------
 .assert * <= $0801, error, "segment overflows into BASIC"
 .org $0801
 .segment "BASIC"
+basic:
+.out .sprintf("        basic: $%04X", basic)
 .word $080b                 ; pointer to next basic line
 .word 10                    ; line number
 .byte $9e                   ; sys token
 .byte "22784", 0            ; sys 22784 ($5900 in decimal)
 .word 0                     ; end of basic program
 .assert * = $80e, error, "segment BASIC has unexpected size"
-
 ;-------------------------------------------------------------------------------
 ; charset 0 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
@@ -111,8 +113,8 @@ SCREEN_0:
 .org $1000
 .segment "CHARSET_0"
 charset_0:
+.out .sprintf("    charset_0: $%04X", charset_0)
     .res $0800
-
 ;-------------------------------------------------------------------------------
 ; charset 1 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
@@ -120,26 +122,26 @@ charset_0:
 .org $1800
 .segment "CHARSET_1"
 charset_1:
+.out .sprintf("    charset_1: $%04X", charset_1)
     .res $0800
-
 ;-------------------------------------------------------------------------------
 ; charset 2 (can be modified)
 ;-------------------------------------------------------------------------------
 .assert * <= $2000, error, "segment overflows into CHARSET_2"
 .org $2000
 .segment "CHARSET_2"
-charset_3:
+charset_2:
+.out .sprintf("    charset_2: $%04X", charset_2)
     .include "../resources/charset_2.s"
-
 ;-------------------------------------------------------------------------------
 ; charset 4 (can be modified)
 ;-------------------------------------------------------------------------------
 .assert * <= $2800, error, "segment overflows into CHARSET_3"
 .org $2800
 .segment "CHARSET_3"
-charset_4:
+charset_3:
+.out .sprintf("    charset_3: $%04X", charset_3)
     .incbin "../resources/charset_3.bin"
-
 ;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
@@ -147,6 +149,8 @@ charset_4:
 .assert * <= $3000, error, "segment overflows into SPRITES_DATA"
 .org $3000
 .segment "SPRITES_DATA"
+sprites_data:
+.out .sprintf(" sprites_data: $%04X", sprites_data)
 sprite_0_data:
     ; 63 bytes of sprite data (21 rows × 3 bytes)
     .byte %00000000, %00000000, %00000000  ; row 0
@@ -171,7 +175,6 @@ sprite_0_data:
     .byte %00000001, %11111000, %00000000  ; row 19
     .byte %00000000, %00000000, %00000000  ; row 20
     .byte 0
-.out .sprintf("sprite_0_data: $%04X", sprite_0_data)
 
 ;-------------------------------------------------------------------------------
 ; screen 1
@@ -179,9 +182,9 @@ sprite_0_data:
 .assert * <= $3c00, error, "segment overflows into SCREEN_1"
 .org $3c00
 .segment "SCREEN_1"
-SCREEN_1:
+screen_1:
+.out .sprintf("     screen_1: $%04X", screen_1)
     .res $400
-.out .sprintf("     screen_1: $%04X", SCREEN_1)
 
 ;-------------------------------------------------------------------------------
 ; tile map
@@ -190,8 +193,8 @@ SCREEN_1:
 .segment "TILE_MAP"
 .org $4000
 tile_map:                   ; the tile map included from resources
-    .include "../resources/tile_map.s"
 .out .sprintf("     tile_map: $%04X", tile_map)
+    .include "../resources/tile_map.s"
 
 ;-------------------------------------------------------------------------------
 ; program
@@ -200,6 +203,7 @@ tile_map:                   ; the tile map included from resources
 .org $5900
 .segment "CODE"
 program:
+.out .sprintf("      program: $%04X", program)
     sei                     ; disable interrupts
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
@@ -323,8 +327,8 @@ game_loop:
     lda sprites_state+1
     sta VIC_SPRITE_0_Y
     lda sprites_state+2
-    sta SCREEN_0+SPRITE_IX_OFST+0
-    sta SCREEN_1+SPRITE_IX_OFST+0
+    sta screen_0+SPRITE_IX_OFST+0
+    sta screen_1+SPRITE_IX_OFST+0
     lda sprites_state+3
     sta VIC_SPRITE_COLR+0
  
@@ -334,8 +338,8 @@ game_loop:
     lda sprites_state+5
     sta VIC_SPRITE_1_Y
     lda sprites_state+6
-    sta SCREEN_0+SPRITE_IX_OFST+1
-    sta SCREEN_1+SPRITE_IX_OFST+1
+    sta screen_0+SPRITE_IX_OFST+1
+    sta screen_1+SPRITE_IX_OFST+1
     lda sprites_state+7
     sta VIC_SPRITE_COLR+1
  
@@ -345,8 +349,8 @@ game_loop:
     lda sprites_state+9
     sta VIC_SPRITE_2_Y
     lda sprites_state+10
-    sta SCREEN_0+SPRITE_IX_OFST+2
-    sta SCREEN_1+SPRITE_IX_OFST+2
+    sta screen_0+SPRITE_IX_OFST+2
+    sta screen_1+SPRITE_IX_OFST+2
     lda sprites_state+11
     sta VIC_SPRITE_COLR+2
 
@@ -356,8 +360,8 @@ game_loop:
     lda sprites_state+13
     sta VIC_SPRITE_3_Y
     lda sprites_state+14
-    sta SCREEN_0+SPRITE_IX_OFST+3
-    sta SCREEN_1+SPRITE_IX_OFST+3
+    sta screen_0+SPRITE_IX_OFST+3
+    sta screen_1+SPRITE_IX_OFST+3
     lda sprites_state+15
     sta VIC_SPRITE_COLR+3
 
@@ -367,8 +371,8 @@ game_loop:
     lda sprites_state+17
     sta VIC_SPRITE_4_Y
     lda sprites_state+18
-    sta SCREEN_0+SPRITE_IX_OFST+4
-    sta SCREEN_1+SPRITE_IX_OFST+4
+    sta screen_0+SPRITE_IX_OFST+4
+    sta screen_1+SPRITE_IX_OFST+4
     lda sprites_state+19
     sta VIC_SPRITE_COLR+4
 
@@ -378,8 +382,8 @@ game_loop:
     lda sprites_state+21
     sta VIC_SPRITE_5_Y
     lda sprites_state+22
-    sta SCREEN_0+SPRITE_IX_OFST+5
-    sta SCREEN_1+SPRITE_IX_OFST+5
+    sta screen_0+SPRITE_IX_OFST+5
+    sta screen_1+SPRITE_IX_OFST+5
     lda sprites_state+23
     sta VIC_SPRITE_COLR+5
  
@@ -389,8 +393,8 @@ game_loop:
     lda sprites_state+25
     sta VIC_SPRITE_6_Y
     lda sprites_state+26
-    sta SCREEN_0+SPRITE_IX_OFST+6
-    sta SCREEN_1+SPRITE_IX_OFST+6
+    sta screen_0+SPRITE_IX_OFST+6
+    sta screen_1+SPRITE_IX_OFST+6
     lda sprites_state+27
     sta VIC_SPRITE_COLR+6
 
@@ -400,8 +404,8 @@ game_loop:
     lda sprites_state+29
     sta VIC_SPRITE_7_Y
     lda sprites_state+30
-    sta SCREEN_0+SPRITE_IX_OFST+7
-    sta SCREEN_1+SPRITE_IX_OFST+7
+    sta screen_0+SPRITE_IX_OFST+7
+    sta screen_1+SPRITE_IX_OFST+7
     lda sprites_state+31
     sta VIC_SPRITE_COLR+7
 
