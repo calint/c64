@@ -87,7 +87,7 @@ zp:
 camera_x_lo:     .res 1     ; low byte of camera x
 camera_x_hi:     .res 1     ; high byte of camera x
 tile_map_x:      .res 1     ; tile map x offset in characters
-tile_map_x_fine: .res 1     ; fine scroll of screen between 0 and 7
+screen_offset:   .res 1
 screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; very near temporary
@@ -273,7 +273,6 @@ program:
     lda #$ff                ; value to not match camera for render at first pass
     sta tile_map_x
     lda #0
-    sta tile_map_x_fine     ; start at left most pixel
     sta camera_x_lo
     sta camera_x_hi
     sta vblank_done         ; vblank not done
@@ -354,21 +353,40 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
+    lda screen_offset
+    sta VIC_CTRL_2
+
     ; jump to game loop but skip wait for vblank because render did that prior
     ; to swapping screens
     jmp game_loop_no_vblank
 
 ;-------------------------------------------------------------------------------
+; | camera_x | offset | tile_map_x |
+; | 0        | 0      | 0          |
+; | 1        | 7      | 1          |
+; | 2        | 6      | 1          |
+; | 3        | 5      | 1          |
+; | 4        | 4      | 1          |
+; | 5        | 3      | 1          |
+; | 6        | 2      | 1          |
+; | 7        | 1      | 1          |
+; | 8        | 0      | 1          |
+; | 9        | 7      | 2          |
+; | 10       | 6      | 2          |
+; etc
 render:
     lda camera_x_lo         ; camera position low byte
     tay                     ; save for later
     and #%00000111          ; calculate screen shift right
     eor #%00000111          ; invert
-    clc                     ; add 1 to correct for 0 being 7
+    clc                     ; add 1
     adc #1                  ;
     and #%00000111          ; select relevant bits
-    sta VIC_CTRL_2          ; store to chip address
-    lda camera_x_hi         ;
+    ; acc now contains the screen right shift
+    tax                     ; save it for later
+    ;ora #%00001000
+    sta screen_offset       ; store screen shift in variable
+    lda camera_x_hi         ; calculate the tile map x
     asl A
     asl A
     asl A
@@ -379,11 +397,15 @@ render:
     lsr A
     lsr A
     lsr A
-    ora tmp1
-    ; acc now contains new tile map x
-    cmp tile_map_x
-    beq game_loop
-    sta tile_map_x
+    ora tmp1                ; acc now contains new tile map x
+    sta tmp1                ; save it
+    txa                     ; check if screen shift is 0
+    beq :+                  ; if 0 then use tile map x as is
+    inc tmp1                ; not 0, increase tile map x (see table)
+:   lda tmp1                ; load variable
+    cmp tile_map_x          ; does the tile map need to be redrawn?
+    beq game_loop           ; same like last frame, only screen shift
+    sta tile_map_x          ; new tile map position, save
     jmp render_tile_map
 
 ;-------------------------------------------------------------------------------
@@ -391,6 +413,9 @@ game_loop:
  :  lda vblank_done         ; wait for vblank 
     beq :-
     lsr vblank_done
+
+    lda screen_offset
+    sta VIC_CTRL_2
 
 game_loop_no_vblank:
     lda #BORDER_LOOP
@@ -496,31 +521,31 @@ game_loop_no_vblank:
 
     jsr update
 
-;     ; joystick
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_LEFT
-;     bne @right
-;     sec                 ; set carry for subtraction
-;     lda camera_x_lo     ; load low byte
-;     sbc #1              ; subtract value (and borrow if needed)
-;     sta camera_x_lo     ; store result low byte
-;     lda camera_x_hi     ; load high byte
-;     sbc #0              ; subtract borrow only (if carry was clear)
-;     sta camera_x_hi     ; store result high byte
-;     jmp render
-; @right:
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_RIGHT
-;     bne @done
-;     clc                 ; clear carry for addition
-;     lda camera_x_lo     ; load low byte
-;     adc #1              ; add value
-;     sta camera_x_lo     ; store result low byte
-;     lda camera_x_hi     ; load high byte
-;     adc #0              ; add carry only (if overflow from low byte)
-;     sta camera_x_hi     ; store result high byte
-;     jmp render
-; @done:
+    ; joystick
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_LEFT
+    bne @right
+    sec                 ; set carry for subtraction
+    lda camera_x_lo     ; load low byte
+    sbc #1              ; subtract value (and borrow if needed)
+    sta camera_x_lo     ; store result low byte
+    lda camera_x_hi     ; load high byte
+    sbc #0              ; subtract borrow only (if carry was clear)
+    sta camera_x_hi     ; store result high byte
+    jmp render
+@right:
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_RIGHT
+    bne @done
+    clc                 ; clear carry for addition
+    lda camera_x_lo     ; load low byte
+    adc #1              ; add value
+    sta camera_x_lo     ; store result low byte
+    lda camera_x_hi     ; load high byte
+    adc #0              ; add carry only (if overflow from low byte)
+    sta camera_x_hi     ; store result high byte
+    jmp render
+@done:
     jmp render 
 
 ;-------------------------------------------------------------------------------
@@ -543,20 +568,20 @@ update:
     dec sprites_state+4
     dec sprites_state+5
 
-    clc
-    lda camera_x_lo
-    adc #1
-    sta camera_x_lo
-    lda camera_x_hi
-    adc #0
-    sta camera_x_hi
+    ; clc
+    ; lda camera_x_lo
+    ; adc #1
+    ; sta camera_x_lo
+    ; lda camera_x_hi
+    ; adc #0
+    ; sta camera_x_hi
 
     ; sec
     ; lda camera_x_lo
     ; sbc #1
     ; sta camera_x_lo
     ; lda camera_x_hi
-    ; sbc #0                  ; subtract the borrow
+    ; sbc #0
     ; sta camera_x_hi
 
     ldy #4
