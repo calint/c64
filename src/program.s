@@ -258,7 +258,7 @@ program:
     ;
 
     ;lda #256-SCREEN_WIDTH   ; place at right most position in tile map
-    lda #7
+    lda #0
     sta TILE_MAP_X_FINE     ; start at left most pixel
     lda #0
     sta TILE_MAP_X
