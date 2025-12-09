@@ -74,8 +74,8 @@ JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 .org $0000
 .segment "HEADER"
 header:
-.word $0801                ; prg load address hard-coded
 .out .sprintf("       header: $%04X", header)
+.word $0801                ; prg load address hard-coded
 ;-------------------------------------------------------------------------------
 ; zero page variables
 ;-------------------------------------------------------------------------------
@@ -87,7 +87,6 @@ TILE_MAP_X:      .res 1     ; tile map x offset in characters
 TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
 SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
 VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
-
 ;-------------------------------------------------------------------------------
 ; stack
 ;-------------------------------------------------------------------------------
@@ -254,12 +253,6 @@ program:
     lda #1                  ; enable raster irq (bit 0 = raster interrupt)
     sta VIC_IRQ_ENABLE      ; write
 
-    ; lda TILE_MAP_X_FINE     ; load fine scroll x
-    ; sta VIC_CTRL_2          ; store to chip address
-    ;
-    ; lda #SCREEN_0_D018      ; activate screen 0
-    ; sta VIC_MEM_CTRL        ; write to register
-
     ;
     ; setup first render
     ;
@@ -272,7 +265,14 @@ program:
     sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
  
+    ; lda TILE_MAP_X_FINE     ; load fine scroll x
+    ; sta VIC_CTRL_2          ; store to chip address
+    ;
+    ; lda #SCREEN_0_D018      ; activate screen 0
+    ; sta VIC_MEM_CTRL        ; write to register
+
     cli                     ; enable interrupts
+    ; fallthrough
 ;-------------------------------------------------------------------------------
 render_tile_map:
     ; set border color to illustrate duration of render
@@ -331,6 +331,8 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
+    ; jump to game loop but skip wait for vblank because render did that prior
+    ; to swapping screens
     jmp game_loop_no_vblank_wait
 
 ;-------------------------------------------------------------------------------
