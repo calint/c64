@@ -8,14 +8,15 @@
 ; 0x0801 - 0x080d: basic stub to jump to $5900
 ; 0x1000 - 0x17ff: default character set (note: vic-ii chip sees rom data)
 ; 0x1800 - 0x1fff: alternate character set (note: vic-ii chip sees rom data)
-; 0x2000 - 0x2fff: 2 custom character sets
+; 0x2000 - 0x27ff: user defined character set 1
+; 0x2800 - 0x2fff: user defined character set 2
 ; 0x3000 - 0x3bff: 48 sprite definition data
 ; 0x3c00 - 0x3fe7: double buffer screen (screen 1)
 ; 0x3ff8 - 0x3fff: sprites data index to address/64 when screen 1 is active
 ; 0x4000 - 0x58ff: tile map
 ; 0x5900 -       : program
 
-; for more see: https://sta.c64.org/cbm64mem.html
+; for more see: linker.cfg, build output and https://sta.c64.org/cbm64mem.html
 
 ;-------------------------------------------------------------------------------
 ; constants
@@ -50,7 +51,7 @@ VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
-SPRITE_IX_OFST  = $03f8     ; sprites data index offset from screen address
+SPRITE_IX_OFST  = $03f8     ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3C00 char map at $2000 
 SCREEN_WIDTH    = 40        ; screen width in characters
@@ -68,15 +69,6 @@ JOYSTICK_RIGHT  = 8         ; bit when joystick is right
 JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 
 ;-------------------------------------------------------------------------------
-; zero page variables
-;-------------------------------------------------------------------------------
-.segment "ZEROPAGE"
-TILE_MAP_X:      .res 1     ; tile map x offset in characters
-TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
-SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
-VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
-
-;-------------------------------------------------------------------------------
 ; program header
 ;-------------------------------------------------------------------------------
 .org $0000
@@ -84,6 +76,26 @@ VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
 header:
 .word $0801                ; prg load address hard-coded
 .out .sprintf("       header: $%04X", header)
+;-------------------------------------------------------------------------------
+; zero page variables
+;-------------------------------------------------------------------------------
+.org $0002
+.segment "ZEROPAGE"
+zp:
+.out .sprintf("    zero page: $%04X", zp)
+TILE_MAP_X:      .res 1     ; tile map x offset in characters
+TILE_MAP_X_FINE: .res 1     ; fine scroll of screen between 0 and 7
+SCREEN_ACTIVE:   .res 1     ; active screen (0 or 1)
+VBLANK_DONE:     .res 1     ; 1 when raster irq triggers
+
+;-------------------------------------------------------------------------------
+; stack
+;-------------------------------------------------------------------------------
+.org $0100
+.segment "STACK"
+stack:
+.out .sprintf("        stack: $%04X", stack)
+.res 256
 ;-------------------------------------------------------------------------------
 ; screen 0
 ;-------------------------------------------------------------------------------
@@ -242,14 +254,21 @@ program:
     lda #1                  ; enable raster irq (bit 0 = raster interrupt)
     sta VIC_IRQ_ENABLE      ; write
 
+    ; lda TILE_MAP_X_FINE     ; load fine scroll x
+    ; sta VIC_CTRL_2          ; store to chip address
+    ;
+    ; lda #SCREEN_0_D018      ; activate screen 0
+    ; sta VIC_MEM_CTRL        ; write to register
+
     ;
     ; setup first render
     ;
 
-    lda #256-SCREEN_WIDTH   ; place at right most position in tile map
-    sta TILE_MAP_X
-    lda #0
+    ;lda #256-SCREEN_WIDTH   ; place at right most position in tile map
+    lda #7
     sta TILE_MAP_X_FINE     ; start at left most pixel
+    lda #0
+    sta TILE_MAP_X
     sta SCREEN_ACTIVE       ; active screen  0
     sta VBLANK_DONE         ; vblank not done
  
@@ -311,13 +330,19 @@ render_tile_map:
     lsr SCREEN_ACTIVE       ; next active screen 0
 @swap:
     sta VIC_MEM_CTRL        ; write to register
-    ; fallthrough to `game_loop`
+
+    jmp game_loop_no_vblank_wait
 
 ;-------------------------------------------------------------------------------
 ; structure: `render` -> `game_loop` -> `update`
 ; note: somewhat spaghetti due to the fine scroll vs full redraw setup
 ;-------------------------------------------------------------------------------
 game_loop:
+ :  lda VBLANK_DONE         ; wait for vblank 
+    beq :-
+    lsr VBLANK_DONE
+
+game_loop_no_vblank_wait:
     lda #BORDER_LOOP
     sta VIC_BORDER
 
@@ -446,14 +471,9 @@ scroll_left:
     sta TILE_MAP_X_FINE     ; store
     inc TILE_MAP_X          ; scroll map left one character
     jsr update              ; update game state
-    jmp render_tile_map     ; render tile map to next screen
+    jmp render_tile_map     ; render tile map to next screen (then `game_loop`)
 @done:
     jsr update              ; update game state
- 
- :  lda VBLANK_DONE         ; wait for vblank
-    beq :-
-    lsr VBLANK_DONE
-
     jmp game_loop           ; continue game loop
 
 ;-------------------------------------------------------------------------------
@@ -468,27 +488,16 @@ scroll_right:
     sta TILE_MAP_X_FINE     ; store
     dec TILE_MAP_X          ; scroll map right one character
     jsr update              ; update game state
-    jmp render_tile_map     ; render tile map to next screen
+    jmp render_tile_map     ; render tile map to next screen (then `game_loop`)
 @done:
     jsr update              ; update game state
- 
- :  lda VBLANK_DONE         ; wait for vblank 
-    beq :-
-    lsr VBLANK_DONE
- 
     jmp game_loop           ; continue game loop
 
 ;-------------------------------------------------------------------------------
 scroll_none:
     lda TILE_MAP_X_FINE     ; load fine scroll x
     sta VIC_CTRL_2          ; store to chip address
-
     jsr update              ; update game state
- 
- :  lda VBLANK_DONE         ; wait for vblank
-    beq :-
-    lsr VBLANK_DONE
- 
     jmp game_loop           ; continue game loop
 ;-------------------------------------------------------------------------------
 update:
@@ -501,7 +510,6 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-
     ; increase x, y, sprtite 0
     inc sprites_state+0
     inc sprites_state+1
@@ -510,12 +518,12 @@ update:
     dec sprites_state+4
     dec sprites_state+5
 
-;     ldy #12
-;     ldx #0
-; :   dex
-;     bne :-
-;     dey
-;     bne :-
+     ldy #4
+     ldx #0
+ :   dex
+     bne :-
+     dey
+     bne :-
     
     lda #BORDER_COLOR
     sta VIC_BORDER
