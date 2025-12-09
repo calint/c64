@@ -353,28 +353,25 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
-    lda screen_offset
-    sta VIC_CTRL_2
-
     ; jump to game loop but skip wait for vblank because render did that prior
     ; to swapping screens
     jmp game_loop_no_vblank
 
 ;-------------------------------------------------------------------------------
-; | camera_x | offset | tile_map_x |
-; | 0        | 0      | 0          |
-; | 1        | 7      | 1          |
-; | 2        | 6      | 1          |
-; | 3        | 5      | 1          |
-; | 4        | 4      | 1          |
-; | 5        | 3      | 1          |
-; | 6        | 2      | 1          |
-; | 7        | 1      | 1          |
-; | 8        | 0      | 1          |
-; | 9        | 7      | 2          |
-; | 10       | 6      | 2          |
-; etc
 render:
+    ; | camera_x | offset | tile_map_x |
+    ; | 0        | 0      | 0          |
+    ; | 1        | 7      | 1          |
+    ; | 2        | 6      | 1          |
+    ; | 3        | 5      | 1          |
+    ; | 4        | 4      | 1          |
+    ; | 5        | 3      | 1          |
+    ; | 6        | 2      | 1          |
+    ; | 7        | 1      | 1          |
+    ; | 8        | 0      | 1          |
+    ; | 9        | 7      | 2          |
+    ; | 10       | 6      | 2          |
+    ; etc
     lda camera_x_lo         ; camera position low byte
     tay                     ; save for later
     and #%00000111          ; calculate screen shift right
@@ -414,10 +411,10 @@ game_loop:
     beq :-
     lsr vblank_done
 
+game_loop_no_vblank:
     lda screen_offset
     sta VIC_CTRL_2
 
-game_loop_no_vblank:
     lda #BORDER_LOOP
     sta VIC_BORDER
 
