@@ -12,7 +12,7 @@
 
 * edit the 2 color (foreground / background) `custom-charset.png` or use `gimp`
   to edit `custom-charset.xcf` and export
-  
+
 ## howto
 
 * run `update.sh` to refresh generated source in `../src/`
