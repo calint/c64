@@ -586,6 +586,7 @@ update:
     sta VIC_BORDER
 
     rts
+
 ;-------------------------------------------------------------------------------
 irq:
     sei                     ; don't allow nested interrupts
@@ -604,9 +605,11 @@ irq:
 
     pla                     ; restore accumulator
     rti                     ; interrupt done
+
 ;-------------------------------------------------------------------------------
 nmi:
     rti
+
 ;-------------------------------------------------------------------------------
 sprites_state:
     ; x, y, data, color
@@ -625,5 +628,6 @@ sprites_double_width:
     .byte %00000001
 sprites_double_height:
     .byte %00000001
+    
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
