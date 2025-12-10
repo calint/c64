@@ -58,6 +58,16 @@ SCREEN_1_D018   = %11111000 ; screen at $3C00 char map at $2000
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
+BORDER_COLOR    = COLOR_BLUE
+BORDER_RENDER   = COLOR_BLACK
+BORDER_UPDATE   = COLOR_YELLOW
+BORDER_LOOP     = COLOR_RED 
+IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
+JOYSTICK_UP     = 1         ; bit when joystick is up
+JOYSTICK_DOWN   = 2         ; bit when joystick is down
+JOYSTICK_LEFT   = 4         ; bit when joystick is left
+JOYSTICK_RIGHT  = 8         ; bit when joystick is right
+JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 COLOR_BLACK     = 0
 COLOR_WHITE     = 1
 COLOR_RED       = 2
@@ -74,16 +84,6 @@ COLOR_GREY_2    = 12
 COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
-BORDER_COLOR    = COLOR_BLUE
-BORDER_RENDER   = COLOR_BLACK
-BORDER_UPDATE   = COLOR_YELLOW
-BORDER_LOOP     = COLOR_RED 
-IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
-JOYSTICK_UP     = 1         ; bit when joystick is up
-JOYSTICK_DOWN   = 2         ; bit when joystick is down
-JOYSTICK_LEFT   = 4         ; bit when joystick is left
-JOYSTICK_RIGHT  = 8         ; bit when joystick is right
-JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 
 ;-------------------------------------------------------------------------------
 ; zero page
