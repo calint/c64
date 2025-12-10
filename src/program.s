@@ -285,14 +285,14 @@ program:
     sta VIC_BG_COLOR
 
     ; set all color ram to white
-    lda #COLOR_WHITE        ; white color
-    ldx #0                  ; initialize index
- :  sta color_ram+$000,x    ; color ram starts at $d800
-    sta color_ram+$100,x    ; continue through
-    sta color_ram+$200,x    ; all 1000 bytes
-    sta color_ram+$300,x    ; of color memory
-    inx
-    bne :-                  ; loop until x wraps to 0
+ ;    lda #COLOR_WHITE        ; white color
+ ;    ldx #0                  ; initialize index
+ ; :  sta color_ram+$000,x    ; color ram starts at $d800
+ ;    sta color_ram+$100,x    ; continue through
+ ;    sta color_ram+$200,x    ; all 1000 bytes
+ ;    sta color_ram+$300,x    ; of color memory
+ ;    inx
+ ;    bne :-                  ; loop until x wraps to 0
 
     cli                     ; enable interrupts
 
