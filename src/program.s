@@ -284,8 +284,8 @@ program:
     ; sta VIC_MEM_CTRL        ; write to register
 
     cli                     ; enable interrupts
-    jmp render
 
+    ; fallthrough
 ;-------------------------------------------------------------------------------
 render:
     ; | camera_x | offset | tile_map_x |
@@ -336,8 +336,8 @@ render:
     bne :+                  ; same as last frame, skip redraw
     jmp game_loop
 :   sta tile_map_x          ; update tile_map_x
-    ; fallthrough
 
+    ; fallthrough
 ;-------------------------------------------------------------------------------
 render_tile_map:
     ; set border color to illustrate duration of render
@@ -541,7 +541,7 @@ game_loop_no_vblank:
 
 ;-------------------------------------------------------------------------------
 update:
-    
+
     ; placeholder for game loop
     ; total: 15,423 cycles
     ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
