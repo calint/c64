@@ -69,15 +69,6 @@ JOYSTICK_RIGHT  = 8         ; bit when joystick is right
 JOYSTICK_FIRE   = 16        ; bit when joystick is fire
 
 ;-------------------------------------------------------------------------------
-; program header
-;-------------------------------------------------------------------------------
-.org $0000
-.segment "HEADER"
-header:
-.out .sprintf("       header: $%04X", header)
-.word $0801                ; prg load address hard-coded
-
-;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
 .org $0002
@@ -91,6 +82,15 @@ screen_offset:   .res 1     ; number of pixels (0-7) screen is shifted right
 screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; very near temporary
+
+;-------------------------------------------------------------------------------
+; program header
+;-------------------------------------------------------------------------------
+.org $0000
+.segment "HEADER"
+header:
+.out .sprintf("       header: $%04X", header)
+.word $0801                ; prg load address hard-coded
 
 ;-------------------------------------------------------------------------------
 ; stack
@@ -153,7 +153,7 @@ charset_1:
 .segment "CHARSET_2"
 charset_2:
 .out .sprintf("    charset_2: $%04X", charset_2)
-    .include "../resources/charset_2.s"
+    .include "charset_2.s"
 
 ;-------------------------------------------------------------------------------
 ; charset 4 (can be modified)
@@ -217,7 +217,7 @@ screen_1:
 .org $4000
 tile_map:                   ; the tile map included from resources
 .out .sprintf("     tile_map: $%04X", tile_map)
-    .include "../resources/tile_map.s"
+    .include "tile_map.s"
 
 ;-------------------------------------------------------------------------------
 ; program
@@ -349,7 +349,7 @@ render_tile_map:
 
 @screen_0:
     ; generated unrolled loop with cheaper absolute indexing
-    .include "../resources/screen_0.s"
+    .include "render_to_screen_0.s"
     inx
     iny
     cpy #SCREEN_WIDTH
@@ -360,7 +360,7 @@ render_tile_map:
 
 @screen_1:
     ; generated unrolled loop with cheaper absolute indexing
-    .include "../resources/screen_1.s"
+    .include "render_to_screen_1.s"
     inx
     iny
     cpy #SCREEN_WIDTH

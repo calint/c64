@@ -4,7 +4,7 @@ import sys
 
 if len(sys.argv) < 4:
     print(
-        "Usage: ./parse-tmx.py <tmx file> <output newline every n'th line> <bit mask for tile id>"
+        "Usage: ./gen-tile-map.py <tmx file> <output newline every n'th line> <bit mask for tile id>"
     )
     sys.exit(1)
 
@@ -16,6 +16,8 @@ root = ET.parse(input_file).getroot()
 width = int(root.attrib["width"])
 height = int(root.attrib["height"])
 data = root.find("layer").find("data").text.strip().split(",")
+
+print("; generated code, do not edit")
 
 for row in range(height):
     row_data = []

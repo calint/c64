@@ -1,3 +1,4 @@
+; generate code, do not edit
     lda tile_map+TILE_MAP_WIDTH* 0,x
     sta screen_0+  SCREEN_WIDTH* 0,y
     lda tile_map+TILE_MAP_WIDTH* 1,x

@@ -32,7 +32,7 @@ def generate_tile_render(screen_name, y_offset, num_rows):
 
 def main():
     if len(sys.argv) != 4:
-        print("Usage: python gen-render-code.py <SCREEN_NAME> <Y_OFFSET> <NUM_ROWS>")
+        print("Usage: ./gen-render-to-screen.py <SCREEN_NAME> <Y_OFFSET> <NUM_ROWS>")
         print()
         print("Examples:")
         print("  python gen-render-code.py SCREEN_0 0 25")
@@ -43,6 +43,7 @@ def main():
     y_offset = int(sys.argv[2])
     num_rows = int(sys.argv[3])
     
+    print("; generate code, do not edit")
     print(generate_tile_render(screen_name, y_offset, num_rows))
 
 

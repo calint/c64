@@ -35,6 +35,7 @@ def gen_custom_charset(wi: int, hi: int, filename: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("usage: gen-custom-charset <width> <height> <filename>")
+        print("Usage: ./gen-charset.py <width> <height> <filename>")
         sys.exit(1)
+    print("; generate code, do not edit")
     gen_custom_charset(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
