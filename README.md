@@ -16,5 +16,6 @@ experiments with bare metal commodore 64
 ## screenshots
 
 ![one pixel per frame](screenshots/1.png)
-![scroll tile  map](screenshots/2.png)
+![scroll tile map](screenshots/2.png)
 ![welcome](screenshots/3.png)
+![sample](screenshots/4.png)

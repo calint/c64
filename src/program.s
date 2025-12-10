@@ -296,6 +296,10 @@ render:
     ; | 10       | 6      | 2          |
     ; etc
 
+    ; set border color to illustrate duration of render
+    lda #BORDER_RENDER
+    sta VIC_BORDER
+
     lda camera_x_lo         ; camera position low byte
     tax                     ; store in x for later use 
     and #%00000111          ; get lower 3 bits
@@ -334,10 +338,6 @@ render:
     ; fallthrough
 ;-------------------------------------------------------------------------------
 render_tile_map:
-    ; set border color to illustrate duration of render
-    lda #BORDER_RENDER
-    sta VIC_BORDER
-
     ; initiate tile map position and screen column
     ldx tile_map_x
     ldy #0
@@ -376,6 +376,9 @@ render_tile_map:
     beq :-
     lsr vblank_done
 
+    lda #BORDER_RENDER
+    sta VIC_BORDER
+
     ; swap screens
     lda screen_active       ; load active screen
     bne @to_screen_1        ; if screen 1 active then activate screen 0
@@ -395,16 +398,19 @@ render_tile_map:
 
 ;-------------------------------------------------------------------------------
 game_loop:
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
  :  lda vblank_done         ; wait for vblank 
     beq :-
     lsr vblank_done
 
 game_loop_no_vblank:
-    lda screen_offset
-    sta VIC_CTRL_2
-
     lda #BORDER_LOOP
     sta VIC_BORDER
+
+    lda screen_offset
+    sta VIC_CTRL_2
 
     ; sprite 0
     lda sprites_state+0
