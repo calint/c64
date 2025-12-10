@@ -10,6 +10,13 @@ experiments with bare metal commodore 64
 * control scroll by user
 * sprites with collision detection
 
+## tools
+
+* `cl65 2.18`: compiler, linker
+* `gimp 3.0.6`: image manipulation
+* `tiled 1.11.2`: tile map editor
+* `python 3.13.11`: automation
+
 ## howto
 
 * use joystick on port 2 to scroll tile map left or right one pixel per frame
