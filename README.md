@@ -6,6 +6,7 @@ experiments with bare metal commodore 64
 
 * horizontal smooth scrolling tile map
 * edit tile map with tiled
+* user defined character set in png bitmap
 * control scroll by user
 * sprites with collision detection
 
