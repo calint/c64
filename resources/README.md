@@ -20,6 +20,6 @@
 
 ### source generators
 
-* `gen-charset.py`: generates `../src/charset_2.s`
-* `gen-render-to-screen.py`: generates `../src/render_to_screen_0.s` and `../src/render_to_screen_1.s`
-* `gen-tile-map.py`: generates `../src/tile_map.s`
+* `gen-charset.py`
+* `gen-render-to-screen.py`
+* `gen-tile-map.py`
