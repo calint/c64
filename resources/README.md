@@ -18,6 +18,15 @@
 
 ![standard c64 charset](c64_upp.gif)
 
+### how to edit custom charset
+
+* edit the 2 color (foreground / background) `custom-charset.png` or use `gimp`
+  to edit `custom-charset.xcf` and export
+
+### how to edit tile map
+
+* use `tiled` and open `world.tiled-project`
+
 ### source generators
 
 * `gen-charset.py`
