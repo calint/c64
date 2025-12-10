@@ -287,14 +287,57 @@ program:
     jmp render
 
 ;-------------------------------------------------------------------------------
-; Flow:
-; 1. `render_tile_map`
-; 2. `game_loop`
-; 3. `update`
-; 4. in case screen needs redraw 1 else 2
-;
-; note: somewhat spaghetti due to the fine scroll vs full redraw cycle
-;-------------------------------------------------------------------------------
+render:
+    ; | camera_x | offset | tile_map_x |
+    ; | 0        | 0      | 0          |
+    ; | 1        | 7      | 1          |
+    ; | 2        | 6      | 1          |
+    ; | 3        | 5      | 1          |
+    ; | 4        | 4      | 1          |
+    ; | 5        | 3      | 1          |
+    ; | 6        | 2      | 1          |
+    ; | 7        | 1      | 1          |
+    ; | 8        | 0      | 1          |
+    ; | 9        | 7      | 2          |
+    ; | 10       | 6      | 2          |
+    ; etc
+
+    lda camera_x_lo         ; camera position low byte
+    tax                     ; store in x for later use 
+    and #%00000111          ; get lower 3 bits
+    eor #%00000111          ; invert
+    clc                     ; clear unknown carray flag state
+    adc #1                  ; add 1
+    and #%00000111          ; mask to 3 bits
+    sta screen_offset       ; store screen shift
+    tay                     ; store in y for later use
+ 
+    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
+    ; with adjustment if screen_offset != 0
+    txa                     ; restore camera_x_lo
+    lsr A                   ; shift right by 3 bits
+    lsr A
+    lsr A
+    sta tmp1                ; tmp1 = camera_x_lo >> 3
+
+    lda camera_x_hi         ; get high byte
+    asl A                   ; shift left by 5 bits 
+    asl A
+    asl A
+    asl A
+    asl A
+    ora tmp1                ; combine: (hi << 5) | (lo >> 3)
+ 
+    ldx screen_offset       ; check if screen_offset is 0
+    beq :+                  ; if 0, no adjustment needed
+    clc                     ; clear unknown carray flag
+    adc #1                  ; add 1 to match desired table values 
+:   cmp tile_map_x          ; compare with current tile_map_x
+    bne :+                  ; same as last frame, skip redraw
+    jmp game_loop
+:   sta tile_map_x          ; update tile_map_x
+    ; fallthrough
+
 ;-------------------------------------------------------------------------------
 render_tile_map:
     ; set border color to illustrate duration of render
@@ -355,57 +398,6 @@ render_tile_map:
     ; jump to game loop but skip wait for vblank because render did that prior
     ; to swapping screens
     jmp game_loop_no_vblank
-
-;-------------------------------------------------------------------------------
-render:
-    ; | camera_x | offset | tile_map_x |
-    ; | 0        | 0      | 0          |
-    ; | 1        | 7      | 1          |
-    ; | 2        | 6      | 1          |
-    ; | 3        | 5      | 1          |
-    ; | 4        | 4      | 1          |
-    ; | 5        | 3      | 1          |
-    ; | 6        | 2      | 1          |
-    ; | 7        | 1      | 1          |
-    ; | 8        | 0      | 1          |
-    ; | 9        | 7      | 2          |
-    ; | 10       | 6      | 2          |
-    ; etc
-
-    lda camera_x_lo         ; camera position low byte
-    tax                     ; store in x for later use 
-    and #%00000111          ; get lower 3 bits
-    eor #%00000111          ; invert
-    clc                     ; clear unknown carray flag state
-    adc #1                  ; add 1
-    and #%00000111          ; mask to 3 bits
-    sta screen_offset       ; store screen shift
-    tay                     ; store in y for later use
- 
-    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
-    ; with adjustment if screen_offset != 0
-    txa                     ; restore camera_x_lo
-    lsr A                   ; shift right by 3 bits
-    lsr A
-    lsr A
-    sta tmp1                ; tmp1 = camera_x_lo >> 3
-
-    lda camera_x_hi         ; get high byte
-    asl A                   ; shift left by 5 bits 
-    asl A
-    asl A
-    asl A
-    asl A
-    ora tmp1                ; combine: (hi << 5) | (lo >> 3)
- 
-    ldx screen_offset       ; check if screen_offset is 0
-    beq :+                  ; if 0, no adjustment needed
-    clc                     ; clear unknown carray flag
-    adc #1                  ; add 1 to match desired table values 
-:   cmp tile_map_x          ; compare with current tile_map_x
-    beq game_loop           ; same as last frame, skip redraw
-    sta tile_map_x          ; update tile_map_x
-    jmp render_tile_map     ; redraw tile map at new position
 
 ;-------------------------------------------------------------------------------
 game_loop:
