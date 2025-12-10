@@ -241,9 +241,9 @@ program:
 
     ; install non-maskable interrupt handler
     lda #<nmi               ;
-    sta $fffa               ; NMI vector low byte
+    sta $fffa               ; nmi vector low byte
     lda #>nmi               ;
-    sta $fffb               ; NMI vector high byte
+    sta $fffb               ; nmi vector high byte
 
     ; disable cia interrupts that might interfere
     lda #$7f                ; bit 7 = 0 means "disable" 
@@ -254,7 +254,7 @@ program:
 
     ; setup which raster line to generate irq
     lda VIC_CTRL_1          ; ensure 9'th bit of raster = 0
-    and #%01111111          ; clear bit 7 of raster
+    and #%01111111          ; clear bit 7 (9'th bit) of register
     sta VIC_CTRL_1          ; write
     lda #IRQ_RASTER_LINE    ; raster line (inside vblank)
     sta VIC_RASTER_REG      ; write
@@ -269,19 +269,13 @@ program:
     ; setup first render
     ;
 
-    lda #$ff                ; value to not match camera for render at first pass
+    lda #$ff                ; value to not match camera at first render
     sta tile_map_x
     lda #0
     sta camera_x_lo
     sta camera_x_hi
     sta vblank_done         ; vblank not done
     sta screen_active       ; active screen  0
- 
-    ; lda tile_map_x_fine     ; load fine scroll x
-    ; sta VIC_CTRL_2          ; store to chip address
-    ;
-    ; lda #SCREEN_0_D018      ; activate screen 0
-    ; sta VIC_MEM_CTRL        ; write to register
 
     cli                     ; enable interrupts
 
@@ -628,6 +622,6 @@ sprites_double_width:
     .byte %00000001
 sprites_double_height:
     .byte %00000001
-    
+
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
