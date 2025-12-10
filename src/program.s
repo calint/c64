@@ -284,8 +284,9 @@ program:
     lda #COLOR_BLACK
     sta VIC_BG_COLOR
 
-    ldx #0                  ; initialize index
+    ; set all color ram to white
     lda #COLOR_WHITE        ; white color
+    ldx #0                  ; initialize index
  :  sta color_ram+$000,x    ; color ram starts at $d800
     sta color_ram+$100,x    ; continue through
     sta color_ram+$200,x    ; all 1000 bytes
