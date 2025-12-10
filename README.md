@@ -20,3 +20,4 @@ experiments with bare metal commodore 64
 ![welcome](screenshots/3.png)
 ![sample](screenshots/4.png)
 ![b/w](screenshots/5.png)
+![abstract](screenshots/6.png)
