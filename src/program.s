@@ -87,11 +87,10 @@ zp:
 camera_x_lo:     .res 1     ; low byte of camera x
 camera_x_hi:     .res 1     ; high byte of camera x
 tile_map_x:      .res 1     ; tile map x offset in characters
-screen_offset:   .res 1
+screen_offset:   .res 1     ; number of pixels (0-7) screen is shifted right
 screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; very near temporary
-tmp2:            .res 1
 
 ;-------------------------------------------------------------------------------
 ; stack
@@ -372,38 +371,41 @@ render:
     ; | 9        | 7      | 2          |
     ; | 10       | 6      | 2          |
     ; etc
+
     lda camera_x_lo         ; camera position low byte
-    tay                     ; save for later
-    and #%00000111          ; calculate screen shift right
+    tax                     ; store in x for later use 
+    and #%00000111          ; get lower 3 bits
     eor #%00000111          ; invert
-    clc                     ; add 1
-    adc #1                  ;
-    and #%00000111          ; select relevant bits
-    ; acc now contains the screen right shift
-    tax                     ; save it for later
-    ;ora #%00001000
-    sta screen_offset       ; store screen shift in variable
-    lda camera_x_hi         ; calculate the tile map x
-    asl A
-    asl A
-    asl A
-    asl A
-    asl A
-    sta tmp1
-    tya
+    clc                     ; clear unknown carray flag state
+    adc #1                  ; add 1
+    and #%00000111          ; mask to 3 bits
+    sta screen_offset       ; store screen shift
+    tay                     ; store in y for later use
+ 
+    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
+    ; with adjustment if screen_offset != 0
+    txa                     ; restore camera_x_lo
+    lsr A                   ; shift right by 3 bits
     lsr A
     lsr A
-    lsr A
-    ora tmp1                ; acc now contains new tile map x
-    sta tmp1                ; save it
-    txa                     ; check if screen shift is 0
-    beq :+                  ; if 0 then use tile map x as is
-    inc tmp1                ; not 0, increase tile map x (see table)
-:   lda tmp1                ; load variable
-    cmp tile_map_x          ; does the tile map need to be redrawn?
-    beq game_loop           ; same like last frame, only screen shift
-    sta tile_map_x          ; new tile map position, save
-    jmp render_tile_map
+    sta tmp1                ; tmp1 = camera_x_lo >> 3
+
+    lda camera_x_hi         ; get high byte
+    asl A                   ; shift left by 5 bits 
+    asl A
+    asl A
+    asl A
+    asl A
+    ora tmp1                ; combine: (hi << 5) | (lo >> 3)
+ 
+    ldx screen_offset       ; check if screen_offset is 0
+    beq :+                  ; if 0, no adjustment needed
+    clc                     ; clear unknown carray flag
+    adc #1                  ; add 1 to match desired table values 
+:   cmp tile_map_x          ; compare with current tile_map_x
+    beq game_loop           ; same as last frame, skip redraw
+    sta tile_map_x          ; update tile_map_x
+    jmp render_tile_map     ; redraw tile map at new position
 
 ;-------------------------------------------------------------------------------
 game_loop:
