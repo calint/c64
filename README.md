@@ -12,9 +12,10 @@ experiments with bare metal commodore 64
 
 ## tools
 
+* `vice 3.9`: emulation
 * `cl65 2.18`: compiler, linker
-* `gimp 3.0.6`: image manipulation
 * `tiled 1.11.2`: tile map editor
+* `gimp 3.0.6`: image manipulation
 * `python 3.13.11`: automation
 
 ## howto
