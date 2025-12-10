@@ -106,7 +106,6 @@ tmp1:            .res 1     ; very near temporary
 .org $0000
 .segment "HEADER"
 header:
-.out .sprintf("       header: $%04X", header)
 .word $0801                ; prg load address hard-coded
 
 ;-------------------------------------------------------------------------------
@@ -239,11 +238,26 @@ tile_map:                   ; the tile map included from resources
 ;-------------------------------------------------------------------------------
 ; program
 ;-------------------------------------------------------------------------------
+; 1. setup
+; 2. render
+; 3. if tile map needs refresh render_tile_map
+; 3.1. render tile map offscreen
+; 3.2. wait for vblank
+; 3.3. jump to 4.2.
+; 4. game_loop
+; 4.1. wait for vblank
+; 4.2. update sprites
+; 5. update
+; 6. jmp to 2.
 .assert * <= $5900, error, "segment overflows into CODE"
 .org $5900
 .segment "CODE"
 program:
 .out .sprintf("      program: $%04X", program)
+    ;
+    ; application setup
+    ;
+
     sei                     ; disable interrupts
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
@@ -313,6 +327,12 @@ program:
     ; fallthrough
 ;-------------------------------------------------------------------------------
 render:
+    ;
+    ; either change the screen shift right or fallthrough to render new tile map
+    ; position
+    ;
+
+    ; note:
     ; | camera_x | offset | tile_map_x |
     ; | 0        | 0      | 0          |
     ; | 1        | 7      | 1          |
@@ -363,12 +383,17 @@ render:
     adc #1                  ; add 1 to match desired table values 
 :   cmp tile_map_x          ; compare with current tile_map_x
     bne :+                  ; same as last frame, skip redraw
-    jmp game_loop
+    jmp update
 :   sta tile_map_x          ; update tile_map_x
 
     ; fallthrough
 ;-------------------------------------------------------------------------------
 render_tile_map:
+    ;
+    ; renders tile map to offscreen, waits for vblank then switches screens and
+    ; jumps to `update` past the vblank wait
+    ; 
+
     ; initiate tile map position and screen column
     ldx tile_map_x
     ldy #0
@@ -423,12 +448,15 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
-    ; jump to game loop but skip wait for vblank because render did that prior
-    ; to swapping screens
-    jmp game_loop_no_vblank
+    ; jump to `update` but skip wait for vblank because render did that prior to 
+    ; swapping screens
+    jmp update_no_vblank
 
 ;-------------------------------------------------------------------------------
-game_loop:
+update:
+    ;
+    ; updates state in critical vblank section to avoid sprite flickering
+    ;
     lda #BORDER_COLOR
     sta VIC_BORDER
 
@@ -436,7 +464,7 @@ game_loop:
     beq :-
     lsr vblank_done
 
-game_loop_no_vblank:
+update_no_vblank:
     lda #BORDER_LOOP
     sta VIC_BORDER
 
@@ -543,7 +571,11 @@ game_loop_no_vblank:
 
     ; fallthrough
 ;-------------------------------------------------------------------------------
-update:
+logic:
+    ;
+    ; user application code
+    ;
+
     ; placeholder for game loop
     ; total: 15,423 cycles
     ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
@@ -598,6 +630,10 @@ update:
 
 ;-------------------------------------------------------------------------------
 irq:
+    ;
+    ; interrupt handling
+    ;
+
     sei                     ; don't allow nested interrupts
     pha                     ; push accumulator on the stack
 
@@ -616,9 +652,7 @@ irq:
     rti                     ; interrupt done
 
 ;-------------------------------------------------------------------------------
-nmi:
-    rti
-
+nmi:rti
 ;-------------------------------------------------------------------------------
 sprites_state:
     ; x, y, data, color
