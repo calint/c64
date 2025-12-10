@@ -45,6 +45,7 @@ VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
 VIC_SPRITE_DBLY = $d017     ; vic-ii double sprites height bits
 VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
 VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
+VIC_BG_COLOR    = $d021     ; vic-ii background color register
 VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 VIC_SPRITE_DBLX = $d01d     ; vic-ii double sprites width bits
 VIC_BORDER      = $d020     ; vic-ii border color register
@@ -57,8 +58,10 @@ SCREEN_1_D018   = %11111000 ; screen at $3C00 char map at $2000
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
+COLOR_BLACK     = 0
+COLOR_WHITE     = 1
 BORDER_COLOR    = 14        ; light blue
-BORDER_RENDER   = 0         ; black
+BORDER_RENDER   = COLOR_BLACK
 BORDER_UPDATE   = 7         ; yellow
 BORDER_LOOP     = 2         ; red
 IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
@@ -276,6 +279,19 @@ program:
     sta camera_x_hi
     sta vblank_done         ; vblank not done
     sta screen_active       ; active screen  0
+
+    ; set foreground and background
+    lda #COLOR_BLACK
+    sta VIC_BG_COLOR
+
+    ldx #0                  ; initialize index
+    lda #COLOR_WHITE        ; white color
+ :  sta color_ram+$000,x    ; color ram starts at $d800
+    sta color_ram+$100,x    ; continue through
+    sta color_ram+$200,x    ; all 1000 bytes
+    sta color_ram+$300,x    ; of color memory
+    inx
+    bne :-                  ; loop until x wraps to 0
 
     cli                     ; enable interrupts
 
@@ -631,3 +647,14 @@ sprites_double_height:
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
+
+;-------------------------------------------------------------------------------
+; color ram
+;-------------------------------------------------------------------------------
+.assert * <= $d800, error, "segment overflows into COLOR_RAM"
+.org $d800
+.segment "COLOR_RAM"
+color_ram:
+.out .sprintf("    color_ram: $%04X", color_ram)
+    .res 1000
+
