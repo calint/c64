@@ -4,6 +4,10 @@
 
 ![custom charset](custom-charset.png)
 
+## sprites
+
+![sprites](sprites-48.png)
+
 ## tile map
 
 * use `tiled` to edit project `world.tiled-project`
