@@ -3,7 +3,7 @@ from PIL import Image
 import sys
 
 
-def gen_custom_charset(wi: int, hi: int, filename: str):
+def gen_charset(wi: int, hi: int, filename: str):
     try:
         with Image.open(filename) as img:
             if img.mode != "P":
@@ -38,4 +38,4 @@ if __name__ == "__main__":
         print("Usage: ./gen-charset.py <width> <height> <filename>")
         sys.exit(1)
     print("; generate code, do not edit")
-    gen_custom_charset(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
+    gen_charset(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])

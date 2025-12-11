@@ -9,3 +9,4 @@ RENDER_N_ROWS=25
 ./gen-render-to-screen.py screen_0 $RENDER_START_ROW $RENDER_N_ROWS >../src/render_to_screen_0.s
 ./gen-render-to-screen.py screen_1 $RENDER_START_ROW $RENDER_N_ROWS >../src/render_to_screen_1.s
 ./gen-charset.py 8 8 custom-charset.png >../src/charset_2.s
+./gen-sprite-data.py 24 21 0 sprites-48.png >../src/sprites_data.s

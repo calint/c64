@@ -190,30 +190,7 @@ charset_3:
 .segment "SPRITES_DATA"
 sprites_data:
 .out .sprintf(" sprites_data: $%04X", sprites_data)
-sprite_0_data:
-    ; 63 bytes of sprite data (21 rows × 3 bytes)
-    .byte %00000000, %00000000, %00000000  ; row 0
-    .byte %00000001, %11111000, %00000000  ; row 1
-    .byte %00000111, %11111110, %00000000  ; row 2
-    .byte %00001111, %11111111, %00000000  ; row 3
-    .byte %00011111, %11111111, %10000000  ; row 4
-    .byte %00111111, %11111111, %11000000  ; row 5
-    .byte %01111111, %11111111, %11100000  ; row 6
-    .byte %01111111, %11111111, %11100000  ; row 7
-    .byte %11111111, %11111111, %11110000  ; row 8
-    .byte %11111111, %11111111, %11110000  ; row 9
-    .byte %11111111, %11111111, %11110000  ; row 10
-    .byte %11111111, %11111111, %11110000  ; row 11
-    .byte %11111111, %11111111, %11110000  ; row 12
-    .byte %01111111, %11111111, %11100000  ; row 13
-    .byte %01111111, %11111111, %11100000  ; row 14
-    .byte %00111111, %11111111, %11000000  ; row 15
-    .byte %00011111, %11111111, %10000000  ; row 16
-    .byte %00001111, %11111111, %00000000  ; row 17
-    .byte %00000111, %11111110, %00000000  ; row 18
-    .byte %00000001, %11111000, %00000000  ; row 19
-    .byte %00000000, %00000000, %00000000  ; row 20
-    .byte 0
+    .include "sprites_data.s"
 
 ;-------------------------------------------------------------------------------
 ; screen 1
@@ -661,13 +638,14 @@ nmi:
 ;-------------------------------------------------------------------------------
 sprites_state:
     ; x, y, data, color
-    .byte  30,  50, sprite_0_data>>6, 1
-    .byte  90, 100, sprite_0_data>>6, 2
-    .byte 110, 110, sprite_0_data>>6, 3
-    .byte 120, 120, sprite_0_data>>6, 4
-    .byte 130, 130, sprite_0_data>>6, 5
-    .byte 140, 140, sprite_0_data>>6, 6
-    .byte 150, 150, sprite_0_data>>6, 7
+    .byte  30,  50, sprites_data_0>>6, 1
+    .byte  90, 100, sprites_data_1>>6, 2
+    .byte 110, 110, sprites_data_2>>6, 3
+    .byte 120, 120, sprites_data_3>>6, 4
+    .byte 130, 130, sprites_data_4>>6, 5
+    .byte 140, 140, sprites_data_5>>6, 6
+    .byte 150, 150, sprites_data_6>>6, 7
+    .byte 160, 160, sprites_data_7>>6, 8
 sprites_msb_x: ; 8'th bit of x-coordinate
     .byte %00000000
 sprites_enable:
