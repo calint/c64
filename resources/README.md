@@ -28,3 +28,4 @@
 * `gen-charset.py`
 * `gen-render-to-screen.py`
 * `gen-tile-map.py`
+* `gen-sprites-data.py`
