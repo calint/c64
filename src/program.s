@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------------
 ; mapped memory
 ;-------------------------------------------------------------------------------
-; 0x0002 - 0x00ff: page zero
+; 0x0002 - 0x00ff: zero page
 ; 0x0400 - 0x07e7: default screen (screen 0)
 ; 0x07f8 - 0x07ff: sprites data index to address/64 when screen 0 is active
 ; 0x0800 - 0x0800; 0 so basic program can run
@@ -37,7 +37,7 @@ VIC_SPRITE_6_X  = $d00c     ; vic-ii sprite 6 x lower 8 bits
 VIC_SPRITE_6_Y  = $d00d     ; vic-ii sprite 6 y
 VIC_SPRITE_7_X  = $d00e     ; vic-ii sprite 7 x lower 8 bits
 VIC_SPRITE_7_Y  = $d00f     ; vic-ii sprite 7 y
-VIC_SPRITES_8X  = $d010     ; vic-ii 8'th bit of x for sprites 0-7
+VIC_SPRITES_8X  = $d010     ; vic-ii 9'th bit of x for sprites 0-7
 VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_RASTER_REG  = $d012     ; vic-ii raster register
 VIC_SPRITE_ENBL = $d015     ; vic-ii sprite enable bits
@@ -89,9 +89,9 @@ COLOR_GREY_3    = 15
 ; zero page
 ;-------------------------------------------------------------------------------
 .org $0002
-.segment "ZEROPAGE"
-zp:
-.out .sprintf("    zero page: $%04X", zp)
+.segment "ZERO_PAGE"
+zero_page:
+.out .sprintf("    zero_page: $%04X", zero_page)
 camera_x_lo:     .res 1     ; low byte of camera x
 camera_x_hi:     .res 1     ; high byte of camera x
 tile_map_x:      .res 1     ; tile map x offset in characters
@@ -172,7 +172,7 @@ charset_2:
     .include "charset_2.s"
 
 ;-------------------------------------------------------------------------------
-; charset 4 (can be modified)
+; charset 3 (can be modified)
 ;-------------------------------------------------------------------------------
 .assert * <= $2800, error, "segment overflows into CHARSET_3"
 .org $2800
@@ -240,7 +240,7 @@ tile_map:                   ; the tile map included from resources
 ;-------------------------------------------------------------------------------
 ; 1. setup
 ; 2. render
-; 3. if tile map needs refresh render_tile_map
+; 3. if tile map doesn't need refresh jump to 4.
 ; 3.1. render tile map offscreen
 ; 3.2. wait for vblank
 ; 3.3. jump to 4.2.
@@ -351,6 +351,7 @@ render:
     lda #BORDER_RENDER
     sta VIC_BORDER
 
+    ; convert camera 16 bit pixel position to tile map x and screen right shift
     lda camera_x_lo         ; camera position low byte
     tax                     ; store in x for later use 
     and #%00000111          ; get lower 3 bits
@@ -360,7 +361,6 @@ render:
     and #%00000111          ; mask to 3 bits
     sta screen_offset       ; store screen shift
     tay                     ; store in y for later use
- 
     ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
     ; with adjustment if screen_offset != 0
     txa                     ; restore camera_x_lo
@@ -368,7 +368,6 @@ render:
     lsr A
     lsr A
     sta tmp1                ; tmp1 = camera_x_lo >> 3
-
     lda camera_x_hi         ; get high byte
     asl A                   ; shift left by 5 bits 
     asl A
@@ -376,7 +375,6 @@ render:
     asl A
     asl A
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
- 
     ldx screen_offset       ; check if screen_offset is 0
     beq :+                  ; if 0, no adjustment needed
     clc                     ; clear unknown carray flag
@@ -457,6 +455,7 @@ update:
     ;
     ; updates state in critical vblank section to avoid sprite flickering
     ;
+    
     lda #BORDER_COLOR
     sta VIC_BORDER
 
@@ -465,9 +464,11 @@ update:
     lsr vblank_done
 
 update_no_vblank:
+    ; color border for visual illustration on number of scan lines for update
     lda #BORDER_LOOP
     sta VIC_BORDER
 
+    ; set screen right offset
     lda screen_offset
     sta VIC_CTRL_2
 
@@ -598,6 +599,7 @@ logic:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
     bne @right
+    ; add 1 to camera x in pixels
     sec                     ; set carry for subtraction
     lda camera_x_lo         ; load low byte
     sbc #1                  ; subtract value (and borrow if needed)
@@ -609,6 +611,7 @@ logic:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
     bne @done
+    ; subtract 1 from camera x in pixels
     clc                     ; clear carry for addition
     lda camera_x_lo         ; load low byte
     adc #1                  ; add value
