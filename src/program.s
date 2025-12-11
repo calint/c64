@@ -644,7 +644,7 @@ sprites_state:
     .byte 138, 100, sprites_data_3>>6, 4
     .byte 162, 100, sprites_data_4>>6, 5
     .byte 186, 100, sprites_data_5>>6, 6
-    .byte 210, 100, sprites_data_6>>6, 7
+    .byte 234, 100, sprites_data_6>>6, 7
     .byte   2, 100, sprites_data_7>>6, 8
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %10000000
