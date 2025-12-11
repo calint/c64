@@ -640,14 +640,14 @@ sprites_state:
     ; x, y, data, color
     .byte  30,  50, sprites_data_0>>6, 1
     .byte  90, 100, sprites_data_1>>6, 2
-    .byte 110, 110, sprites_data_2>>6, 3
-    .byte 120, 120, sprites_data_3>>6, 4
-    .byte 130, 130, sprites_data_4>>6, 5
-    .byte 140, 140, sprites_data_5>>6, 6
-    .byte 150, 150, sprites_data_6>>6, 7
-    .byte 160, 160, sprites_data_7>>6, 8
-sprites_msb_x: ; 8'th bit of x-coordinate
-    .byte %00000000
+    .byte 114, 100, sprites_data_2>>6, 3
+    .byte 138, 100, sprites_data_3>>6, 4
+    .byte 162, 100, sprites_data_4>>6, 5
+    .byte 186, 100, sprites_data_5>>6, 6
+    .byte 210, 100, sprites_data_6>>6, 7
+    .byte   2, 100, sprites_data_7>>6, 8
+sprites_msb_x: ; 9'th bit of x-coordinate
+    .byte %10000000
 sprites_enable:
     .byte %11111111
 sprites_double_width:
