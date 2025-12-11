@@ -31,5 +31,6 @@
 
 * `gen-charset.py`
 * `gen-render-to-screen.py`
+* `gen-sprites-state-update.py`
 * `gen-tile-map.py`
 * `gen-sprites-data.py`
