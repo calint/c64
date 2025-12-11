@@ -37,5 +37,5 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print("Usage: ./gen-charset.py <width> <height> <filename>")
         sys.exit(1)
-    print("; generate code, do not edit")
+    print("; generated code, do not edit")
     gen_charset(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])

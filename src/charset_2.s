@@ -1,4 +1,4 @@
-; generate code, do not edit
+; generated code, do not edit
 ; 0
 .byte %00000000
 .byte %00000000

@@ -43,7 +43,7 @@ def main():
     y_offset = int(sys.argv[2])
     num_rows = int(sys.argv[3])
     
-    print("; generate code, do not edit")
+    print("; generated code, do not edit")
     print(generate_tile_render(screen_name, y_offset, num_rows))
 
 
