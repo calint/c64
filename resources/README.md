@@ -4,6 +4,9 @@
 
 ![custom charset](custom-charset.png)
 
+* edit the 2 color (foreground / background) `custom-charset.png` or use `gimp`
+  to edit `custom-charset.xcf` and export
+
 ## sprites
 
 ![sprites](sprites-48.png)
@@ -11,11 +14,6 @@
 ## tile map
 
 * use `tiled` to edit project `world.tiled-project`
-
-## custom charset
-
-* edit the 2 color (foreground / background) `custom-charset.png` or use `gimp`
-  to edit `custom-charset.xcf` and export
 
 ## howto
 
