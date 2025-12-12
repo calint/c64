@@ -1,9 +1,10 @@
 #!/bin/python3
+
 from PIL import Image
 import sys
 
 
-def gen_charset(wi: int, hi: int, filename: str):
+def gen_charset(filename: str):
     try:
         with Image.open(filename) as img:
             if img.mode != "P":
@@ -12,6 +13,8 @@ def gen_charset(wi: int, hi: int, filename: str):
 
             BACKGROUND_PALETTE_INDEX = 0
 
+            wi = 8
+            hi = 8
             width, height = img.size
             ix = 0
             for row in range(0, height, hi):
@@ -34,8 +37,8 @@ def gen_charset(wi: int, hi: int, filename: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Usage: ./gen-charset.py <width> <height> <filename>")
+    if len(sys.argv) < 2:
+        print("Usage: ./gen-charset.py <filename>")
         sys.exit(1)
     print("; generated code, do not edit")
-    gen_charset(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
+    gen_charset(sys.argv[1])
