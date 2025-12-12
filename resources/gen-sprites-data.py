@@ -16,15 +16,15 @@ with Image.open(filename) as img:
         print("Error: PNG must be paletted.")
         sys.exit(1)
 
-    w, h = img.size
-    sw, sh = 24, 21  # sprite dims
+    img_width, img_height = img.size
+    sprite_width, sprite_height = 24, 21  # sprite dims
 
-    for row in range(0, h, sh):
-        for col in range(0, w, sw):
+    for row in range(0, img_height, sprite_height):
+        for col in range(0, img_width, sprite_width):
             print(f"\nsprites_data_{label_ix}:")
             label_ix += 1
 
-            for y in range(row, row + sh):
+            for y in range(row, row + sprite_height):
                 bytes_out = []
                 for byte_idx in range(3):  # 3 bytes per row
                     x_start = col + byte_idx * 8

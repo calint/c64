@@ -19,16 +19,16 @@ with Image.open(filename) as img:
 
     BACKGROUND_PALETTE_INDEX = 0
 
-    wi = 8
-    hi = 8
-    width, height = img.size
+    char_width = 8
+    char_height = 8
+    img_width, img_height = img.size
     ix = 0
-    for row in range(0, height, hi):
-        for column in range(0, width, wi):
+    for row in range(0, img_height, char_height):
+        for column in range(0, img_width, char_width):
             print(f"; {ix}")
             ix += 1
-            for y in range(row, row + hi):
-                for start_x in range(column, column + wi, 8):
+            for y in range(row, row + char_height):
+                for start_x in range(column, column + char_width, 8):
                     byte_value = 0
                     for i in range(8):
                         x = start_x + i
