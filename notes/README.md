@@ -6,4 +6,5 @@
     sayings, paragraphs etc
 [ ] sprites 16x16 och hero climbing, jumping, crouching, walking
 [ ] projectiles could be illustrated in the color map only
+[ ] minor priority: clc may be unnecessary in certain cases
 ```

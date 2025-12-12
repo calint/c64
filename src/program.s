@@ -333,7 +333,7 @@ render:
     tax                     ; store in x for later use 
     and #%00000111          ; get lower 3 bits
     eor #%00000111          ; invert
-    clc                     ; clear unknown carray flag state
+    clc                     ; clear unknown carry flag state
     adc #1                  ; add 1
     and #%00000111          ; mask to 3 bits
     sta screen_offset       ; store screen shift
@@ -354,7 +354,7 @@ render:
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
     ldx screen_offset       ; check if screen_offset is 0
     beq :+                  ; if 0, no adjustment needed
-    clc                     ; clear unknown carray flag
+    clc                     ; clear unknown carry flag
     adc #1                  ; add 1 to match desired table values 
 :   cmp tile_map_x          ; compare with current tile_map_x
     bne :+                  ; same as last frame, skip redraw
