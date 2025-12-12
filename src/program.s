@@ -441,7 +441,7 @@ update:
     lsr vblank_done
 
 update_no_vblank:
-    ; color border for visual illustration on number of scan lines for update
+    ; set border color to illustrate duration of render
     lda #BORDER_LOOP
     sta VIC_BORDER
 
