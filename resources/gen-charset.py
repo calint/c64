@@ -3,11 +3,9 @@
 from PIL import Image
 import sys
 
-
 if len(sys.argv) < 2:
     print("Usage: ./gen-charset.py <filename>")
     sys.exit(1)
-
 
 filename = sys.argv[1]
 
@@ -29,6 +27,7 @@ with Image.open(filename) as img:
             ix += 1
             for y in range(row, row + char_height):
                 for start_x in range(column, column + char_width, 8):
+                    # note: 8 is number of pixels per byte
                     byte_value = 0
                     for i in range(8):
                         x = start_x + i

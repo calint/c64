@@ -30,6 +30,7 @@ with Image.open(filename) as img:
                     x_start = col + byte_idx * 8
                     byte_val = 0
                     for i in range(8):
+                        # note: 8 pixels per byte
                         pixel = img.getpixel((x_start + i, y))
                         byte_val = (byte_val << 1) | (0 if pixel == 0 else 1)
                     bytes_out.append(f"%{byte_val:08b}")

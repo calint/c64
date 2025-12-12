@@ -2,7 +2,6 @@
 
 import sys
 
-
 if len(sys.argv) != 4:
     print("Usage: ./gen-render-to-screen.py <SCREEN_NAME> <Y_OFFSET> <NUM_ROWS>")
     sys.exit(1)
