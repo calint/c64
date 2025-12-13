@@ -99,6 +99,8 @@ screen_offset:   .res 1     ; number of pixels (0-7) screen is shifted right
 screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; very near temporary
+tmp2:            .res 1     ; very near temporary
+tmp3:            .res 1     ; very near temporary
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -341,16 +343,16 @@ render:
     ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
     ; with adjustment if screen_offset != 0
     txa                     ; restore camera_x_lo
-    lsr A                   ; shift right by 3 bits
-    lsr A
-    lsr A
+    lsr                     ; shift right by 3 bits
+    lsr
+    lsr
     sta tmp1                ; tmp1 = camera_x_lo >> 3
     lda camera_x_hi         ; get high byte
-    asl A                   ; shift left by 5 bits 
-    asl A
-    asl A
-    asl A
-    asl A
+    asl                     ; shift left by 5 bits 
+    asl
+    asl
+    asl
+    asl
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
     ldx screen_offset       ; check if screen_offset is 0
     beq :+                  ; if 0, no adjustment needed
@@ -449,18 +451,6 @@ update_no_vblank:
     lda screen_offset
     sta VIC_CTRL_2
 
-    .include "update_sprites_state.s"
-
-    ; sprites state
-    lda sprites_enable
-    sta VIC_SPRITE_ENBL
-    lda sprites_double_width
-    sta VIC_SPRITE_DBLX
-    lda sprites_double_height
-    sta VIC_SPRITE_DBLY
-    lda sprites_msb_x
-    sta VIC_SPRITES_8X
-
     ; update objects state
 
     clc
@@ -479,26 +469,45 @@ update_no_vblank:
     adc objects_state + 7   ; dyhi
     sta objects_state + 3
 
-    ; update camera position
+
+    ; subtract camera position from object x coordinate
+
+    lda objects_state + 0   ; xlo
+    lsr                     ; shift out the sub-pixel coordinate
+    lsr
+    lsr
+    lsr
+    sta tmp1
+    lda objects_state + 1   ; xhi
+    asl
+    asl
+    asl
+    asl
+    ora tmp1
+    sta tmp1                ; now lower bits of world position in pixels
+    lda objects_state + 1   ; xhi
+    lsr
+    lsr
+    lsr
+    lsr
+    sta tmp2                ; now higher bit of world coordinate in pixels 
+ 
+    ; subtract camera position for screen coordinates in pixels
+    sec
+    lda tmp1
+    sbc camera_x_lo
+    sta tmp1
+    lda tmp2
+    sbc camera_x_hi
+    sta tmp2
 
     ; update sprites state from objects state considering the 4 bits of
     ; sub-pixel positions
-    lda objects_state + 0       ; x low
-    lsr                         ; shift 4 sub pixels right
-    lsr
-    lsr
-    lsr
-    sta tmp1                    ; save to later `or` with high bits
-    lda objects_state + 1       ; x hi
-    asl                         ; shift left 4 sub-pixels
-    asl
-    asl
-    asl
-    ora tmp1                    ; make complete x low byte
+    lda tmp1                    ; x low
     sta sprites_state + 0       ; update x low
     ; check if 9'th bit of sprite x needs to be set
-    lda objects_state + 1       ; x high
-    and #%00010000              ; check 9'th bit considering the sub-pixels
+    lda tmp2                    ; x high
+    and #1                      ; check 9'th bit considering the sub-pixels
     beq @msb_off                ; zero, msb off
     lda sprites_msb_x           ; msb on
     ora #%00000001              ; set 9'th bit of sprite 0 x
@@ -512,6 +521,20 @@ update_no_vblank:
 
     lda objects_state + 2       ; y low
     sta sprites_state + 1       ; update y low
+
+    ; update sprite hardware
+
+    .include "update_sprites_state.s"
+
+    ; sprites state
+    lda sprites_enable
+    sta VIC_SPRITE_ENBL
+    lda sprites_double_width
+    sta VIC_SPRITE_DBLX
+    lda sprites_double_height
+    sta VIC_SPRITE_DBLY
+    lda sprites_msb_x
+    sta VIC_SPRITES_8X
 
     ; fallthrough
 ;-------------------------------------------------------------------------------
@@ -618,7 +641,7 @@ sprites_double_height:
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;           xlo,       xhi, ylo, yhi, dxlo, dxhi, dylo, dyhi, sprite
-    .byte %11110000, %00000001, 226,   0,    4,    0,    0,    0, sprites_data_1>>6
+    .byte %11110000, %00000001, 226,   0,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
