@@ -85,6 +85,7 @@ COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
 ; object moving direction used at collision detection and handling
+MOVE_DIR_NONE   = 0
 MOVE_DIR_UP     = 1
 MOVE_DIR_RIGHT  = 2
 MOVE_DIR_DOWN   = 4
@@ -700,15 +701,13 @@ logic:
     adc #0
     sta objects_state + 1
 
-    lda #1
-    sta objects_state + 4   ; dx low byte 
+    ; set velocity to none
     lda #0
-    sta objects_state + 5   ; dx high byte
+    sta objects_state + 6   ; dy low byte 
+    sta objects_state + 7   ; dy high byte
 
-    lda #MOVE_DIR_RIGHT
+    lda #MOVE_DIR_NONE
     sta hero_moving_dir
-
-    jmp @check_collision_up
 
 @check_collision_right:
     lda hero_moving_dir
@@ -725,7 +724,11 @@ logic:
     bne @react_collision_right
 
     inc ptr1 + 1            ; increase row to lower tile
+    iny
+    iny
     lda (ptr1), y
+    dey
+    dey
     dec ptr1 + 1            ; restore to top row
     cmp #32                 ; empty?
     bne @react_collision_right
@@ -734,7 +737,11 @@ logic:
     beq @check_collision_up
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
+    iny
+    iny
     lda (ptr1), y           ; load tile
+    dey
+    dey
     dec ptr1 + 1            ; restore row pointer
     dec ptr1 + 1
     cmp #32
@@ -750,11 +757,12 @@ logic:
     and #%10000000
     sta objects_state + 0   ; set x at start of tile and no pixel fraction
 
-    lda #$ff                ; -1
-    sta objects_state + 4   ; dx low byte 
-    sta objects_state + 5   ; dx high byte
+    ; set velocity to none
+    lda #0
+    sta objects_state + 6   ; dy low byte 
+    sta objects_state + 7   ; dy high byte
 
-    lda #MOVE_DIR_LEFT
+    lda #MOVE_DIR_NONE
     sta hero_moving_dir
 
 @check_collision_up:
@@ -813,14 +821,13 @@ logic:
     adc #((50 * 16) >> 8)
     sta objects_state + 3
  
-    lda #1
-    sta objects_state + 6   ; dy low byte 
+    ; set velocity to none
     lda #0
+    sta objects_state + 6   ; dy low byte 
     sta objects_state + 7   ; dy high byte
 
-    lda #MOVE_DIR_DOWN
+    lda #MOVE_DIR_NONE
     sta hero_moving_dir
-    jmp @check_collision_done
 
 @check_collision_down:
     lda hero_moving_dir
@@ -888,30 +895,85 @@ jmp @controls
     sta VIC_BORDER
 
 @controls:
+    lda #0
+    sta hero_moving_dir
+    sta objects_state + 4     ; dx low
+    sta objects_state + 5     ; dy high
+    sta objects_state + 6     ; dy low
+    sta objects_state + 7     ; dy high
+
     ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
     bne @right
-    ; add 1 to camera x in pixels
-    sec                     ; set carry for subtraction
-    lda camera_x_lo         ; load low byte
-    sbc #1                  ; subtract value (and borrow if needed)
-    sta camera_x_lo         ; store result low byte
-    lda camera_x_hi         ; load high byte
-    sbc #0                  ; subtract borrow only (if carry was clear)
-    sta camera_x_hi         ; store result high byte
+
+    lda #$ff
+    sta objects_state + 4     ; dx low
+    sta objects_state + 5     ; dx high
+
+    lda hero_moving_dir
+    ora #MOVE_DIR_LEFT
+    sta hero_moving_dir
+
+    ; ; add 1 to camera x in pixels
+    ; sec                     ; set carry for subtraction
+    ; lda camera_x_lo         ; load low byte
+    ; sbc #1                  ; subtract value (and borrow if needed)
+    ; sta camera_x_lo         ; store result low byte
+    ; lda camera_x_hi         ; load high byte
+    ; sbc #0                  ; subtract borrow only (if carry was clear)
+    ; sta camera_x_hi         ; store result high byte
+
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
+    bne @up
+
+    lda #1
+    sta objects_state + 4     ; dx low
+    lda #0
+    sta objects_state + 5     ; dx high
+
+    lda hero_moving_dir
+    ora #MOVE_DIR_RIGHT
+    sta hero_moving_dir
+
+    ; ; subtract 1 from camera x in pixels
+    ; clc                     ; clear carry for addition
+    ; lda camera_x_lo         ; load low byte
+    ; adc #1                  ; add value
+    ; sta camera_x_lo         ; store result low byte
+    ; lda camera_x_hi         ; load high byte
+    ; adc #0                  ; add carry only (if overflow from low byte)
+    ; sta camera_x_hi         ; store result high byte
+
+@up:
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_UP
+    bne @down
+
+    lda #$ff
+    sta objects_state + 6     ; dy low
+    sta objects_state + 7     ; dy high
+
+    lda hero_moving_dir
+    ora #MOVE_DIR_UP
+    sta hero_moving_dir
+
+@down:
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_DOWN
     bne @done
-    ; subtract 1 from camera x in pixels
-    clc                     ; clear carry for addition
-    lda camera_x_lo         ; load low byte
-    adc #1                  ; add value
-    sta camera_x_lo         ; store result low byte
-    lda camera_x_hi         ; load high byte
-    adc #0                  ; add carry only (if overflow from low byte)
-    sta camera_x_hi         ; store result high byte
+
+    lda #1
+    sta objects_state + 6     ; dy low
+    lda #0
+    sta objects_state + 7     ; dy high
+
+    lda hero_moving_dir
+    ora #MOVE_DIR_DOWN
+    sta hero_moving_dir
+
 @done:
 
     ; dummy work
@@ -982,8 +1044,8 @@ objects_state:
 
     ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6
 
-    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6
-    ; .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6
+    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6
+    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
