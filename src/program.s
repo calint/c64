@@ -453,6 +453,7 @@ update_no_vblank:
 
     ; update objects state
 
+    ; x
     clc
     lda objects_state + 0   ; xlo
     adc objects_state + 4   ; dxlo
@@ -461,6 +462,7 @@ update_no_vblank:
     adc objects_state + 5   ; dxhi
     sta objects_state + 1
 
+    ; y
     clc
     lda objects_state + 2   ; ylo
     adc objects_state + 6   ; dylo
@@ -483,13 +485,13 @@ update_no_vblank:
     asl
     asl
     ora tmp1
-    sta tmp1                ; now low bits of world x in pixels
+    sta tmp1                ; low bits of world x in pixels
     lda objects_state + 1   ; xhi
     lsr
     lsr
     lsr
     lsr
-    sta tmp2                ; now high bits of world x in pixels 
+    sta tmp2                ; high bits of world x in pixels 
  
     ; subtract camera position for screen coordinates in pixels
     sec
@@ -653,7 +655,8 @@ sprites_double_height:
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;           xlo,       xhi,       ylo,       yhi, dxlo, dxhi, dylo, dyhi, sprite
-    .byte %11110000, %00000001, %00100000, %00001110,    0,    0,    0,    0, sprites_data_1>>6
+    ;.byte %11110000, %00000001, %00100000, %00001110,    1,    0,  $ff,  $ff, sprites_data_1>>6
+    .byte %11110000, %00000001, %00100000, %00001110,    1,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
