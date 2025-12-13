@@ -317,7 +317,7 @@ program:
 
     ; application setup
 
-    lda #MOVE_DIR_LEFT
+    lda #MOVE_DIR_UP
     sta hero_moving_dir
 
     cli                     ; enable interrupts
@@ -468,6 +468,7 @@ update_no_vblank:
 
     ; set screen right offset
     lda screen_offset
+    ;ora #%1000             ; enable 40 columns
     sta VIC_CTRL_2
 
     ; update objects state
@@ -588,14 +589,15 @@ logic:
 
     ; convert hero x to tile map x
 
-    ; subtract left border (40 column mode to include the offscreen tile)
+    ; subtract left border (40 column mode to include the off-screen tile)
     ; store in `tmp1` and `tmp2`
+    ; note: in 40 column mode first visible pixel is at 24
     sec
     lda objects_state + 0   ; x low byte
-    sbc #((24 * 16) & $ff)
+    sbc #((24 << 4) & $ff)
     sta tmp1
     lda objects_state + 1   ; x high byte
-    sbc #((24 * 16) >> 8)
+    sbc #((24 << 4) >> 8)
     sta tmp2
 
     ; map to tile x
@@ -655,9 +657,9 @@ logic:
     adc hero_tile_y         ; add tile map y to row pointer
     sta ptr1 + 1            ; high byte (tile map row)
 
-    lda tmp5
+    lda tmp5                ; 0 if there is no x overlap
     bne @check_collision_left
-    jmp @check_collision_up
+    jmp @check_collision_up ; don't check collisions on x axis
 
 @check_collision_left:
     lda hero_moving_dir
@@ -683,7 +685,6 @@ logic:
     dec ptr1 + 1
     cmp #32
     bne @react_collision_left
-
     jmp @check_collision_right
 
 @react_collision_left:
@@ -707,17 +708,19 @@ logic:
     lda #MOVE_DIR_RIGHT
     sta hero_moving_dir
 
-    jmp @check_collision_done
+    jmp @check_collision_up
 
 @check_collision_right:
     lda hero_moving_dir
     and #MOVE_DIR_RIGHT
-    beq @check_collision_done
+    beq @check_collision_up
 
     ; increase register y to the right overlapping tile
     iny
     iny
     lda (ptr1), y           ; load tile
+    dey
+    dey
     cmp #32                 ; empty?
     bne @react_collision_right
 
@@ -728,7 +731,7 @@ logic:
     bne @react_collision_right
 
     lda tmp6                ; 0 if no overlap on y
-    beq @check_collision_done
+    beq @check_collision_up
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
     lda (ptr1), y           ; load tile
@@ -736,8 +739,7 @@ logic:
     dec ptr1 + 1
     cmp #32
     bne @react_collision_right
-
-    jmp @check_collision_done
+    jmp @check_collision_up
 
 @react_collision_right:
     ; collision
@@ -756,6 +758,127 @@ logic:
     sta hero_moving_dir
 
 @check_collision_up:
+    lda hero_moving_dir
+    and #MOVE_DIR_UP
+    beq @check_collision_down
+
+    lda (ptr1), y           ; load tile
+    cmp #32                 ; empty?
+    bne @react_collision_up
+
+    iny                     ; increase to next horizontal tile
+    lda (ptr1), y
+    dey
+    cmp #32                 ; empty?
+    bne @react_collision_up
+
+    lda tmp5                ; 0 if no overlap on x
+    beq @check_collision_down
+    iny
+    iny
+    lda (ptr1), y           ; load tile
+    dey
+    dey
+    cmp #32
+    bne @react_collision_up
+    jmp @check_collision_down
+
+@react_collision_up:
+    ; collision
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+
+    sec
+    lda objects_state + 2   ; y low byte
+    sbc #((50 * 16) & $ff)
+    sta tmp3
+    lda objects_state + 3   ; y high byte
+    sbc #((50 * 16) >> 8)
+    sta tmp4
+
+    lda tmp3                ; y low byte
+    and #%10000000          ; remove pixel fraction and tile fraction
+    clc                     ;
+    adc #%10000000          ; next row
+    sta tmp3                ; set y at start of tile and no pixel fraction
+    lda tmp4                ; y high byte
+    adc #0
+    sta tmp4                ; set y high byte 
+ 
+    clc
+    lda tmp3
+    adc #((50 * 16) & $ff)
+    sta objects_state + 2
+    lda tmp4
+    adc #((50 * 16) >> 8)
+    sta objects_state + 3
+ 
+    lda #1
+    sta objects_state + 6   ; dy low byte 
+    lda #0
+    sta objects_state + 7   ; dy high byte
+
+    lda #MOVE_DIR_DOWN
+    sta hero_moving_dir
+    jmp @check_collision_done
+
+@check_collision_down:
+    lda hero_moving_dir
+    and #MOVE_DIR_DOWN
+    beq @check_collision_done
+
+    inc ptr1 + 1
+    inc ptr1 + 1
+    lda (ptr1), y           ; load tile
+    cmp #32                 ; empty?
+    bne @react_collision_down
+
+    iny                     ; increase to next horizontal tile
+    lda (ptr1), y
+    cmp #32                 ; empty?
+    bne @react_collision_down
+
+    lda tmp5                ; 0 if no overlap on x
+    beq @check_collision_done
+    iny
+    lda (ptr1), y           ; load tile
+    cmp #32
+    bne @react_collision_down
+    jmp @check_collision_done
+
+@react_collision_down:
+    ; collision
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+
+    sec
+    lda objects_state + 2   ; y low byte
+    sbc #((50 * 16) & $ff)
+    sta tmp3
+    lda objects_state + 3   ; y high byte
+    sbc #((50 * 16) >> 8)
+    sta tmp4
+
+    lda tmp3                ; y low byte
+    and #%10000000          ; remove pixel fraction and tile fraction
+    sta tmp3                ; set y at start of tile and no pixel fraction
+ 
+    clc
+    lda tmp3
+    adc #((50 * 16) & $ff)
+    sta objects_state + 2
+    lda tmp4
+    adc #((50 * 16) >> 8)
+    sta objects_state + 3
+ 
+    ; set velocity to none
+    lda #0
+    sta objects_state + 6   ; dy low byte 
+    sta objects_state + 7   ; dy high byte
+
+    lda #MOVE_DIR_NONE
+    sta hero_moving_dir
+
 @check_collision_done:
 
 jmp @controls
@@ -852,14 +975,15 @@ sprites_double_height:
 ;-------------------------------------------------------------------------------
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;              xlo,         xhi,          ylo,         yhi, dxlo, dxhi, dylo, dyhi, sprite
-    .byte (170<<4)&$ff, (170<<4)>>8, (226<<4)&$ff, (226<<4)>>8,  $ff,  $ff,    0,    0, sprites_data_1>>6
+    ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi, sprite
 
-    ; bottom left standing on a row of tiles (31, 226) 
-    .byte %11110000, %00000001, %00100000, %00001110,    1,    0,    0,    0, sprites_data_1>>6
+    ; top left (31, 50) on visible are in 38 column mode
+    ;.byte  31<<4&$ff,  31>>4,  50<<4&$ff, 50>>4,     0,    0,    1,    0, sprites_data_1>>6
 
-    ; top left (30, 50)
-    .byte %11100000, %00000001, %00100000, %00000011,    0,    0,    0,    0, sprites_data_1>>6
+    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6
+
+    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6
+    ; .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
