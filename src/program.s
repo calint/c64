@@ -461,6 +461,58 @@ update_no_vblank:
     lda sprites_msb_x
     sta VIC_SPRITES_8X
 
+    ; update objects state
+
+    clc
+    lda objects_state + 0   ; xlo
+    adc objects_state + 4   ; dxlo
+    sta objects_state + 0
+    lda objects_state + 1   ; xhi
+    adc objects_state + 5   ; dxhi
+    sta objects_state + 1
+
+    clc
+    lda objects_state + 2   ; ylo
+    adc objects_state + 6   ; dylo
+    sta objects_state + 2
+    lda objects_state + 3   ; yhi
+    adc objects_state + 7   ; dyhi
+    sta objects_state + 3
+
+    ; update camera position
+
+    ; update sprites state from objects state considering the 4 bits of
+    ; sub-pixel positions
+    lda objects_state + 0       ; x low
+    lsr                         ; shift 4 sub pixels right
+    lsr
+    lsr
+    lsr
+    sta tmp1                    ; save to later `or` with high bits
+    lda objects_state + 1       ; x hi
+    asl                         ; shift left 4 sub-pixels
+    asl
+    asl
+    asl
+    ora tmp1                    ; make complete x low byte
+    sta sprites_state + 0       ; update x low
+    ; check if 9'th bit of sprite x needs to be set
+    lda objects_state + 1       ; x high
+    and #%00010000              ; check 9'th bit considering the sub-pixels
+    beq @msb_off                ; zero, msb off
+    lda sprites_msb_x           ; msb on
+    ora #%00000001              ; set 9'th bit of sprite 0 x
+    sta sprites_msb_x
+    jmp @msb_done
+@msb_off:
+    lda sprites_msb_x
+    and #%11111110              ; change sprite 0 x 9'th bit
+    sta sprites_msb_x
+@msb_done:
+
+    lda objects_state + 2       ; y low
+    sta sprites_state + 1       ; update y low
+
     ; fallthrough
 ;-------------------------------------------------------------------------------
 logic:
@@ -477,14 +529,6 @@ logic:
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
     sta VIC_BORDER
-
-    ; increase x, y, sprite 0
-    inc sprites_state+0
-    inc sprites_state+1
-
-    ; dec x, y, sprite 1
-    dec sprites_state+4
-    dec sprites_state+5
 
     ; joystick
     lda VIC_DATA_PORT_A 
@@ -551,8 +595,9 @@ nmi:
 
 ;-------------------------------------------------------------------------------
 sprites_state:
-    ; x, y, data, color
-    .byte  30,  50, sprites_data_0>>6, 1
+.out .sprintf("sprites_state: $%04X", sprites_state)
+    ;       x,   y,              data, color
+    .byte   0,   0, sprites_data_0>>6, 1
     .byte  90, 100, sprites_data_1>>6, 2
     .byte 114, 100, sprites_data_2>>6, 3
     .byte 138, 100, sprites_data_3>>6, 4
@@ -565,9 +610,15 @@ sprites_msb_x: ; 9'th bit of x-coordinate
 sprites_enable:
     .byte %11111111
 sprites_double_width:
-    .byte %00000001
+    .byte %00000000
 sprites_double_height:
-    .byte %00000001
+    .byte %00000000
+
+;-------------------------------------------------------------------------------
+objects_state:
+.out .sprintf("objects_state: $%04X", objects_state)
+    ;           xlo,       xhi, ylo, yhi, dxlo, dxhi, dylo, dyhi, sprite
+    .byte %11110000, %00000001, 226,   0,    4,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"

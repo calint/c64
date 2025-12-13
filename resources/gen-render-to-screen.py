@@ -15,7 +15,7 @@ print("; generated code, do not edit")
 for i in range(num_rows):
     tile_row = i
     screen_row = screen_y_offset + i
-    lines.append(f"    lda tile_map+TILE_MAP_WIDTH*{tile_row:2d},x")
-    lines.append(f"    sta {screen_name}+  SCREEN_WIDTH*{screen_row:2d},y")
+    lines.append(f"    lda tile_map + TILE_MAP_WIDTH*{tile_row:2d}, x")
+    lines.append(f"    sta {screen_name} + SCREEN_WIDTH*{screen_row:2d}, y")
 
 print("\n".join(lines))
