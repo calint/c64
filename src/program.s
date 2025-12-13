@@ -98,9 +98,11 @@ tile_map_x:      .res 1     ; tile map x offset in characters
 screen_offset:   .res 1     ; number of pixels (0-7) screen is shifted right
 screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
-tmp1:            .res 1     ; very near temporary
-tmp2:            .res 1     ; very near temporary
-tmp3:            .res 1     ; very near temporary
+tmp1:            .res 1     ; temporary
+tmp2:            .res 1     ; temporary
+tmp3:            .res 1     ; temporary
+tmp4:            .res 1     ; temporary
+ptr1:            .res 2     ; temporary pointer
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -250,9 +252,9 @@ program:
     sta $ffff               ; store
 
     ; install non-maskable interrupt handler
-    lda #<nmi               ;
+    lda #<nmi               ; low byte
     sta $fffa               ; nmi vector low byte
-    lda #>nmi               ;
+    lda #>nmi               ; high byte
     sta $fffb               ; nmi vector high byte
 
     ; disable cia interrupts that might interfere
@@ -567,6 +569,78 @@ logic:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
+    ; convert hero x to tile map x
+
+    ; subtract left border (40 column mode to include the offscreen tile)
+    sec
+    lda objects_state + 0   ; x low byte
+    sbc #((24 * 16) & $ff)
+    sta tmp1
+    lda objects_state + 1   ; x high byte
+    sbc #((24 * 16) >> 8)
+    sta tmp2
+
+    ; map to tile x
+    lda tmp1
+    lsr                     ; shift 4 away the fraction
+    lsr
+    lsr
+    lsr
+    lsr                     ; shift 3 to tile map x
+    lsr
+    lsr
+    sta tmp1
+    lda tmp2
+    asl                     ; shift 8 - (4 + 3) bits to `or`
+    ora tmp1
+    ; acc now contains x offset in tile map
+    sta tmp1
+    tay
+
+    ; convert hero y to tile map
+
+    ; subtract top border 50 and store in tmp3 and tmp4
+    sec
+    lda objects_state + 2   ; y low byte
+    sbc #((50 * 16) & $ff)
+    sta tmp3
+    lda objects_state + 3   ; y high byte
+    sbc #((50 * 16) >> 8)
+    sta tmp4
+
+    ; map to tile y
+    lda tmp3
+    lsr                     ; shift 4 away the fraction
+    lsr
+    lsr
+    lsr
+    lsr                     ; shift 3 to tile map y
+    lsr
+    lsr
+    sta tmp3
+    lda tmp4
+    asl                     ; shift 8 - (4 + 3) to `or`
+    ora tmp3
+    ; acc now contains the tile map y
+    sta tmp4
+
+    lda #<tile_map          ; low byte (always 0)
+    sta ptr1
+    lda #>tile_map          ; high byte
+    clc
+    adc tmp4                ; add tile map y to row pointer
+    sta ptr1 + 1
+
+    lda (ptr1), y           ; load tile at x, y
+    cmp #32                 ; compare with empty tile
+    beq :+
+    ; collision
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+:   ; no collision
+
+    ; check special case where there is no overlap x or y in tile map
+
     ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
@@ -659,8 +733,8 @@ objects_state:
     ; bottom left standing on a row of tiles (31, 226) 
     .byte %11110000, %00000001, %00100000, %00001110,    1,    0,    0,    0, sprites_data_1>>6
 
-    ; top left (31, 50)
-    .byte %11110000, %00000001, %00100000, %00000011,    0,    0,    0,    0, sprites_data_1>>6
+    ; top left (30, 50)
+    .byte %11100000, %00000001, %00100000, %00000011,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
