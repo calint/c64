@@ -102,6 +102,7 @@ tmp1:            .res 1     ; temporary
 tmp2:            .res 1     ; temporary
 tmp3:            .res 1     ; temporary
 tmp4:            .res 1     ; temporary
+tmp5:            .res 1     ; temporary
 ptr1:            .res 2     ; temporary pointer
 
 ;-------------------------------------------------------------------------------
@@ -572,6 +573,7 @@ logic:
     ; convert hero x to tile map x
 
     ; subtract left border (40 column mode to include the offscreen tile)
+    ; store in `tmp1` and `tmp2`
     sec
     lda objects_state + 0   ; x low byte
     sbc #((24 * 16) & $ff)
@@ -586,6 +588,7 @@ logic:
     lsr
     lsr
     lsr
+    sta tmp5                ; used later to check if sprite is overlapping tiles
     lsr                     ; shift 3 to tile map x
     lsr
     lsr
@@ -596,6 +599,17 @@ logic:
     ; acc now contains x offset in tile map
     sta tmp1
     tay
+
+    lda tmp5                ; contains pixel value
+    and #%111               ; check if overlaps tiles
+    beq @1                  ; even of 8 pixels, no overlap
+    lda #1                  ; overlap
+    sta tmp5                ; store for later
+    jmp @2
+@1:
+    lda #0
+    sta tmp5
+@2:
 
     ; convert hero y to tile map
 
@@ -624,6 +638,9 @@ logic:
     ; acc now contains the tile map y
     sta tmp4
 
+    lda tmp5                ; 1 if sprite overlaps tiles x wise
+    beq @no_x_overlap
+
     lda #<tile_map          ; low byte (always 0)
     sta ptr1
     lda #>tile_map          ; high byte
@@ -637,10 +654,27 @@ logic:
     ; collision
     lda #COLOR_GREEN
     sta VIC_BORDER
-:   ; no collision
+:   iny                     ; check next tile to the right
+    lda (ptr1), y           ; load tile at x, y
+    cmp #32
+    beq :+
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+:   iny                     ; check next tile to the right
+    lda (ptr1), y           ; load tile at x, y
+    cmp #32
+    beq :+
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+:
 
-    ; check special case where there is no overlap x or y in tile map
+jmp @controls
 
+@no_x_overlap:
+    lda #COLOR_BROWN
+    sta VIC_BORDER
+
+@controls:
     ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
