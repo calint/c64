@@ -84,6 +84,11 @@ COLOR_GREY_2    = 12
 COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
+; object moving direction used at collision detection and handling
+MOVE_DIR_UP     = 1
+MOVE_DIR_RIGHT  = 2
+MOVE_DIR_DOWN   = 4
+MOVE_DIR_LEFT   = 8
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -104,6 +109,7 @@ tmp2:            .res 1     ; temporary
 ; application variables
 hero_tile_x:     .res 1
 hero_tile_y:     .res 1
+hero_moving_dir: .res 1
 tmp3:            .res 1     ; temporary
 tmp4:            .res 1     ; temporary
 tmp5:            .res 1     ; temporary
@@ -307,6 +313,11 @@ program:
     sta color_ram+$300,x    ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
+
+    ; application setup
+
+    lda #MOVE_DIR_LEFT
+    sta hero_moving_dir
 
     cli                     ; enable interrupts
 
@@ -637,32 +648,71 @@ logic:
     lda tmp5                ; is 0 if no overlap x wise
     beq @no_x_overlap
 
+    ; make pointer to tile map row of hero y
     lda #<tile_map          ; low byte (always 0)
     sta ptr1
     lda #>tile_map          ; high byte
     clc
     adc hero_tile_y         ; add tile map y to row pointer
-    sta ptr1 + 1
+    sta ptr1 + 1            ; high byte (tile map row)
+
+@check_collision_left:
+    lda hero_moving_dir
+    and #MOVE_DIR_LEFT
+    beq @check_collision_right
 
     lda (ptr1), y           ; load tile at x, y
     cmp #32                 ; compare with empty tile
-    beq :+
+    beq @check_collision_right
+    ; collision
+
+    lda #COLOR_GREEN
+    sta VIC_BORDER
+
+    lda objects_state + 0   ; x low byte
+    and #%10000000          ; set x at the edge to the tile
+    clc                     ;
+    adc #%10000000          ;
+    sta objects_state + 0   ; set x at start of tile and no pixel fraction
+    lda objects_state + 1   ; x high byte
+    adc #0
+    sta objects_state + 1
+
+    lda #1
+    sta objects_state + 4   ; dx low byte 
+    lda #0
+    sta objects_state + 5   ; dx high byte
+
+    lda #MOVE_DIR_RIGHT
+    sta hero_moving_dir
+
+@check_collision_right:
+    lda hero_moving_dir
+    and #MOVE_DIR_RIGHT
+    beq @check_collision_done
+
+    iny
+    iny
+    lda(ptr1), y
+    cmp #32
+    beq @check_collision_done
+
     ; collision
     lda #COLOR_GREEN
     sta VIC_BORDER
-:   iny                     ; check next tile to the right
-    lda (ptr1), y           ; load tile at x, y
-    cmp #32
-    beq :+
-    lda #COLOR_GREEN
-    sta VIC_BORDER
-:   iny                     ; check next tile to the right
-    lda (ptr1), y           ; load tile at x, y
-    cmp #32
-    beq :+
-    lda #COLOR_GREEN
-    sta VIC_BORDER
-:
+    lda objects_state + 0   ; x low byte
+ 
+    and #%10000000
+    sta objects_state + 0   ; set x at start of tile and no pixel fraction
+
+    lda #$ff                ; -1
+    sta objects_state + 4   ; dx low byte 
+    sta objects_state + 5   ; dx high byte
+
+    lda #MOVE_DIR_LEFT
+    sta hero_moving_dir
+
+@check_collision_done:
 
 jmp @controls
 
@@ -758,8 +808,9 @@ sprites_double_height:
 ;-------------------------------------------------------------------------------
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;           xlo,       xhi,       ylo,       yhi, dxlo, dxhi, dylo, dyhi, sprite
-    ;.byte %11110000, %00000001, %00100000, %00001110,    1,    0,  $ff,  $ff, sprites_data_1>>6
+    ;              xlo,         xhi,          ylo,         yhi, dxlo, dxhi, dylo, dyhi, sprite
+    .byte (170<<4)&$ff, (170<<4)>>8, (226<<4)&$ff, (226<<4)>>8,  $ff,  $ff,    0,    0, sprites_data_1>>6
+
     ; bottom left standing on a row of tiles (31, 226) 
     .byte %11110000, %00000001, %00100000, %00001110,    1,    0,    0,    0, sprites_data_1>>6
 
