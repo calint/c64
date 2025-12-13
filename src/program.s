@@ -107,13 +107,14 @@ vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; temporary
 tmp2:            .res 1     ; temporary
 ; application variables
-hero_tile_x:     .res 1
-hero_tile_y:     .res 1
-hero_moving_dir: .res 1
 tmp3:            .res 1     ; temporary
 tmp4:            .res 1     ; temporary
 tmp5:            .res 1     ; temporary
+tmp6:            .res 1     ; temporary
 ptr1:            .res 2     ; temporary pointer
+hero_tile_x:     .res 1
+hero_tile_y:     .res 1
+hero_moving_dir: .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -631,6 +632,7 @@ logic:
 
     ; map to tile y
     lda tmp3
+    sta tmp6
     lsr                     ; shift 4 away the fraction
     lsr
     lsr
@@ -645,11 +647,6 @@ logic:
     ; acc now contains the tile map y
     sta hero_tile_y
 
-    lda tmp5                ; is 0 if no overlap x wise
-    bne :+
-    jmp @no_x_overlap
-    :
-
     ; make pointer to tile map row of hero y
     lda #<tile_map          ; low byte (always 0)
     sta ptr1
@@ -657,6 +654,10 @@ logic:
     clc
     adc hero_tile_y         ; add tile map y to row pointer
     sta ptr1 + 1            ; high byte (tile map row)
+
+    lda tmp5
+    bne @check_collision_left
+    jmp @check_collision_up
 
 @check_collision_left:
     lda hero_moving_dir
@@ -671,6 +672,16 @@ logic:
     lda (ptr1), y           ; load tile at x, y
     dec ptr1 + 1            ; restore y to top tile
     cmp #32                 ; compare with empty tile
+    bne @react_collision_left
+
+    lda tmp6                ; 0 if no overlap on y
+    beq @check_collision_right
+    inc ptr1 + 1            ; move 2 rows down
+    inc ptr1 + 1
+    lda (ptr1), y           ; load tile
+    dec ptr1 + 1            ; restore row pointer
+    dec ptr1 + 1
+    cmp #32
     bne @react_collision_left
 
     jmp @check_collision_right
@@ -703,7 +714,7 @@ logic:
     and #MOVE_DIR_RIGHT
     beq @check_collision_done
 
-    ; increase y to right overlapping x
+    ; increase register y to the right overlapping tile
     iny
     iny
     lda (ptr1), y           ; load tile
@@ -714,6 +725,16 @@ logic:
     lda (ptr1), y
     dec ptr1 + 1            ; restore to top row
     cmp #32                 ; empty?
+    bne @react_collision_right
+
+    lda tmp6                ; 0 if no overlap on y
+    beq @check_collision_done
+    inc ptr1 + 1            ; move 2 rows down
+    inc ptr1 + 1
+    lda (ptr1), y           ; load tile
+    dec ptr1 + 1            ; restore row pointer
+    dec ptr1 + 1
+    cmp #32
     bne @react_collision_right
 
     jmp @check_collision_done
@@ -734,6 +755,7 @@ logic:
     lda #MOVE_DIR_LEFT
     sta hero_moving_dir
 
+@check_collision_up:
 @check_collision_done:
 
 jmp @controls
