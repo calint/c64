@@ -650,6 +650,10 @@ logic:
     ; acc now contains the tile map y
     sta hero_tile_y
 
+    lda tmp6                ; contains pixel value
+    and #%1111111           ; check if overlaps tiles
+    sta tmp6                ; if zero no overlap
+
     ; make pointer to tile map row of hero y
     lda #<tile_map          ; low byte (always 0)
     sta ptr1
@@ -679,6 +683,10 @@ logic:
 
     lda tmp6                ; 0 if no overlap on y
     beq @check_collision_right
+
+    lda #COLOR_VIOLET
+    sta VIC_BORDER
+
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
     lda (ptr1), y           ; load tile
@@ -686,6 +694,7 @@ logic:
     dec ptr1 + 1
     cmp #32
     bne @react_collision_left
+
     jmp @check_collision_right
 
 @react_collision_left:
@@ -735,6 +744,10 @@ logic:
 
     lda tmp6                ; 0 if no overlap on y
     beq @check_collision_up
+
+    lda #COLOR_LHT_GREEN
+    sta VIC_BORDER
+
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
     iny
@@ -746,6 +759,7 @@ logic:
     dec ptr1 + 1
     cmp #32
     bne @react_collision_right
+
     jmp @check_collision_up
 
 @react_collision_right:
@@ -782,6 +796,10 @@ logic:
 
     lda tmp5                ; 0 if no overlap on x
     beq @check_collision_down
+
+    lda #COLOR_VIOLET
+    sta VIC_BORDER
+
     iny
     iny
     lda (ptr1), y           ; load tile
@@ -789,6 +807,7 @@ logic:
     dey
     cmp #32
     bne @react_collision_up
+
     jmp @check_collision_down
 
 @react_collision_up:
@@ -847,10 +866,15 @@ logic:
 
     lda tmp5                ; 0 if no overlap on x
     beq @check_collision_done
+
+    lda #COLOR_VIOLET
+    sta VIC_BORDER
+
     iny
     lda (ptr1), y           ; load tile
     cmp #32
     bne @react_collision_down
+
     jmp @check_collision_done
 
 @react_collision_down:
@@ -888,13 +912,10 @@ logic:
 
 @check_collision_done:
 
-jmp @controls
-
-@no_x_overlap:
-    lda #COLOR_BROWN
-    sta VIC_BORDER
-
 @controls:
+
+    lda tmp5
+
     lda #0
     sta hero_moving_dir
     sta objects_state + 4     ; dx low
