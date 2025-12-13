@@ -443,7 +443,7 @@ update:
     lsr vblank_done
 
 update_no_vblank:
-    ; set border color to illustrate duration of render
+    ; set border color to illustrate duration of update
     lda #BORDER_LOOP
     sta VIC_BORDER
 
@@ -469,7 +469,6 @@ update_no_vblank:
     adc objects_state + 7   ; dyhi
     sta objects_state + 3
 
-
     ; subtract camera position from object x coordinate
 
     lda objects_state + 0   ; xlo
@@ -484,13 +483,13 @@ update_no_vblank:
     asl
     asl
     ora tmp1
-    sta tmp1                ; now lower bits of world position in pixels
+    sta tmp1                ; now low bits of world x in pixels
     lda objects_state + 1   ; xhi
     lsr
     lsr
     lsr
     lsr
-    sta tmp2                ; now higher bit of world coordinate in pixels 
+    sta tmp2                ; now high bits of world x in pixels 
  
     ; subtract camera position for screen coordinates in pixels
     sec
@@ -501,8 +500,8 @@ update_no_vblank:
     sbc camera_x_hi
     sta tmp2
 
-    ; update sprites state from objects state considering the 4 bits of
-    ; sub-pixel positions
+    ; update sprite x position
+
     lda tmp1                    ; x low
     sta sprites_state + 0       ; update x low
     ; check if 9'th bit of sprite x needs to be set
@@ -519,8 +518,21 @@ update_no_vblank:
     sta sprites_msb_x
 @msb_done:
 
-    lda objects_state + 2       ; y low
-    sta sprites_state + 1       ; update y low
+    ; update sprite y position
+
+    lda objects_state + 2       ; y low bits
+    lsr
+    lsr
+    lsr
+    lsr
+    sta tmp1                    ; now low bits in screen coordinates
+    lda objects_state + 3       ; y high bits
+    asl
+    asl
+    asl
+    asl
+    ora tmp1
+    sta sprites_state + 1       ; sprite screen y
 
     ; update sprite hardware
 
@@ -640,8 +652,8 @@ sprites_double_height:
 ;-------------------------------------------------------------------------------
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;           xlo,       xhi, ylo, yhi, dxlo, dxhi, dylo, dyhi, sprite
-    .byte %11110000, %00000001, 226,   0,    0,    0,    0,    0, sprites_data_1>>6
+    ;           xlo,       xhi,       ylo,       yhi, dxlo, dxhi, dylo, dyhi, sprite
+    .byte %11110000, %00000001, %00100000, %00001110,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
