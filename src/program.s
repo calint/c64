@@ -646,7 +646,9 @@ logic:
     sta hero_tile_y
 
     lda tmp5                ; is 0 if no overlap x wise
-    beq @no_x_overlap
+    bne :+
+    jmp @no_x_overlap
+    :
 
     ; make pointer to tile map row of hero y
     lda #<tile_map          ; low byte (always 0)
@@ -663,9 +665,17 @@ logic:
 
     lda (ptr1), y           ; load tile at x, y
     cmp #32                 ; compare with empty tile
-    beq @check_collision_right
-    ; collision
+    bne @react_collision_left
 
+    inc ptr1 + 1            ; increase y to next tile in column
+    lda (ptr1), y           ; load tile at x, y
+    dec ptr1 + 1            ; restore y to top tile
+    cmp #32                 ; compare with empty tile
+    bne @react_collision_left
+
+    jmp @check_collision_right
+
+@react_collision_left:
     lda #COLOR_GREEN
     sta VIC_BORDER
 
@@ -686,17 +696,29 @@ logic:
     lda #MOVE_DIR_RIGHT
     sta hero_moving_dir
 
+    jmp @check_collision_done
+
 @check_collision_right:
     lda hero_moving_dir
     and #MOVE_DIR_RIGHT
     beq @check_collision_done
 
+    ; increase y to right overlapping x
     iny
     iny
-    lda(ptr1), y
-    cmp #32
-    beq @check_collision_done
+    lda (ptr1), y           ; load tile
+    cmp #32                 ; empty?
+    bne @react_collision_right
 
+    inc ptr1 + 1            ; increase row to lower tile
+    lda (ptr1), y
+    dec ptr1 + 1            ; restore to top row
+    cmp #32                 ; empty?
+    bne @react_collision_right
+
+    jmp @check_collision_done
+
+@react_collision_right:
     ; collision
     lda #COLOR_GREEN
     sta VIC_BORDER
