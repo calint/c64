@@ -92,6 +92,7 @@ COLOR_GREY_3    = 15
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04X", zero_page)
+; system variables
 camera_x_lo:     .res 1     ; low byte of camera x
 camera_x_hi:     .res 1     ; high byte of camera x
 tile_map_x:      .res 1     ; tile map x offset in characters
@@ -100,6 +101,9 @@ screen_active:   .res 1     ; active screen (0 or 1)
 vblank_done:     .res 1     ; 1 when raster irq triggers
 tmp1:            .res 1     ; temporary
 tmp2:            .res 1     ; temporary
+; application variables
+hero_tile_x:     .res 1
+hero_tile_y:     .res 1
 tmp3:            .res 1     ; temporary
 tmp4:            .res 1     ; temporary
 tmp5:            .res 1     ; temporary
@@ -584,11 +588,11 @@ logic:
 
     ; map to tile x
     lda tmp1
+    sta tmp5                ; used to determine if there is no tile x overlap
     lsr                     ; shift 4 away the fraction
     lsr
     lsr
     lsr
-    sta tmp5                ; used later to check if sprite is overlapping tiles
     lsr                     ; shift 3 to tile map x
     lsr
     lsr
@@ -596,20 +600,12 @@ logic:
     lda tmp2
     asl                     ; shift 8 - (4 + 3) bits to `or`
     ora tmp1
-    ; acc now contains x offset in tile map
-    sta tmp1
-    tay
+    sta hero_tile_x
+    tay                     ; copy to y register for later use
 
     lda tmp5                ; contains pixel value
-    and #%111               ; check if overlaps tiles
-    beq @1                  ; even of 8 pixels, no overlap
-    lda #1                  ; overlap
-    sta tmp5                ; store for later
-    jmp @2
-@1:
-    lda #0
-    sta tmp5
-@2:
+    and #%1111111           ; check if overlaps tiles
+    sta tmp5                ; if zero no overlap
 
     ; convert hero y to tile map
 
@@ -636,16 +632,16 @@ logic:
     asl                     ; shift 8 - (4 + 3) to `or`
     ora tmp3
     ; acc now contains the tile map y
-    sta tmp4
+    sta hero_tile_y
 
-    lda tmp5                ; 1 if sprite overlaps tiles x wise
+    lda tmp5                ; is 0 if no overlap x wise
     beq @no_x_overlap
 
     lda #<tile_map          ; low byte (always 0)
     sta ptr1
     lda #>tile_map          ; high byte
     clc
-    adc tmp4                ; add tile map y to row pointer
+    adc hero_tile_y         ; add tile map y to row pointer
     sta ptr1 + 1
 
     lda (ptr1), y           ; load tile at x, y
