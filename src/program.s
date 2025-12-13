@@ -635,13 +635,13 @@ sprites_state:
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,              data, color
     .byte   0,   0, sprites_data_0>>6, 1
-    .byte  90, 100, sprites_data_1>>6, 2
-    .byte 114, 100, sprites_data_2>>6, 3
-    .byte 138, 100, sprites_data_3>>6, 4
-    .byte 162, 100, sprites_data_4>>6, 5
-    .byte 186, 100, sprites_data_5>>6, 6
-    .byte 234, 100, sprites_data_6>>6, 7
-    .byte   2, 100, sprites_data_7>>6, 8
+    .byte  90,  50, sprites_data_1>>6, 2
+    .byte 114,  50, sprites_data_2>>6, 3
+    .byte 138,  50, sprites_data_3>>6, 4
+    .byte 162,  50, sprites_data_4>>6, 5
+    .byte 186,  50, sprites_data_5>>6, 6
+    .byte 234,  50, sprites_data_6>>6, 7
+    .byte   2,  50, sprites_data_7>>6, 8
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %10000000
 sprites_enable:
@@ -656,7 +656,11 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;           xlo,       xhi,       ylo,       yhi, dxlo, dxhi, dylo, dyhi, sprite
     ;.byte %11110000, %00000001, %00100000, %00001110,    1,    0,  $ff,  $ff, sprites_data_1>>6
+    ; bottom left standing on a row of tiles (31, 226) 
     .byte %11110000, %00000001, %00100000, %00001110,    1,    0,    0,    0, sprites_data_1>>6
+
+    ; top left (31, 50)
+    .byte %11110000, %00000001, %00100000, %00000011,    0,    0,    0,    0, sprites_data_1>>6
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
