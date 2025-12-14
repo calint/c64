@@ -396,10 +396,11 @@ render_tile_map:
     sta VIC_MEM_CTRL        ; write to register
 
 ;-------------------------------------------------------------------------------
+;
+; user application code
+;
+;-------------------------------------------------------------------------------
 update:
-    ;
-    ; user application code
-    ;
 
     ; placeholder for game loop
     ; total: 15,423 cycles
@@ -558,6 +559,10 @@ update:
     bne :-
 
 ;-------------------------------------------------------------------------------
+;
+; timing critical code refreshing objects and sprites positions during vblank
+;
+;-------------------------------------------------------------------------------
 refresh:
     ; set border color to illustrate duration of update
     lda #BORDER_LOOP
@@ -683,7 +688,7 @@ refresh:
     sta VIC_SPRITES_8X
 
     jmp render              ; jump to top of loop 
-    ; fallthrough
+
 ;-------------------------------------------------------------------------------
 sprites_state:
 .out .sprintf("sprites_state: $%04X", sprites_state)
