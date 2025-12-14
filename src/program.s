@@ -331,9 +331,6 @@ render:
     beq :+                  ; if 0, no adjustment needed
     clc                     ; clear unknown carry flag
     adc #1                  ; add 1 to match desired table values 
-:   cmp tile_map_x          ; compare with current tile_map_x
-    bne :+                  ; same as last frame, skip redraw
-;    jmp update
 :   sta tile_map_x          ; update tile_map_x
 
     ; fallthrough
@@ -398,24 +395,170 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
-    ; jump to `update` but skip wait for vblank because render did that prior to 
-    ; swapping screens
-    jmp update_no_vblank
-
 ;-------------------------------------------------------------------------------
 update:
     ;
-    ; updates state in critical vblank section to avoid sprite flickering
+    ; user application code
     ;
-    
-    lda #BORDER_COLOR
+
+    ; placeholder for game loop
+    ; total: 15,423 cycles
+    ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
+    ; ntsc: ~15.08 ms
+    ; pal: ~15.65 ms
+
+    ; give visual for number of scan lines `update` uses
+    lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    lda #RASTER_BORDER
-:   cmp VIC_RASTER_REG
+    lda hero_jumping
+    bne @gravity_apply
+
+    ; check if dy is zero and skip gravity if so
+    lda objects_state + 6   ; ylo
+    bne @gravity_apply
+    lda objects_state + 7   ; yhi
+    beq @gravity_skip
+
+@gravity_apply:
+    clc
+    lda objects_state + 6   ; dylo
+    adc #4
+    sta objects_state + 6
+    lda objects_state + 7   ; dyhi
+    adc #0
+    sta objects_state + 7
+
+@gravity_skip:
+    ; check if sprite 0 has collided with background
+    lda VIC_SPR_BG_COL
+    and #%00000001
+    beq @controls
+    sta VIC_SPR_BG_COL     ; acknowledge and enable further detection
+
+    ; sprite has collided with background, restore state to previous x and y and
+    ; set dx, dy to 0
+
+    lda #COLOR_WHITE
+    sta VIC_BORDER
+
+    lda objects_state + 9   ; xlo prv
+    sta objects_state + 0   ; xlo
+
+    lda objects_state + 10  ; xhi prv
+    sta objects_state + 1   ; xhi
+
+    lda objects_state + 11  ; ylo prv
+    sta objects_state + 2   ; ylo
+
+    lda objects_state + 12  ; yhi prv
+    sta objects_state + 3   ; yhi
+
+    ; half the dx, dy
+    lda objects_state + 5   ; dy high
+    cmp #$80
+    ror objects_state + 5   ; dy high
+    ror objects_state + 4   ; dx low
+    lda objects_state + 7   ; dy high
+    cmp #$80
+    ror objects_state + 7   ; dy high
+    ror objects_state + 6   ; dy low
+
+    lda #0
+    sta hero_jumping
+
+@controls:
+    lda #0
+    sta objects_state + 4     ; dx low
+    sta objects_state + 5     ; dy high
+    ; sta objects_state + 6     ; dy low
+    ; sta objects_state + 7     ; dy high
+
+    ; joystick
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_LEFT
+    bne @right
+
+    lda #$ff
+    sta objects_state + 4     ; dx low
+    sta objects_state + 5     ; dx high
+
+    ; ; add 1 to camera x in pixels
+    ; sec                     ; set carry for subtraction
+    ; lda camera_x_lo         ; load low byte
+    ; sbc #1                  ; subtract value (and borrow if needed)
+    ; sta camera_x_lo         ; store result low byte
+    ; lda camera_x_hi         ; load high byte
+    ; sbc #0                  ; subtract borrow only (if carry was clear)
+    ; sta camera_x_hi         ; store result high byte
+
+@right:
+    lda VIC_DATA_PORT_A 
+    and #JOYSTICK_RIGHT
+    ; bne @up
+    bne @fire
+
+    lda #1
+    sta objects_state + 4     ; dx low
+    lda #0
+    sta objects_state + 5     ; dx high
+
+    ; ; subtract 1 from camera x in pixels
+    ; clc                     ; clear carry for addition
+    ; lda camera_x_lo         ; load low byte
+    ; adc #1                  ; add value
+    ; sta camera_x_lo         ; store result low byte
+    ; lda camera_x_hi         ; load high byte
+    ; adc #0                  ; add carry only (if overflow from low byte)
+    ; sta camera_x_hi         ; store result high byte
+
+; @up:
+;     lda VIC_DATA_PORT_A 
+;     and #JOYSTICK_UP
+;     bne @down
+;
+;     lda #$ff
+;     sta objects_state + 6     ; dy low
+;     sta objects_state + 7     ; dy high
+;
+; @down:
+;     lda VIC_DATA_PORT_A 
+;     and #JOYSTICK_DOWN
+;     bne @fire
+;
+;     lda #1
+;     sta objects_state + 6     ; dy low
+;     lda #0
+;     sta objects_state + 7     ; dy high
+
+@fire:
+    lda hero_jumping
+    bne @done
+
+    lda VIC_DATA_PORT_A
+    and #JOYSTICK_FIRE
+    bne @done
+
+    lda #$e0
+    sta objects_state + 6     ; dy low
+    lda #$ff
+    sta objects_state + 7     ; dy high
+
+    lda #1
+    sta hero_jumping
+
+@done:
+
+    ; dummy work
+    ldy #4
+    ldx #0
+ :  dex
+    bne :-
+    dey
     bne :-
 
-update_no_vblank:
+;-------------------------------------------------------------------------------
+refresh:
     ; set border color to illustrate duration of update
     lda #BORDER_LOOP
     sta VIC_BORDER
@@ -539,164 +682,8 @@ update_no_vblank:
     lda sprites_msb_x
     sta VIC_SPRITES_8X
 
-    ; fallthrough
-;-------------------------------------------------------------------------------
-logic:
-    ;
-    ; user application code
-    ;
-
-    ; placeholder for game loop
-    ; total: 15,423 cycles
-    ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
-    ; ntsc: ~15.08 ms
-    ; pal: ~15.65 ms
-
-    ; give visual for number of scan lines `update` uses
-    lda #BORDER_UPDATE
-    sta VIC_BORDER
-
-    lda hero_jumping
-    bne @gravity_apply
-
-    ; check if dy is zero and skip gravity if so
-    lda objects_state + 6   ; ylo
-    bne @gravity_apply
-    lda objects_state + 7   ; yhi
-    beq @gravity_skip
-
-@gravity_apply:
-    clc
-    lda objects_state + 6   ; dylo
-    adc #4
-    sta objects_state + 6
-    lda objects_state + 7   ; dyhi
-    adc #0
-    sta objects_state + 7
-
-@gravity_skip:
-    ; check if sprite 0 has collided with background
-    lda VIC_SPR_BG_COL
-    and #%00000001
-    beq @controls
-    sta VIC_SPR_BG_COL     ; acknowledge and enable further detection
-
-    ; sprite has collided with background, restore state to previous x and y and
-    ; set dx, dy to 0
-
-    lda #COLOR_WHITE
-    sta VIC_BORDER
-
-    lda objects_state + 9   ; xlo prv
-    sta objects_state + 0   ; xlo
-
-    lda objects_state + 10  ; xhi prv
-    sta objects_state + 1   ; xhi
-
-    lda objects_state + 11  ; ylo prv
-    sta objects_state + 2   ; ylo
-
-    lda objects_state + 12  ; yhi prv
-    sta objects_state + 3   ; yhi
-
-    lda #0
-    sta objects_state + 4     ; dx low
-    sta objects_state + 5     ; dy high
-    sta objects_state + 6     ; dy low
-    sta objects_state + 7     ; dy high
-
-@controls:
-    lda #0
-    sta objects_state + 4     ; dx low
-    sta objects_state + 5     ; dy high
-    ; sta objects_state + 6     ; dy low
-    ; sta objects_state + 7     ; dy high
-
-    ; joystick
-    lda VIC_DATA_PORT_A 
-    and #JOYSTICK_LEFT
-    bne @right
-
-    lda #$ff
-    sta objects_state + 4     ; dx low
-    sta objects_state + 5     ; dx high
-
-    ; ; add 1 to camera x in pixels
-    ; sec                     ; set carry for subtraction
-    ; lda camera_x_lo         ; load low byte
-    ; sbc #1                  ; subtract value (and borrow if needed)
-    ; sta camera_x_lo         ; store result low byte
-    ; lda camera_x_hi         ; load high byte
-    ; sbc #0                  ; subtract borrow only (if carry was clear)
-    ; sta camera_x_hi         ; store result high byte
-
-@right:
-    lda VIC_DATA_PORT_A 
-    and #JOYSTICK_RIGHT
-    ; bne @up
-    bne @fire
-
-    lda #1
-    sta objects_state + 4     ; dx low
-    lda #0
-    sta objects_state + 5     ; dx high
-
-    ; ; subtract 1 from camera x in pixels
-    ; clc                     ; clear carry for addition
-    ; lda camera_x_lo         ; load low byte
-    ; adc #1                  ; add value
-    ; sta camera_x_lo         ; store result low byte
-    ; lda camera_x_hi         ; load high byte
-    ; adc #0                  ; add carry only (if overflow from low byte)
-    ; sta camera_x_hi         ; store result high byte
-
-; @up:
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_UP
-;     bne @down
-;
-;     lda #$ff
-;     sta objects_state + 6     ; dy low
-;     sta objects_state + 7     ; dy high
-;
-; @down:
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_DOWN
-;     bne @fire
-;
-;     lda #1
-;     sta objects_state + 6     ; dy low
-;     lda #0
-;     sta objects_state + 7     ; dy high
-
-@fire:
-    lda hero_jumping
-    bne @done
-
-    lda VIC_DATA_PORT_A
-    and #JOYSTICK_FIRE
-    bne @done
-
-    lda #$e0
-    sta objects_state + 6     ; dy low
-    lda #$ff
-    sta objects_state + 7     ; dy high
-
-    lda #1
-    sta hero_jumping
-
-@done:
-
-    ; dummy work
-    ldy #4
-    ldx #0
- :  dex
-    bne :-
-    dey
-    bne :-
- 
     jmp render              ; jump to top of loop 
-
+    ; fallthrough
 ;-------------------------------------------------------------------------------
 sprites_state:
 .out .sprintf("sprites_state: $%04X", sprites_state)
