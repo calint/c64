@@ -99,23 +99,24 @@ MOVE_DIR_LEFT   = 8
 zero_page:
 .out .sprintf("    zero_page: $%04X", zero_page)
 ; system variables
-camera_x_lo:     .res 1     ; low byte of camera x
-camera_x_hi:     .res 1     ; high byte of camera x
-tile_map_x:      .res 1     ; tile map x offset in characters
-screen_offset:   .res 1     ; number of pixels (0-7) screen is shifted right
-screen_active:   .res 1     ; active screen (0 or 1)
-vblank_done:     .res 1     ; 1 when raster irq triggers
-tmp1:            .res 1     ; temporary
-tmp2:            .res 1     ; temporary
+camera_x_lo:         .res 1  ; low byte of camera x
+camera_x_hi:         .res 1  ; high byte of camera x
+tile_map_x:          .res 1  ; tile map x offset in characters
+screen_offset:       .res 1  ; number of pixels (0-7) screen is shifted right
+screen_active:       .res 1  ; active screen (0 or 1)
+vblank_done:         .res 1  ; 1 when raster irq triggers
+tmp1:                .res 1  ; temporary
+tmp2:                .res 1  ; temporary
 ; application variables
-tmp3:            .res 1     ; temporary
-tmp4:            .res 1     ; temporary
-tmp5:            .res 1     ; temporary
-tmp6:            .res 1     ; temporary
-ptr1:            .res 2     ; temporary pointer
-hero_tile_x:     .res 1
-hero_tile_y:     .res 1
-hero_moving_dir: .res 1
+tmp3:                .res 1  ; temporary
+tmp4:                .res 1  ; temporary
+tmp5:                .res 1  ; temporary
+tmp6:                .res 1  ; temporary
+ptr1:                .res 2  ; temporary pointer
+hero_tile_x:         .res 1
+hero_tile_y:         .res 1
+hero_moving_dir:     .res 1
+hero_moving_dir_nxt: .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -619,7 +620,7 @@ logic:
     tay                     ; copy to y register for later use
 
     lda tmp5                ; contains pixel value of x in screen space
-    and #%111               ; check if it overlaps tiles
+    and #%111               ; make 0 if it does not overlap on x
     sta tmp5                ; if zero no overlap
 
     ; convert hero y to tile map
@@ -651,7 +652,7 @@ logic:
     sta hero_tile_y
 
     lda tmp6                ; contains pixel value
-    and #%111               ; check if it overlaps tiles
+    and #%111               ; make 0 if it does not overlap tiles on y
     sta tmp6                ; if zero no overlap
 
     ; make pointer to tile map row of hero y
@@ -665,6 +666,9 @@ logic:
     ; lda tmp5                ; 0 if there is no x overlap
     ; bne @check_collision_left
     ; jmp @check_collision_up ; don't check collisions on x axis
+
+    lda hero_moving_dir
+    sta hero_moving_dir_nxt
 
 @check_collision_left:
     lda hero_moving_dir
@@ -684,9 +688,6 @@ logic:
     lda tmp6                ; 0 if no overlap on y
     beq @check_collision_right
 
-    lda #COLOR_VIOLET
-    sta VIC_BORDER
-
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
     lda (ptr1), y           ; load tile
@@ -698,9 +699,6 @@ logic:
     jmp @check_collision_right
 
 @react_collision_left:
-    lda #COLOR_GREEN
-    sta VIC_BORDER
-
     lda objects_state + 0   ; x low byte
     and #%10000000          ; set x at the edge to the tile
     clc                     ;
@@ -716,7 +714,7 @@ logic:
     sta objects_state + 7   ; dy high byte
 
     lda #MOVE_DIR_NONE
-    sta hero_moving_dir
+    sta hero_moving_dir_nxt
 
 @check_collision_right:
     lda hero_moving_dir
@@ -745,9 +743,6 @@ logic:
     lda tmp6                ; 0 if no overlap on y
     beq @check_collision_up
 
-    lda #COLOR_VIOLET
-    sta VIC_BORDER
-
     inc ptr1 + 1            ; move 2 rows down
     inc ptr1 + 1
     iny
@@ -763,10 +758,6 @@ logic:
     jmp @check_collision_up
 
 @react_collision_right:
-    ; collision
-    ; lda #COLOR_GREEN
-    ; sta VIC_BORDER
-
     lda objects_state + 0   ; x low byte
  
     and #%10000000
@@ -778,7 +769,7 @@ logic:
     sta objects_state + 7   ; dy high byte
 
     lda #MOVE_DIR_NONE
-    sta hero_moving_dir
+    sta hero_moving_dir_nxt
 
 @check_collision_up:
     lda hero_moving_dir
@@ -798,9 +789,6 @@ logic:
     lda tmp5                ; 0 if no overlap on x
     beq @check_collision_down
 
-    ; lda #COLOR_VIOLET
-    ; sta VIC_BORDER
-
     iny
     iny
     lda (ptr1), y           ; load tile
@@ -812,10 +800,7 @@ logic:
     jmp @check_collision_down
 
 @react_collision_up:
-    ; collision
-    lda #COLOR_GREEN
-    sta VIC_BORDER
-
+    ; subtract top border 50
     sec
     lda objects_state + 2   ; y low byte
     sbc #((50 * 16) & $ff)
@@ -847,7 +832,7 @@ logic:
     sta objects_state + 7   ; dy high byte
 
     lda #MOVE_DIR_NONE
-    sta hero_moving_dir
+    sta hero_moving_dir_nxt
 
 @check_collision_down:
     lda hero_moving_dir
@@ -869,9 +854,6 @@ logic:
     lda tmp5                ; 0 if no overlap on x
     beq @check_collision_done
 
-    lda #COLOR_VIOLET
-    sta VIC_BORDER
-
     iny
     lda (ptr1), y           ; load tile
     cmp #32
@@ -880,10 +862,7 @@ logic:
     jmp @check_collision_done
 
 @react_collision_down:
-    ; collision
-    lda #COLOR_GREEN
-    sta VIC_BORDER
-
+    ; subtract top border 50
     sec
     lda objects_state + 2   ; y low byte
     sbc #((50 * 16) & $ff)
@@ -896,6 +875,7 @@ logic:
     and #%10000000          ; remove pixel fraction and tile fraction
     sta tmp3                ; set y at start of tile and no pixel fraction
  
+    ; add 50
     clc
     lda tmp3
     adc #((50 * 16) & $ff)
@@ -910,9 +890,12 @@ logic:
     sta objects_state + 7   ; dy high byte
 
     lda #MOVE_DIR_NONE
-    sta hero_moving_dir
+    sta hero_moving_dir_nxt
 
 @check_collision_done:
+
+    lda hero_moving_dir_nxt
+    sta hero_moving_dir
 
 @controls:
     lda #0
