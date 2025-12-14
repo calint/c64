@@ -401,13 +401,6 @@ render_tile_map:
 ;
 ;-------------------------------------------------------------------------------
 update:
-
-    ; placeholder for game loop
-    ; total: 15,423 cycles
-    ; time: at 1.023 mhz (ntsc) or 0.985 mhz (pal):
-    ; ntsc: ~15.08 ms
-    ; pal: ~15.65 ms
-
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
     sta VIC_BORDER
@@ -419,7 +412,7 @@ update:
     lda objects_state + 6   ; ylo
     bne @gravity_apply
     lda objects_state + 7   ; yhi
-    beq @gravity_skip
+    beq @gravity_done
 
 @gravity_apply:
     clc
@@ -430,7 +423,7 @@ update:
     adc #0
     sta objects_state + 7
 
-@gravity_skip:
+@gravity_done:
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
