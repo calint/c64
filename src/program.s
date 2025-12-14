@@ -61,7 +61,7 @@ SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = COLOR_BLUE
-BORDER_RENDER   = COLOR_BLACK
+BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_YELLOW
 BORDER_LOOP     = COLOR_RED 
 RASTER_BORDER   = 250       ; raster interrupt at bottom border
@@ -253,7 +253,7 @@ program:
     ; setup first render
     ;
 
-    lda #$ff                ; value to not match camera at first render
+    lda #$ff                ; value that does not match camera at first render
     sta tile_map_x
     lda #0
     sta camera_x_lo
@@ -273,7 +273,6 @@ program:
     sta color_ram+$300,x    ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
-
 
     ; fallthrough
 ;-------------------------------------------------------------------------------
