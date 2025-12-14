@@ -352,6 +352,24 @@ update:
     ror objects_state + 7   ; dy high
     ror objects_state + 6   ; dy low
 
+    lda objects_state + 5   ; dx high
+    cmp #$80
+    ror objects_state + 5   ; dx high
+    ror objects_state + 4   ; dx low
+    lda objects_state + 7   ; dy high
+    cmp #$80
+    ror objects_state + 7   ; dy high
+    ror objects_state + 6   ; dy low
+
+    lda objects_state + 5   ; dx high
+    cmp #$80
+    ror objects_state + 5   ; dx high
+    ror objects_state + 4   ; dx low
+    lda objects_state + 7   ; dy high
+    cmp #$80
+    ror objects_state + 7   ; dy high
+    ror objects_state + 6   ; dy low
+
     ; lda #0
     ; sta objects_state + 4
     ; sta objects_state + 5
@@ -373,8 +391,9 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #$ff
+    lda #$fc
     sta objects_state + 4     ; dx low
+    lda #$ff
     sta objects_state + 5     ; dx high
 
     ; ; add 1 to camera x in pixels
@@ -392,7 +411,7 @@ update:
     ; bne @up
     bne @fire
 
-    lda #1
+    lda #4
     sta objects_state + 4     ; dx low
     lda #0
     sta objects_state + 5     ; dx high
@@ -433,7 +452,7 @@ update:
     and #JOYSTICK_FIRE
     bne @controls_done
 
-    lda #$e0
+    lda #$ce
     sta objects_state + 6     ; dy low
     lda #$ff
     sta objects_state + 7     ; dy high
