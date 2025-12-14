@@ -315,7 +315,7 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; lda objects_state + 6   ; dylo
+    ; lda hero + 6   ; dylo
     ; sta VIC_BORDER
  
 ;    inc camera_x_lo
@@ -324,7 +324,6 @@ update:
     lda VIC_SPR_BG_COL
     and #%00000001
     beq @controls
-    sta VIC_SPR_BG_COL     ; acknowledge and enable further detection
 
     ; sprite has collided with background, restore state to previous x and y and
     ; set dx, dy to 0
@@ -332,61 +331,43 @@ update:
     ; lda #COLOR_WHITE
     ; sta VIC_BORDER
 
-    lda objects_state + 9   ; xlo prv
-    sta objects_state + 0   ; xlo
+    lda hero + 9   ; xlo prv
+    sta hero + 0   ; xlo
 
-    lda objects_state + 10  ; xhi prv
-    sta objects_state + 1   ; xhi
+    lda hero + 10  ; xhi prv
+    sta hero + 1   ; xhi
 
-    lda objects_state + 11  ; ylo prv
-    sta objects_state + 2   ; ylo
+    lda hero + 11  ; ylo prv
+    sta hero + 2   ; ylo
 
-    lda objects_state + 12  ; yhi prv
-    sta objects_state + 3   ; yhi
+    lda hero + 12  ; yhi prv
+    sta hero + 3   ; yhi
 
     ; ; half the dx, dy
-    ; lda objects_state + 5   ; dx high
+    ; note: this would be nicer but it does not work for now
+    ; lda hero + 5   ; dx high
     ; cmp #$80
-    ; ror objects_state + 5   ; dx high
-    ; ror objects_state + 4   ; dx low
-    ; lda objects_state + 7   ; dy high
+    ; ror hero + 5   ; dx high
+    ; ror hero + 4   ; dx low
+    ; lda hero + 7   ; dy high
     ; cmp #$80
-    ; ror objects_state + 7   ; dy high
-    ; ror objects_state + 6   ; dy low
-    ;
-    ; lda objects_state + 5   ; dx high
-    ; cmp #$80
-    ; ror objects_state + 5   ; dx high
-    ; ror objects_state + 4   ; dx low
-    ; lda objects_state + 7   ; dy high
-    ; cmp #$80
-    ; ror objects_state + 7   ; dy high
-    ; ror objects_state + 6   ; dy low
-    ;
-    ; lda objects_state + 5   ; dx high
-    ; cmp #$80
-    ; ror objects_state + 5   ; dx high
-    ; ror objects_state + 4   ; dx low
-    ; lda objects_state + 7   ; dy high
-    ; cmp #$80
-    ; ror objects_state + 7   ; dy high
-    ; ror objects_state + 6   ; dy low
+    ; ror hero + 7   ; dy high
+    ; ror hero + 6   ; dy low
 
     lda #0
-    sta objects_state + 4   ; dxlo
-    sta objects_state + 5   ; dxhi
-    sta objects_state + 6   ; dylo
-    sta objects_state + 7   ; dyhi
+    ; note: dxlo and dxhi are set to 0 in @controls
+;    sta hero + 4   ; dxlo
+;    sta hero + 5   ; dxhi
+    sta hero + 6   ; dylo
+    sta hero + 7   ; dyhi
 
     lda #0
     sta hero_jumping
 
 @controls:
     lda #0
-    sta objects_state + 4     ; dx low
-    sta objects_state + 5     ; dy high
-    ; sta objects_state + 6     ; dy low
-    ; sta objects_state + 7     ; dy high
+    sta hero + 4     ; dx low
+    sta hero + 5     ; dy high
 
     ; joystick
     lda VIC_DATA_PORT_A 
@@ -394,18 +375,19 @@ update:
     bne @right
 
     lda #$f8
-    sta objects_state + 4     ; dx low
+    sta hero + 4     ; dx low
     lda #$ff
-    sta objects_state + 5     ; dx high
+    sta hero + 5     ; dx high
 
+    ; every now and then make a small jump when moving
     lda frame_counter
     and #$1f
     bne @right
 
     lda #$ec
-    sta objects_state + 6     ; dy low
+    sta hero + 6     ; dy low
     lda #$ff
-    sta objects_state + 7     ; dy high
+    sta hero + 7     ; dy high
 
 @right:
     lda VIC_DATA_PORT_A 
@@ -414,18 +396,19 @@ update:
     bne @fire
 
     lda #8
-    sta objects_state + 4     ; dx low
+    sta hero + 4     ; dx low
     lda #0
-    sta objects_state + 5     ; dx high
+    sta hero + 5     ; dx high
 
+    ; every now and then make a small jump when moving
     lda frame_counter
     and #$1f
     bne @fire
 
     lda #$ec
-    sta objects_state + 6     ; dy low
+    sta hero + 6     ; dy low
     lda #$ff
-    sta objects_state + 7     ; dy high
+    sta hero + 7     ; dy high
 
 ; @up:
 ;     lda VIC_DATA_PORT_A 
@@ -433,8 +416,8 @@ update:
 ;     bne @down
 ;
 ;     lda #$ff
-;     sta objects_state + 6     ; dy low
-;     sta objects_state + 7     ; dy high
+;     sta hero + 6     ; dy low
+;     sta hero + 7     ; dy high
 ;
 ; @down:
 ;     lda VIC_DATA_PORT_A 
@@ -442,11 +425,12 @@ update:
 ;     bne @fire
 ;
 ;     lda #1
-;     sta objects_state + 6     ; dy low
+;     sta hero + 6     ; dy low
 ;     lda #0
-;     sta objects_state + 7     ; dy high
+;     sta hero + 7     ; dy high
 
 @fire:
+    ; is hero already jumping?
     lda hero_jumping
     bne @controls_done
 
@@ -454,10 +438,11 @@ update:
     and #JOYSTICK_FIRE
     bne @controls_done
 
+    ; set negative dy to jump up
     lda #$ce
-    sta objects_state + 6     ; dy low
+    sta hero + 6     ; dy low
     lda #$ff
-    sta objects_state + 7     ; dy high
+    sta hero + 7     ; dy high
 
     lda #1
     sta hero_jumping
@@ -474,19 +459,19 @@ update:
     beq @gravity_apply
 
     ; check if dy is zero and skip gravity if so
-    lda objects_state + 6   ; ylo
+    lda hero + 6   ; ylo
     bne @gravity_apply
-    lda objects_state + 7   ; yhi
+    lda hero + 7   ; yhi
     beq @gravity_done
 
 @gravity_apply:
     clc
-    lda objects_state + 6   ; dylo
+    lda hero + 6   ; dylo
     adc #4
-    sta objects_state + 6
-    lda objects_state + 7   ; dyhi
+    sta hero + 6
+    lda hero + 7   ; dyhi
     adc #0
-    sta objects_state + 7
+    sta hero + 7
 
 @gravity_done:
     ; dummy work
@@ -537,13 +522,13 @@ refresh:
 
     ; center camera on hero
     ; todo: move this to "user" code
-    lda objects_state + 0     ; xlo
+    lda hero + 0     ; xlo
     lsr
     lsr
     lsr
     lsr
     sta tmp1
-    lda objects_state + 1     ; xhi
+    lda hero + 1     ; xhi
     tax
     asl
     asl
@@ -776,11 +761,10 @@ objects_state:
     ; top left (31, 50) on visible are in 38 column mode
     ;.byte  31<<4&$ff,  31>>4,  50<<4&$ff, 50>>4,     0,    0,    1,    0, sprites_data_1>>6,       0,     0,      0,      0
 
+    ; standing on bottom tile row
     ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6,       0,     0,      0,      0
 
-
-    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6,       0,     0,      0,      0
-
+hero:
     .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
 
 
