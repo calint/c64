@@ -579,6 +579,7 @@ logic:
     lda VIC_SPR_BG_COL
     and #%00000001
     beq @controls
+    sta VIC_SPR_BG_COL     ; acknowledge and enable further detection
 
     ; sprite has collided with background, restore state to previous x and y and
     ; set dx, dy to 0
