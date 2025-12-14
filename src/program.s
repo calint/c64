@@ -455,9 +455,9 @@ update:
     sta objects_state + 3   ; yhi
 
     ; half the dx, dy
-    lda objects_state + 5   ; dy high
+    lda objects_state + 5   ; dx high
     cmp #$80
-    ror objects_state + 5   ; dy high
+    ror objects_state + 5   ; dx high
     ror objects_state + 4   ; dx low
     lda objects_state + 7   ; dy high
     cmp #$80
