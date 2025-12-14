@@ -62,8 +62,8 @@ SCREEN_HEIGHT   = 25        ; screen height in characters
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
-BORDER_UPDATE   = COLOR_YELLOW
-BORDER_LOOP     = COLOR_RED 
+BORDER_UPDATE   = COLOR_RED
+BORDER_LOOP     = COLOR_YELLOW 
 RASTER_BORDER   = 250       ; raster interrupt at bottom border
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
@@ -277,110 +277,13 @@ program:
     bne :-                  ; loop until x wraps to 0
 
     ; fallthrough
+
 ;-------------------------------------------------------------------------------
-render:
-    ;
-    ; either change the screen shift right or fallthrough to render new tile map
-    ; position
-    ;
-
-    ; note:
-    ; | camera_x | offset | tile_map_x |
-    ; | 0        | 0      | 0          |
-    ; | 1        | 7      | 1          |
-    ; | 2        | 6      | 1          |
-    ; | 3        | 5      | 1          |
-    ; | 4        | 4      | 1          |
-    ; | 5        | 3      | 1          |
-    ; | 6        | 2      | 1          |
-    ; | 7        | 1      | 1          |
-    ; | 8        | 0      | 1          |
-    ; | 9        | 7      | 2          |
-    ; | 10       | 6      | 2          |
-    ; etc
-
-    ; set border color to illustrate duration of render
-    lda #BORDER_RENDER
-    sta VIC_BORDER
-
-    ; convert camera 16 bit pixel position to tile map x and screen right shift
-    lda camera_x_lo         ; camera position low byte
-    tax                     ; store in x for later use 
-    and #%00000111          ; get lower 3 bits
-    eor #%00000111          ; invert
-    clc                     ; clear unknown carry flag state
-    adc #1                  ; add 1
-    and #%00000111          ; mask to 3 bits
-    sta screen_offset       ; store screen shift
-    tay                     ; store in y for later use
-    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
-    ; with adjustment if screen_offset != 0
-    txa                     ; restore camera_x_lo
-    lsr                     ; shift right by 3 bits
-    lsr
-    lsr
-    sta tmp1                ; tmp1 = camera_x_lo >> 3
-    lda camera_x_hi         ; get high byte
-    asl                     ; shift left by 5 bits 
-    asl
-    asl
-    asl
-    asl
-    ora tmp1                ; combine: (hi << 5) | (lo >> 3)
-    ldx screen_offset       ; check if screen_offset is 0
-    beq :+                  ; if 0, no adjustment needed
-    clc                     ; clear unknown carry flag
-    adc #1                  ; add 1 to match desired table values 
-:   sta tile_map_x          ; update tile_map_x
-
-    ; fallthrough
-;-------------------------------------------------------------------------------
-render_tile_map:
-    ;
-    ; renders tile map to offscreen, waits for vblank then switches screens and
-    ; jumps to `update` past the vblank wait
-    ; 
-
-    ; initiate tile map position and screen column
-    ldx tile_map_x
-    ldy #0
-
-    ; jump to unrolled loop for current screen
-    lda screen_active
-    beq @screen_0
-    jmp @screen_1
-
-@screen_0:
-    ; generated unrolled loop with cheaper absolute indexing
-    .include "render_to_screen_0.s"
-    inx
-    iny
-    cpy #SCREEN_WIDTH
-    beq @jmp_to_done
-    jmp @screen_0
-@jmp_to_done:
-    jmp @done 
-
-@screen_1:
-    ; generated unrolled loop with cheaper absolute indexing
-    .include "render_to_screen_1.s"
-    inx
-    iny
-    cpy #SCREEN_WIDTH
-    beq @done
-    jmp @screen_1
-
-@done:
-    ; restore border color
-    lda #BORDER_COLOR
-    sta VIC_BORDER
-
+main_loop:
+    ; wait for vblank at lower border
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
     bne :-
-
-    lda #BORDER_RENDER
-    sta VIC_BORDER
 
     ; swap screens
     lda screen_active       ; load active screen
@@ -395,9 +298,17 @@ render_tile_map:
 @swap:
     sta VIC_MEM_CTRL        ; write to register
 
+    ; set screen right offset in vblank, takes effect next frame
+    lda screen_offset
+    ;ora #%1000             ; enable 40 columns
+    sta VIC_CTRL_2
+
 ;-------------------------------------------------------------------------------
 ;
 ; user application code
+;
+; note: this and `refresh` must fit in the vblank area and `render` must finish
+;       before next vblank
 ;
 ;-------------------------------------------------------------------------------
 update:
@@ -405,25 +316,11 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    lda hero_jumping
-    bne @gravity_apply
+    lda objects_state + 6
+    sta VIC_BORDER
 
-    ; check if dy is zero and skip gravity if so
-    lda objects_state + 6   ; ylo
-    bne @gravity_apply
-    lda objects_state + 7   ; yhi
-    beq @gravity_done
+    inc camera_x_lo
 
-@gravity_apply:
-    clc
-    lda objects_state + 6   ; dylo
-    adc #4
-    sta objects_state + 6
-    lda objects_state + 7   ; dyhi
-    adc #0
-    sta objects_state + 7
-
-@gravity_done:
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
@@ -433,8 +330,8 @@ update:
     ; sprite has collided with background, restore state to previous x and y and
     ; set dx, dy to 0
 
-    lda #COLOR_WHITE
-    sta VIC_BORDER
+    ; lda #COLOR_WHITE
+    ; sta VIC_BORDER
 
     lda objects_state + 9   ; xlo prv
     sta objects_state + 0   ; xlo
@@ -457,6 +354,12 @@ update:
     cmp #$80
     ror objects_state + 7   ; dy high
     ror objects_state + 6   ; dy low
+
+    ; lda #0
+    ; sta objects_state + 4
+    ; sta objects_state + 5
+    ; sta objects_state + 6
+    ; sta objects_state + 7
 
     lda #0
     sta hero_jumping
@@ -527,11 +430,11 @@ update:
 
 @fire:
     lda hero_jumping
-    bne @done
+    bne @controls_done
 
     lda VIC_DATA_PORT_A
     and #JOYSTICK_FIRE
-    bne @done
+    bne @controls_done
 
     lda #$e0
     sta objects_state + 6     ; dy low
@@ -541,15 +444,34 @@ update:
     lda #1
     sta hero_jumping
 
-@done:
+@controls_done:
 
+    lda hero_jumping
+    bne @gravity_apply
+
+    ; check if dy is zero and skip gravity if so
+    lda objects_state + 6   ; ylo
+    bne @gravity_apply
+    lda objects_state + 7   ; yhi
+    beq @gravity_done
+
+@gravity_apply:
+    clc
+    lda objects_state + 6   ; dylo
+    adc #4
+    sta objects_state + 6
+    lda objects_state + 7   ; dyhi
+    adc #0
+    sta objects_state + 7
+
+@gravity_done:
     ; dummy work
-    ldy #4
-    ldx #0
- :  dex
-    bne :-
-    dey
-    bne :-
+ ;    ldy #4
+ ;    ldx #0
+ ; :  dex
+ ;    bne :-
+ ;    dey
+ ;    bne :-
 
 ;-------------------------------------------------------------------------------
 ;
@@ -560,11 +482,6 @@ refresh:
     ; set border color to illustrate duration of update
     lda #BORDER_LOOP
     sta VIC_BORDER
-
-    ; set screen right offset
-    lda screen_offset
-    ;ora #%1000             ; enable 40 columns
-    sta VIC_CTRL_2
 
     ; update objects state
 
@@ -680,7 +597,107 @@ refresh:
     lda sprites_msb_x
     sta VIC_SPRITES_8X
 
-    jmp render              ; jump to top of loop 
+    ; fallthrough
+
+;-------------------------------------------------------------------------------
+render:
+    ;
+    ; either change the screen shift right or fallthrough to render new tile map
+    ; position
+    ;
+
+    ; note:
+    ; | camera_x | offset | tile_map_x |
+    ; | 0        | 0      | 0          |
+    ; | 1        | 7      | 1          |
+    ; | 2        | 6      | 1          |
+    ; | 3        | 5      | 1          |
+    ; | 4        | 4      | 1          |
+    ; | 5        | 3      | 1          |
+    ; | 6        | 2      | 1          |
+    ; | 7        | 1      | 1          |
+    ; | 8        | 0      | 1          |
+    ; | 9        | 7      | 2          |
+    ; | 10       | 6      | 2          |
+    ; etc
+
+    ; set border color to illustrate duration of render
+    lda #BORDER_RENDER
+    sta VIC_BORDER
+
+    ; convert camera 16 bit pixel position to tile map x and screen right shift
+    lda camera_x_lo         ; camera position low byte
+    tax                     ; store in x for later use 
+    and #%00000111          ; get lower 3 bits
+    eor #%00000111          ; invert
+    clc                     ; clear unknown carry flag state
+    adc #1                  ; add 1
+    and #%00000111          ; mask to 3 bits
+    sta screen_offset       ; store screen shift
+    tay                     ; store in y for later use
+    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
+    ; with adjustment if screen_offset != 0
+    txa                     ; restore camera_x_lo
+    lsr                     ; shift right by 3 bits
+    lsr
+    lsr
+    sta tmp1                ; tmp1 = camera_x_lo >> 3
+    lda camera_x_hi         ; get high byte
+    asl                     ; shift left by 5 bits 
+    asl
+    asl
+    asl
+    asl
+    ora tmp1                ; combine: (hi << 5) | (lo >> 3)
+    ldx screen_offset       ; check if screen_offset is 0
+    beq :+                  ; if 0, no adjustment needed
+    clc                     ; clear unknown carry flag
+    adc #1                  ; add 1 to match desired table values 
+:   sta tile_map_x          ; update tile_map_x
+
+    ; fallthrough
+;-------------------------------------------------------------------------------
+render_tile_map:
+    ;
+    ; renders tile map to offscreen, waits for vblank then switches screens and
+    ; jumps to `update` past the vblank wait
+    ; 
+
+    ; initiate tile map position and screen column
+    ldx tile_map_x
+    ldy #0
+
+    ; jump to unrolled loop for current screen
+    lda screen_active
+    beq @screen_0
+    jmp @screen_1
+
+@screen_0:
+    ; generated unrolled loop with cheaper absolute indexing
+    .include "render_to_screen_0.s"
+    inx
+    iny
+    cpy #SCREEN_WIDTH
+    beq @jmp_to_done
+    jmp @screen_0
+@jmp_to_done:
+    jmp @done 
+
+@screen_1:
+    ; generated unrolled loop with cheaper absolute indexing
+    .include "render_to_screen_1.s"
+    inx
+    iny
+    cpy #SCREEN_WIDTH
+    beq @done
+    jmp @screen_1
+
+@done:
+    ; restore border color
+    lda #BORDER_COLOR
+    sta VIC_BORDER
+
+    jmp main_loop
 
 ;-------------------------------------------------------------------------------
 sprites_state:
