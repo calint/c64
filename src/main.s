@@ -86,12 +86,11 @@ COLOR_GREY_2    = 12
 COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
-; object moving direction used at collision detection and handling
-MOVE_DIR_NONE   = 0
-MOVE_DIR_UP     = 1
-MOVE_DIR_RIGHT  = 2
-MOVE_DIR_DOWN   = 4
-MOVE_DIR_LEFT   = 8
+; application
+MOVE_DY_LOW     = 8
+MOVE_SKIP_FRM   = %1111 
+MOVE_SKIP_AMNT  = 20
+JUMP_DY_LOW     = 50
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -401,17 +400,23 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #$f8
+    lda #(256-MOVE_DY_LOW)
     sta hero + o::dx_lo
     lda #$ff
     sta hero + o::dx_hi
 
     ; every now and then make a small jump when moving
     lda frame_counter
-    and #$1f
+    and #MOVE_SKIP_FRM
     bne @right
 
-    lda #$ec
+    ; check that dy is 0
+    lda hero + o::dy_lo
+    bne @right
+    lda hero + o::dy_hi
+    bne @right
+
+    lda #(256-MOVE_SKIP_AMNT)
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -422,17 +427,23 @@ update:
     ; bne @up
     bne @fire
 
-    lda #8
+    lda #MOVE_DY_LOW
     sta hero + o::dx_lo
     lda #0
     sta hero + o::dx_hi
 
     ; every now and then make a small jump when moving
     lda frame_counter
-    and #$1f
+    and #MOVE_SKIP_FRM
     bne @fire
 
-    lda #$ec
+    ; check that dy is 0
+    lda hero + o::dy_lo
+    bne @fire
+    lda hero + o::dy_hi
+    bne @fire
+
+    lda #(256-MOVE_SKIP_AMNT)
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -466,7 +477,7 @@ update:
     bne @controls_done
 
     ; set negative dy to jump up
-    lda #$ce
+    lda #(256-JUMP_DY_LOW)
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -520,32 +531,32 @@ refresh:
     ; update objects state
 
     ; save current state to previous
-    lda objects_state + o::x_lo
-    sta objects_state + o::x_prv_lo
-    lda objects_state + o::x_hi
-    sta objects_state + o::x_prv_hi
-    lda objects_state + o::y_lo
-    sta objects_state + o::y_prv_lo
-    lda objects_state + o::y_hi
-    sta objects_state + o::y_prv_hi
+    lda hero + o::x_lo
+    sta hero + o::x_prv_lo
+    lda hero + o::x_hi
+    sta hero + o::x_prv_hi
+    lda hero + o::y_lo
+    sta hero + o::y_prv_lo
+    lda hero + o::y_hi
+    sta hero + o::y_prv_hi
 
     ; add dx to x
     clc
-    lda objects_state + o::x_lo
-    adc objects_state + o::dx_lo
-    sta objects_state + o::x_lo
-    lda objects_state + o::x_hi
-    adc objects_state + o::dx_hi
-    sta objects_state + o::x_hi
+    lda hero + o::x_lo
+    adc hero + o::dx_lo
+    sta hero + o::x_lo
+    lda hero + o::x_hi
+    adc hero + o::dx_hi
+    sta hero + o::x_hi
 
     ; add dy to y
     clc
-    lda objects_state + o::y_lo
-    adc objects_state + o::dy_lo
-    sta objects_state + o::y_lo
-    lda objects_state + o::y_hi
-    adc objects_state + o::dy_hi
-    sta objects_state + o::y_hi
+    lda hero + o::y_lo
+    adc hero + o::dy_lo
+    sta hero + o::y_lo
+    lda hero + o::y_hi
+    adc hero + o::dy_hi
+    sta hero + o::y_hi
 
     ; center camera on hero
     ; todo: move this to "user" code
@@ -580,20 +591,20 @@ refresh:
     ; place object in camera coordinate system
 
     ; put object world x coordinates in tmp1, tmp2 (lo,hi) by removing fraction
-    lda objects_state + o::x_lo
+    lda hero + o::x_lo
     lsr                     ; shift out the sub-pixel coordinate
     lsr
     lsr
     lsr
     sta tmp1
-    lda objects_state + o::x_hi
+    lda hero + o::x_hi
     asl
     asl
     asl
     asl
     ora tmp1
     sta tmp1                ; low bits of world x in pixels
-    lda objects_state + o::x_hi
+    lda hero + o::x_hi
     lsr
     lsr
     lsr
@@ -629,13 +640,13 @@ refresh:
 @msb_done:
 
     ; update sprite y position
-    lda objects_state + o::y_lo
+    lda hero + o::y_lo
     lsr
     lsr
     lsr
     lsr
     sta tmp1                    ; low bits in screen coordinates
-    lda objects_state + o::y_hi
+    lda hero + o::y_hi
     asl
     asl
     asl
