@@ -603,11 +603,11 @@ logic:
 
     ; map to tile x
     lda tmp1
-    sta tmp5                ; used to determine if there is no tile x overlap
     lsr                     ; shift 4 away the fraction
     lsr
     lsr
     lsr
+    sta tmp5                ; used to determine if there is tile overlap on x
     lsr                     ; shift 3 to tile map x
     lsr
     lsr
@@ -618,8 +618,8 @@ logic:
     sta hero_tile_x
     tay                     ; copy to y register for later use
 
-    lda tmp5                ; contains pixel value
-    and #%1111111           ; check if overlaps tiles
+    lda tmp5                ; contains pixel value of x in screen space
+    and #%111               ; check if it overlaps tiles
     sta tmp5                ; if zero no overlap
 
     ; convert hero y to tile map
@@ -627,19 +627,19 @@ logic:
     ; subtract top border 50 and store in tmp3 and tmp4
     sec
     lda objects_state + 2   ; y low byte
-    sbc #((50 * 16) & $ff)
+    sbc #((50 << 4) & $ff)
     sta tmp3
     lda objects_state + 3   ; y high byte
-    sbc #((50 * 16) >> 8)
+    sbc #((50 << 4) >> 8)
     sta tmp4
 
     ; map to tile y
     lda tmp3
-    sta tmp6
     lsr                     ; shift 4 away the fraction
     lsr
     lsr
     lsr
+    sta tmp6                ; used to determine if there is tile overlap on y
     lsr                     ; shift 3 to tile map y
     lsr
     lsr
@@ -651,7 +651,7 @@ logic:
     sta hero_tile_y
 
     lda tmp6                ; contains pixel value
-    and #%1111111           ; check if overlaps tiles
+    and #%111               ; check if it overlaps tiles
     sta tmp6                ; if zero no overlap
 
     ; make pointer to tile map row of hero y
@@ -662,9 +662,9 @@ logic:
     adc hero_tile_y         ; add tile map y to row pointer
     sta ptr1 + 1            ; high byte (tile map row)
 
-    lda tmp5                ; 0 if there is no x overlap
-    bne @check_collision_left
-    jmp @check_collision_up ; don't check collisions on x axis
+    ; lda tmp5                ; 0 if there is no x overlap
+    ; bne @check_collision_left
+    ; jmp @check_collision_up ; don't check collisions on x axis
 
 @check_collision_left:
     lda hero_moving_dir
@@ -745,7 +745,7 @@ logic:
     lda tmp6                ; 0 if no overlap on y
     beq @check_collision_up
 
-    lda #COLOR_LHT_GREEN
+    lda #COLOR_VIOLET
     sta VIC_BORDER
 
     inc ptr1 + 1            ; move 2 rows down
@@ -764,8 +764,9 @@ logic:
 
 @react_collision_right:
     ; collision
-    lda #COLOR_GREEN
-    sta VIC_BORDER
+    ; lda #COLOR_GREEN
+    ; sta VIC_BORDER
+
     lda objects_state + 0   ; x low byte
  
     and #%10000000
@@ -797,8 +798,8 @@ logic:
     lda tmp5                ; 0 if no overlap on x
     beq @check_collision_down
 
-    lda #COLOR_VIOLET
-    sta VIC_BORDER
+    ; lda #COLOR_VIOLET
+    ; sta VIC_BORDER
 
     iny
     iny
@@ -856,6 +857,7 @@ logic:
     inc ptr1 + 1
     inc ptr1 + 1
     lda (ptr1), y           ; load tile
+    ; note: no restore of `ptr1` because it will not be used from here on
     cmp #32                 ; empty?
     bne @react_collision_down
 
@@ -913,9 +915,6 @@ logic:
 @check_collision_done:
 
 @controls:
-
-    lda tmp5
-
     lda #0
     sta hero_moving_dir
     sta objects_state + 4     ; dx low
