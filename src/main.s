@@ -344,39 +344,39 @@ update:
     lda objects_state + 12  ; yhi prv
     sta objects_state + 3   ; yhi
 
-    ; half the dx, dy
-    lda objects_state + 5   ; dx high
-    cmp #$80
-    ror objects_state + 5   ; dx high
-    ror objects_state + 4   ; dx low
-    lda objects_state + 7   ; dy high
-    cmp #$80
-    ror objects_state + 7   ; dy high
-    ror objects_state + 6   ; dy low
+    ; ; half the dx, dy
+    ; lda objects_state + 5   ; dx high
+    ; cmp #$80
+    ; ror objects_state + 5   ; dx high
+    ; ror objects_state + 4   ; dx low
+    ; lda objects_state + 7   ; dy high
+    ; cmp #$80
+    ; ror objects_state + 7   ; dy high
+    ; ror objects_state + 6   ; dy low
+    ;
+    ; lda objects_state + 5   ; dx high
+    ; cmp #$80
+    ; ror objects_state + 5   ; dx high
+    ; ror objects_state + 4   ; dx low
+    ; lda objects_state + 7   ; dy high
+    ; cmp #$80
+    ; ror objects_state + 7   ; dy high
+    ; ror objects_state + 6   ; dy low
+    ;
+    ; lda objects_state + 5   ; dx high
+    ; cmp #$80
+    ; ror objects_state + 5   ; dx high
+    ; ror objects_state + 4   ; dx low
+    ; lda objects_state + 7   ; dy high
+    ; cmp #$80
+    ; ror objects_state + 7   ; dy high
+    ; ror objects_state + 6   ; dy low
 
-    lda objects_state + 5   ; dx high
-    cmp #$80
-    ror objects_state + 5   ; dx high
-    ror objects_state + 4   ; dx low
-    lda objects_state + 7   ; dy high
-    cmp #$80
-    ror objects_state + 7   ; dy high
-    ror objects_state + 6   ; dy low
-
-    lda objects_state + 5   ; dx high
-    cmp #$80
-    ror objects_state + 5   ; dx high
-    ror objects_state + 4   ; dx low
-    lda objects_state + 7   ; dy high
-    cmp #$80
-    ror objects_state + 7   ; dy high
-    ror objects_state + 6   ; dy low
-
-    ; lda #0
-    ; sta objects_state + 4
-    ; sta objects_state + 5
-    ; sta objects_state + 6
-    ; sta objects_state + 7
+    lda #0
+    sta objects_state + 4   ; dxlo
+    sta objects_state + 5   ; dxhi
+    sta objects_state + 6   ; dylo
+    sta objects_state + 7   ; dyhi
 
     lda #0
     sta hero_jumping
@@ -398,6 +398,15 @@ update:
     lda #$ff
     sta objects_state + 5     ; dx high
 
+    lda frame_counter
+    and #$1f
+    bne @right
+
+    lda #$ec
+    sta objects_state + 6     ; dy low
+    lda #$ff
+    sta objects_state + 7     ; dy high
+
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
@@ -408,6 +417,15 @@ update:
     sta objects_state + 4     ; dx low
     lda #0
     sta objects_state + 5     ; dx high
+
+    lda frame_counter
+    and #$1f
+    bne @fire
+
+    lda #$ec
+    sta objects_state + 6     ; dy low
+    lda #$ff
+    sta objects_state + 7     ; dy high
 
 ; @up:
 ;     lda VIC_DATA_PORT_A 
