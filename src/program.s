@@ -50,6 +50,8 @@ VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
 VIC_SPRITE_DBLX = $d01d     ; vic-ii double sprites width bits
 VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
+VIC_SPR_SPR_COL = $d01e     ; vic-ii sprite vs sprite collision bits
+VIC_SPR_BG_COL  = $d01f     ; vic-ii sprite vs background collision bits
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 SPRITE_IX_OFST  = $03f8     ; sprite data index table offset from screen address
@@ -98,7 +100,6 @@ MOVE_DIR_LEFT   = 8
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04X", zero_page)
-; system variables
 camera_x_lo:         .res 1  ; low byte of camera x
 camera_x_hi:         .res 1  ; high byte of camera x
 tile_map_x:          .res 1  ; tile map x offset in characters
@@ -107,16 +108,6 @@ screen_active:       .res 1  ; active screen (0 or 1)
 vblank_done:         .res 1  ; 1 when raster irq triggers
 tmp1:                .res 1  ; temporary
 tmp2:                .res 1  ; temporary
-; application variables
-tmp3:                .res 1  ; temporary
-tmp4:                .res 1  ; temporary
-tmp5:                .res 1  ; temporary
-tmp6:                .res 1  ; temporary
-ptr1:                .res 2  ; temporary pointer
-hero_tile_x:         .res 1
-hero_tile_y:         .res 1
-hero_moving_dir:     .res 1
-hero_moving_dir_nxt: .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -317,11 +308,6 @@ program:
     inx
     bne :-                  ; loop until x wraps to 0
 
-    ; application setup
-
-    lda #MOVE_DIR_UP
-    sta hero_moving_dir
-
     cli                     ; enable interrupts
 
     ; fallthrough
@@ -381,7 +367,7 @@ render:
     adc #1                  ; add 1 to match desired table values 
 :   cmp tile_map_x          ; compare with current tile_map_x
     bne :+                  ; same as last frame, skip redraw
-    jmp update
+;    jmp update
 :   sta tile_map_x          ; update tile_map_x
 
     ; fallthrough
@@ -475,7 +461,17 @@ update_no_vblank:
 
     ; update objects state
 
-    ; x
+    ; save current state to previous
+    lda objects_state + 0   ; xlo
+    sta objects_state + 9   ; xlo prv
+    lda objects_state + 1   ; xhi
+    sta objects_state + 10  ; xhi prv
+    lda objects_state + 2   ; ylo
+    sta objects_state + 11  ; ylo prv
+    lda objects_state + 3   ; yhi
+    sta objects_state + 12  ; yhi prv
+
+    ; add dx to x
     clc
     lda objects_state + 0   ; xlo
     adc objects_state + 4   ; dxlo
@@ -484,7 +480,7 @@ update_no_vblank:
     adc objects_state + 5   ; dxhi
     sta objects_state + 1
 
-    ; y
+    ; add dy to y
     clc
     lda objects_state + 2   ; ylo
     adc objects_state + 6   ; dylo
@@ -493,8 +489,10 @@ update_no_vblank:
     adc objects_state + 7   ; dyhi
     sta objects_state + 3
 
-    ; subtract camera position from object x coordinate
 
+    ; place object in camera coordinate system
+
+    ; put object world x coordinates in tmp1, tmp2 (lo,hi) by removing fraction
     lda objects_state + 0   ; xlo
     lsr                     ; shift out the sub-pixel coordinate
     lsr
@@ -515,7 +513,7 @@ update_no_vblank:
     lsr
     sta tmp2                ; high bits of world x in pixels 
  
-    ; subtract camera position for screen coordinates in pixels
+    ; put object coordinates on screen by subtracting camera x position
     sec
     lda tmp1
     sbc camera_x_lo
@@ -524,8 +522,9 @@ update_no_vblank:
     sbc camera_x_hi
     sta tmp2
 
-    ; update sprite x position
+    ; update sprite position
 
+    ; update sprite x position
     lda tmp1                    ; x low
     sta sprites_state + 0       ; update x low
     ; check if 9'th bit of sprite x needs to be set
@@ -538,12 +537,11 @@ update_no_vblank:
     jmp @msb_done
 @msb_off:
     lda sprites_msb_x
-    and #%11111110              ; change sprite 0 x 9'th bit
+    and #%11111110              ; set sprite 0 9'th bit to 0
     sta sprites_msb_x
 @msb_done:
 
     ; update sprite y position
-
     lda objects_state + 2       ; y low bits
     lsr
     lsr
@@ -558,11 +556,14 @@ update_no_vblank:
     ora tmp1
     sta sprites_state + 1       ; sprite screen y
 
+    ;
     ; update sprite hardware
+    ;
 
+    ; 8 sprites
     .include "update_sprites_state.s"
 
-    ; sprites state
+    ; sprites state bits
     lda sprites_enable
     sta VIC_SPRITE_ENBL
     lda sprites_double_width
@@ -589,317 +590,31 @@ logic:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; convert hero x to tile map x
+    ; check if sprite has collided with background
+    lda VIC_SPR_BG_COL
+    and #%00000001
+    beq @controls
 
-    ; subtract left border (40 column mode to include the off-screen tile)
-    ; store in `tmp1` and `tmp2`
-    ; note: in 40 column mode first visible pixel is at 24
-    sec
-    lda objects_state + 0   ; x low byte
-    sbc #((24 << 4) & $ff)
-    sta tmp1
-    lda objects_state + 1   ; x high byte
-    sbc #((24 << 4) >> 8)
-    sta tmp2
+    ; sprite has collided with background, restore state to previous x and y and
+    ; set dx, dy to 0
 
-    ; map to tile x
-    lda tmp1
-    lsr                     ; shift 4 away the fraction
-    lsr
-    lsr
-    lsr
-    sta tmp5                ; used to determine if there is tile overlap on x
-    lsr                     ; shift 3 to tile map x
-    lsr
-    lsr
-    sta tmp1
-    lda tmp2
-    asl                     ; shift 8 - (4 + 3) bits to `or`
-    ora tmp1
-    sta hero_tile_x
-    tay                     ; copy to y register for later use
+    lda #COLOR_WHITE
+    sta VIC_BORDER
 
-    lda tmp5                ; contains pixel value of x in screen space
-    and #%111               ; make 0 if it does not overlap on x
-    sta tmp5                ; if zero no overlap
+    lda objects_state + 9   ; xlo prv
+    sta objects_state + 0   ; xlo
 
-    ; convert hero y to tile map
+    lda objects_state + 10  ; xhi prv
+    sta objects_state + 1   ; xhi
 
-    ; subtract top border 50 and store in tmp3 and tmp4
-    sec
-    lda objects_state + 2   ; y low byte
-    sbc #((50 << 4) & $ff)
-    sta tmp3
-    lda objects_state + 3   ; y high byte
-    sbc #((50 << 4) >> 8)
-    sta tmp4
+    lda objects_state + 11  ; ylo prv
+    sta objects_state + 2   ; ylo
 
-    ; map to tile y
-    lda tmp3
-    lsr                     ; shift 4 away the fraction
-    lsr
-    lsr
-    lsr
-    sta tmp6                ; used to determine if there is tile overlap on y
-    lsr                     ; shift 3 to tile map y
-    lsr
-    lsr
-    sta tmp3
-    lda tmp4
-    asl                     ; shift 8 - (4 + 3) to `or`
-    ora tmp3
-    ; acc now contains the tile map y
-    sta hero_tile_y
-
-    lda tmp6                ; contains pixel value
-    and #%111               ; make 0 if it does not overlap tiles on y
-    sta tmp6                ; if zero no overlap
-
-    ; make pointer to tile map row of hero y
-    lda #<tile_map          ; low byte (always 0)
-    sta ptr1
-    lda #>tile_map          ; high byte
-    clc
-    adc hero_tile_y         ; add tile map y to row pointer
-    sta ptr1 + 1            ; high byte (tile map row)
-
-    ; lda tmp5                ; 0 if there is no x overlap
-    ; bne @check_collision_left
-    ; jmp @check_collision_up ; don't check collisions on x axis
-
-    lda hero_moving_dir
-    sta hero_moving_dir_nxt
-
-@check_collision_left:
-    lda hero_moving_dir
-    and #MOVE_DIR_LEFT
-    beq @check_collision_right
-
-    lda (ptr1), y           ; load tile at x, y
-    cmp #32                 ; compare with empty tile
-    bne @react_collision_left
-
-    inc ptr1 + 1            ; increase y to next tile in column
-    lda (ptr1), y           ; load tile at x, y
-    dec ptr1 + 1            ; restore y to top tile
-    cmp #32                 ; compare with empty tile
-    bne @react_collision_left
-
-    lda tmp6                ; 0 if no overlap on y
-    beq @check_collision_right
-
-    inc ptr1 + 1            ; move 2 rows down
-    inc ptr1 + 1
-    lda (ptr1), y           ; load tile
-    dec ptr1 + 1            ; restore row pointer
-    dec ptr1 + 1
-    cmp #32
-    bne @react_collision_left
-
-    jmp @check_collision_right
-
-@react_collision_left:
-    lda objects_state + 0   ; x low byte
-    and #%10000000          ; set x at the edge to the tile
-    clc                     ;
-    adc #%10000000          ;
-    sta objects_state + 0   ; set x at start of tile and no pixel fraction
-    lda objects_state + 1   ; x high byte
-    adc #0
-    sta objects_state + 1
-
-    ; set velocity to none
-    lda #0
-    sta objects_state + 6   ; dy low byte 
-    sta objects_state + 7   ; dy high byte
-
-    lda #MOVE_DIR_NONE
-    sta hero_moving_dir_nxt
-
-@check_collision_right:
-    lda hero_moving_dir
-    and #MOVE_DIR_RIGHT
-    beq @check_collision_up
-
-    ; increase register y to the right overlapping tile
-    iny
-    iny
-    lda (ptr1), y           ; load tile
-    dey
-    dey
-    cmp #32                 ; empty?
-    bne @react_collision_right
-
-    inc ptr1 + 1            ; increase row to lower tile
-    iny
-    iny
-    lda (ptr1), y
-    dey
-    dey
-    dec ptr1 + 1            ; restore to top row
-    cmp #32                 ; empty?
-    bne @react_collision_right
-
-    lda tmp6                ; 0 if no overlap on y
-    beq @check_collision_up
-
-    inc ptr1 + 1            ; move 2 rows down
-    inc ptr1 + 1
-    iny
-    iny
-    lda (ptr1), y           ; load tile
-    dey
-    dey
-    dec ptr1 + 1            ; restore row pointer
-    dec ptr1 + 1
-    cmp #32
-    bne @react_collision_right
-
-    jmp @check_collision_up
-
-@react_collision_right:
-    lda objects_state + 0   ; x low byte
- 
-    and #%10000000
-    sta objects_state + 0   ; set x at start of tile and no pixel fraction
-
-    ; set velocity to none
-    lda #0
-    sta objects_state + 6   ; dy low byte 
-    sta objects_state + 7   ; dy high byte
-
-    lda #MOVE_DIR_NONE
-    sta hero_moving_dir_nxt
-
-@check_collision_up:
-    lda hero_moving_dir
-    and #MOVE_DIR_UP
-    beq @check_collision_down
-
-    lda (ptr1), y           ; load tile
-    cmp #32                 ; empty?
-    bne @react_collision_up
-
-    iny                     ; increase to next horizontal tile
-    lda (ptr1), y
-    dey
-    cmp #32                 ; empty?
-    bne @react_collision_up
-
-    lda tmp5                ; 0 if no overlap on x
-    beq @check_collision_down
-
-    iny
-    iny
-    lda (ptr1), y           ; load tile
-    dey
-    dey
-    cmp #32
-    bne @react_collision_up
-
-    jmp @check_collision_down
-
-@react_collision_up:
-    ; subtract top border 50
-    sec
-    lda objects_state + 2   ; y low byte
-    sbc #((50 * 16) & $ff)
-    sta tmp3
-    lda objects_state + 3   ; y high byte
-    sbc #((50 * 16) >> 8)
-    sta tmp4
-
-    lda tmp3                ; y low byte
-    and #%10000000          ; remove pixel fraction and tile fraction
-    clc                     ;
-    adc #%10000000          ; next row
-    sta tmp3                ; set y at start of tile and no pixel fraction
-    lda tmp4                ; y high byte
-    adc #0
-    sta tmp4                ; set y high byte 
- 
-    clc
-    lda tmp3
-    adc #((50 * 16) & $ff)
-    sta objects_state + 2
-    lda tmp4
-    adc #((50 * 16) >> 8)
-    sta objects_state + 3
- 
-    ; set velocity to none
-    lda #0
-    sta objects_state + 6   ; dy low byte 
-    sta objects_state + 7   ; dy high byte
-
-    lda #MOVE_DIR_NONE
-    sta hero_moving_dir_nxt
-
-@check_collision_down:
-    lda hero_moving_dir
-    and #MOVE_DIR_DOWN
-    beq @check_collision_done
-
-    inc ptr1 + 1
-    inc ptr1 + 1
-    lda (ptr1), y           ; load tile
-    ; note: no restore of `ptr1` because it will not be used from here on
-    cmp #32                 ; empty?
-    bne @react_collision_down
-
-    iny                     ; increase to next horizontal tile
-    lda (ptr1), y
-    cmp #32                 ; empty?
-    bne @react_collision_down
-
-    lda tmp5                ; 0 if no overlap on x
-    beq @check_collision_done
-
-    iny
-    lda (ptr1), y           ; load tile
-    cmp #32
-    bne @react_collision_down
-
-    jmp @check_collision_done
-
-@react_collision_down:
-    ; subtract top border 50
-    sec
-    lda objects_state + 2   ; y low byte
-    sbc #((50 * 16) & $ff)
-    sta tmp3
-    lda objects_state + 3   ; y high byte
-    sbc #((50 * 16) >> 8)
-    sta tmp4
-
-    lda tmp3                ; y low byte
-    and #%10000000          ; remove pixel fraction and tile fraction
-    sta tmp3                ; set y at start of tile and no pixel fraction
- 
-    ; add 50
-    clc
-    lda tmp3
-    adc #((50 * 16) & $ff)
-    sta objects_state + 2
-    lda tmp4
-    adc #((50 * 16) >> 8)
-    sta objects_state + 3
- 
-    ; set velocity to none
-    lda #0
-    sta objects_state + 6   ; dy low byte 
-    sta objects_state + 7   ; dy high byte
-
-    lda #MOVE_DIR_NONE
-    sta hero_moving_dir_nxt
-
-@check_collision_done:
-
-    lda hero_moving_dir_nxt
-    sta hero_moving_dir
+    lda objects_state + 12  ; yhi prv
+    sta objects_state + 3   ; yhi
 
 @controls:
     lda #0
-    sta hero_moving_dir
     sta objects_state + 4     ; dx low
     sta objects_state + 5     ; dy high
     sta objects_state + 6     ; dy low
@@ -913,10 +628,6 @@ logic:
     lda #$ff
     sta objects_state + 4     ; dx low
     sta objects_state + 5     ; dx high
-
-    lda hero_moving_dir
-    ora #MOVE_DIR_LEFT
-    sta hero_moving_dir
 
     ; ; add 1 to camera x in pixels
     ; sec                     ; set carry for subtraction
@@ -937,10 +648,6 @@ logic:
     lda #0
     sta objects_state + 5     ; dx high
 
-    lda hero_moving_dir
-    ora #MOVE_DIR_RIGHT
-    sta hero_moving_dir
-
     ; ; subtract 1 from camera x in pixels
     ; clc                     ; clear carry for addition
     ; lda camera_x_lo         ; load low byte
@@ -959,10 +666,6 @@ logic:
     sta objects_state + 6     ; dy low
     sta objects_state + 7     ; dy high
 
-    lda hero_moving_dir
-    ora #MOVE_DIR_UP
-    sta hero_moving_dir
-
 @down:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_DOWN
@@ -973,10 +676,6 @@ logic:
     lda #0
     sta objects_state + 7     ; dy high
 
-    lda hero_moving_dir
-    ora #MOVE_DIR_DOWN
-    sta hero_moving_dir
-
 @done:
 
     ; dummy work
@@ -986,7 +685,7 @@ logic:
     bne :-
     dey
     bne :-
-
+ 
     jmp render              ; jump to top of loop 
 
 ;-------------------------------------------------------------------------------
@@ -1040,15 +739,18 @@ sprites_double_height:
 ;-------------------------------------------------------------------------------
 objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi, sprite
+    ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 
     ; top left (31, 50) on visible are in 38 column mode
-    ;.byte  31<<4&$ff,  31>>4,  50<<4&$ff, 50>>4,     0,    0,    1,    0, sprites_data_1>>6
+    ;.byte  31<<4&$ff,  31>>4,  50<<4&$ff, 50>>4,     0,    0,    1,    0, sprites_data_1>>6,       0,     0,      0,      0
 
-    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6
+    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6,       0,     0,      0,      0
 
-    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6
-    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6
+
+    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,  $ff,  $ff, sprites_data_1>>6,       0,     0,      0,      0
+
+    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
+
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
