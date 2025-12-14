@@ -554,7 +554,7 @@ logic:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; check if sprite has collided with background
+    ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
     beq @controls
