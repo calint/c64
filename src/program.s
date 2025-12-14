@@ -107,6 +107,7 @@ screen_offset:       .res 1  ; number of pixels (0-7) screen is shifted right
 screen_active:       .res 1  ; active screen (0 or 1)
 tmp1:                .res 1  ; temporary
 tmp2:                .res 1  ; temporary
+hero_jumping:        .res 1  ; 1 if in jump
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -259,6 +260,7 @@ program:
     sta camera_x_lo
     sta camera_x_hi
     sta screen_active       ; active screen  0
+    sta hero_jumping
 
     ; set foreground and background
     lda #COLOR_BLACK
@@ -554,6 +556,25 @@ logic:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
+    lda hero_jumping
+    bne @gravity_apply
+
+    ; check if dy is zero and skip gravity if so
+    lda objects_state + 6   ; ylo
+    bne @gravity_apply
+    lda objects_state + 7   ; yhi
+    beq @gravity_skip
+
+@gravity_apply:
+    clc
+    lda objects_state + 6   ; dylo
+    adc #4
+    sta objects_state + 6
+    lda objects_state + 7   ; dyhi
+    adc #0
+    sta objects_state + 7
+
+@gravity_skip:
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
@@ -577,12 +598,18 @@ logic:
     lda objects_state + 12  ; yhi prv
     sta objects_state + 3   ; yhi
 
-@controls:
     lda #0
     sta objects_state + 4     ; dx low
     sta objects_state + 5     ; dy high
     sta objects_state + 6     ; dy low
     sta objects_state + 7     ; dy high
+
+@controls:
+    lda #0
+    sta objects_state + 4     ; dx low
+    sta objects_state + 5     ; dy high
+    ; sta objects_state + 6     ; dy low
+    ; sta objects_state + 7     ; dy high
 
     ; joystick
     lda VIC_DATA_PORT_A 
@@ -605,7 +632,8 @@ logic:
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
-    bne @up
+    ; bne @up
+    bne @fire
 
     lda #1
     sta objects_state + 4     ; dx low
@@ -621,24 +649,40 @@ logic:
     ; adc #0                  ; add carry only (if overflow from low byte)
     ; sta camera_x_hi         ; store result high byte
 
-@up:
-    lda VIC_DATA_PORT_A 
-    and #JOYSTICK_UP
-    bne @down
+; @up:
+;     lda VIC_DATA_PORT_A 
+;     and #JOYSTICK_UP
+;     bne @down
+;
+;     lda #$ff
+;     sta objects_state + 6     ; dy low
+;     sta objects_state + 7     ; dy high
+;
+; @down:
+;     lda VIC_DATA_PORT_A 
+;     and #JOYSTICK_DOWN
+;     bne @fire
+;
+;     lda #1
+;     sta objects_state + 6     ; dy low
+;     lda #0
+;     sta objects_state + 7     ; dy high
 
-    lda #$ff
-    sta objects_state + 6     ; dy low
-    sta objects_state + 7     ; dy high
-
-@down:
-    lda VIC_DATA_PORT_A 
-    and #JOYSTICK_DOWN
+@fire:
+    lda hero_jumping
     bne @done
 
-    lda #1
+    lda VIC_DATA_PORT_A
+    and #JOYSTICK_FIRE
+    bne @done
+
+    lda #$e0
     sta objects_state + 6     ; dy low
-    lda #0
+    lda #$ff
     sta objects_state + 7     ; dy high
+
+    lda #1
+    sta hero_jumping
 
 @done:
 
