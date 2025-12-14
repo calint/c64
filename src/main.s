@@ -280,6 +280,8 @@ program:
 
 ;-------------------------------------------------------------------------------
 main_loop:
+;-------------------------------------------------------------------------------
+
     ; wait for vblank at lower border
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
@@ -304,14 +306,9 @@ main_loop:
     sta VIC_CTRL_2
 
 ;-------------------------------------------------------------------------------
-;
-; user application code
-;
-; note: this and `refresh` must fit in the vblank area and `render` must finish
-;       before next vblank
-;
-;-------------------------------------------------------------------------------
 update:
+;-------------------------------------------------------------------------------
+
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
     sta VIC_BORDER
@@ -319,7 +316,7 @@ update:
     lda objects_state + 6
     sta VIC_BORDER
 
-    inc camera_x_lo
+;    inc camera_x_lo
 
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
@@ -474,11 +471,9 @@ update:
  ;    bne :-
 
 ;-------------------------------------------------------------------------------
-;
-; timing critical code refreshing objects and sprites positions during vblank
-;
-;-------------------------------------------------------------------------------
 refresh:
+;-------------------------------------------------------------------------------
+
     ; set border color to illustrate duration of update
     lda #BORDER_LOOP
     sta VIC_BORDER
@@ -601,10 +596,7 @@ refresh:
 
 ;-------------------------------------------------------------------------------
 render:
-    ;
-    ; either change the screen shift right or fallthrough to render new tile map
-    ; position
-    ;
+;-------------------------------------------------------------------------------
 
     ; note:
     ; | camera_x | offset | tile_map_x |
@@ -656,12 +648,10 @@ render:
 :   sta tile_map_x          ; update tile_map_x
 
     ; fallthrough
+
 ;-------------------------------------------------------------------------------
 render_tile_map:
-    ;
-    ; renders tile map to offscreen, waits for vblank then switches screens and
-    ; jumps to `update` past the vblank wait
-    ; 
+;-------------------------------------------------------------------------------
 
     ; initiate tile map position and screen column
     ldx tile_map_x
@@ -701,6 +691,7 @@ render_tile_map:
 
 ;-------------------------------------------------------------------------------
 sprites_state:
+;-------------------------------------------------------------------------------
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,              data, color
     .byte   0,   0, sprites_data_0>>6, 1
@@ -722,6 +713,7 @@ sprites_double_height:
 
 ;-------------------------------------------------------------------------------
 objects_state:
+;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 
