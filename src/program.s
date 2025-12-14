@@ -64,7 +64,7 @@ BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_BLACK
 BORDER_UPDATE   = COLOR_YELLOW
 BORDER_LOOP     = COLOR_RED 
-IRQ_RASTER_LINE = 250       ; raster interrupt at bottom border
+RASTER_BORDER   = 250       ; raster interrupt at bottom border
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
 JOYSTICK_LEFT   = 4         ; bit when joystick is left
@@ -105,7 +105,6 @@ camera_x_hi:         .res 1  ; high byte of camera x
 tile_map_x:          .res 1  ; tile map x offset in characters
 screen_offset:       .res 1  ; number of pixels (0-7) screen is shifted right
 screen_active:       .res 1  ; active screen (0 or 1)
-vblank_done:         .res 1  ; 1 when raster irq triggers
 tmp1:                .res 1  ; temporary
 tmp2:                .res 1  ; temporary
 
@@ -250,38 +249,6 @@ program:
     lda #%00110101          ; see https://sta.c64.org/cbm64mem.html
     sta $01
 
-    ; install interrupt handler
-    lda #<irq               ; hardware irq vector low byte
-    sta $fffe               ; store
-    lda #>irq               ; hardware irq vector high byte
-    sta $ffff               ; store
-
-    ; install non-maskable interrupt handler
-    lda #<nmi               ; low byte
-    sta $fffa               ; nmi vector low byte
-    lda #>nmi               ; high byte
-    sta $fffb               ; nmi vector high byte
-
-    ; disable cia interrupts that might interfere
-    lda #$7f                ; bit 7 = 0 means "disable" 
-    sta $dc0d               ; disable cia 1 interrupts
-    sta $dd0d               ; disable cia 2 interrupts
-    lda $dc0d               ; acknowledge cia 1 interrupts
-    lda $dd0d               ; acknowledge cia 2 interrupts
-
-    ; setup which raster line to generate irq
-    lda VIC_CTRL_1          ; ensure 9'th bit of raster = 0
-    and #%01111111          ; clear bit 7 (9'th bit) of register
-    sta VIC_CTRL_1          ; write
-    lda #IRQ_RASTER_LINE    ; raster line (inside vblank)
-    sta VIC_RASTER_REG      ; write
- 
-    lda #$ff                ; acknowledge any pending vic interrupts
-    sta VIC_IRQ_REG         ; write
-
-    lda #1                  ; enable raster irq (bit 0 = raster interrupt)
-    sta VIC_IRQ_ENABLE      ; write
-
     ;
     ; setup first render
     ;
@@ -291,7 +258,6 @@ program:
     lda #0
     sta camera_x_lo
     sta camera_x_hi
-    sta vblank_done         ; vblank not done
     sta screen_active       ; active screen  0
 
     ; set foreground and background
@@ -308,7 +274,6 @@ program:
     inx
     bne :-                  ; loop until x wraps to 0
 
-    cli                     ; enable interrupts
 
     ; fallthrough
 ;-------------------------------------------------------------------------------
@@ -412,9 +377,9 @@ render_tile_map:
     lda #BORDER_COLOR
     sta VIC_BORDER
 
- :  lda vblank_done         ; wait for vblank 
-    beq :-
-    lsr vblank_done
+    lda #RASTER_BORDER
+:   cmp VIC_RASTER_REG
+    bne :-
 
     lda #BORDER_RENDER
     sta VIC_BORDER
@@ -445,9 +410,9 @@ update:
     lda #BORDER_COLOR
     sta VIC_BORDER
 
- :  lda vblank_done         ; wait for vblank 
-    beq :-
-    lsr vblank_done
+    lda #RASTER_BORDER
+:   cmp VIC_RASTER_REG
+    bne :-
 
 update_no_vblank:
     ; set border color to illustrate duration of update
@@ -687,33 +652,6 @@ logic:
     bne :-
  
     jmp render              ; jump to top of loop 
-
-;-------------------------------------------------------------------------------
-irq:
-    ;
-    ; interrupt handling
-    ;
-
-    sei                     ; don't allow nested interrupts
-    pha                     ; push accumulator on the stack
-
-    lda VIC_IRQ_REG         ; read interrupt status register
-    and #1                  ; check bit 0 (raster interrupt)
-    beq @not_raster         ; if not set, not a raster interrupt
-    lda #1                  ; set vblank done
-    sta vblank_done         ; store
-
-@not_raster:
- 
-    lda #$ff                ; clear all interrupt flags (bits 1-3)
-    sta VIC_IRQ_REG         ; write to register 
-
-    pla                     ; restore accumulator
-    rti                     ; interrupt done
-
-;-------------------------------------------------------------------------------
-nmi:
-    rti
 
 ;-------------------------------------------------------------------------------
 sprites_state:
