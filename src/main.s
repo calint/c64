@@ -240,6 +240,37 @@ tile_map:                   ; the tile map included from resources
 .org $5900
 .segment "CODE"
 program:
+
+;-------------------------------------------------------------------------------
+; object struct with short name `o` for code brevity
+;-------------------------------------------------------------------------------
+.struct o
+    x_lo     .byte
+    x_hi     .byte
+    y_lo     .byte
+    y_hi     .byte
+    dx_lo    .byte
+    dx_hi    .byte
+    dy_lo    .byte
+    dy_hi    .byte
+    sprite   .byte ; address / 64 pointing to sprite data
+    x_prv_lo .byte
+    x_prv_hi .byte
+    y_prv_lo .byte
+    y_prv_hi .byte
+.endstruct
+
+;-------------------------------------------------------------------------------
+; sprite struct with short name `s` for code brevity
+;-------------------------------------------------------------------------------
+.struct s
+    sx       .byte ; screen x lower 8 bits
+    sy       .byte ; screen y
+    data     .byte ; address / 64 pointing to sprite data
+    color    .byte ; color
+.endstruct
+
+;-------------------------------------------------------------------------------
 .out .sprintf("      program: $%04X", program)
     ;
     ; application setup
@@ -331,17 +362,17 @@ update:
     ; lda #COLOR_WHITE
     ; sta VIC_BORDER
 
-    lda hero + 9   ; xlo prv
-    sta hero + 0   ; xlo
+    lda hero + o::x_prv_lo
+    sta hero + o::x_lo
 
-    lda hero + 10  ; xhi prv
-    sta hero + 1   ; xhi
+    lda hero + o::x_prv_hi
+    sta hero + o::x_hi
 
-    lda hero + 11  ; ylo prv
-    sta hero + 2   ; ylo
+    lda hero + o::y_prv_lo
+    sta hero + o::y_lo
 
-    lda hero + 12  ; yhi prv
-    sta hero + 3   ; yhi
+    lda hero + o::y_prv_hi
+    sta hero + o::y_hi
 
     ; ; half the dx, dy
     ; note: this would be nicer but it does not work for now
@@ -355,19 +386,15 @@ update:
     ; ror hero + 6   ; dy low
 
     lda #0
-    ; note: dxlo and dxhi are set to 0 in @controls
-;    sta hero + 4   ; dxlo
-;    sta hero + 5   ; dxhi
-    sta hero + 6   ; dylo
-    sta hero + 7   ; dyhi
-
-    lda #0
     sta hero_jumping
+    ; note: `dx_lo`` and `dx_hi` are set to 0 in @controls
+    sta hero + o::dy_lo
+    sta hero + o::dy_hi
 
 @controls:
     lda #0
-    sta hero + 4     ; dx low
-    sta hero + 5     ; dy high
+    sta hero + o::dx_lo 
+    sta hero + o::dx_hi
 
     ; joystick
     lda VIC_DATA_PORT_A 
@@ -375,9 +402,9 @@ update:
     bne @right
 
     lda #$f8
-    sta hero + 4     ; dx low
+    sta hero + o::dx_lo
     lda #$ff
-    sta hero + 5     ; dx high
+    sta hero + o::dx_hi
 
     ; every now and then make a small jump when moving
     lda frame_counter
@@ -385,9 +412,9 @@ update:
     bne @right
 
     lda #$ec
-    sta hero + 6     ; dy low
+    sta hero + o::dy_lo
     lda #$ff
-    sta hero + 7     ; dy high
+    sta hero + o::dy_hi
 
 @right:
     lda VIC_DATA_PORT_A 
@@ -396,9 +423,9 @@ update:
     bne @fire
 
     lda #8
-    sta hero + 4     ; dx low
+    sta hero + o::dx_lo
     lda #0
-    sta hero + 5     ; dx high
+    sta hero + o::dx_hi
 
     ; every now and then make a small jump when moving
     lda frame_counter
@@ -406,9 +433,9 @@ update:
     bne @fire
 
     lda #$ec
-    sta hero + 6     ; dy low
+    sta hero + o::dy_lo
     lda #$ff
-    sta hero + 7     ; dy high
+    sta hero + o::dy_hi
 
 ; @up:
 ;     lda VIC_DATA_PORT_A 
@@ -440,9 +467,9 @@ update:
 
     ; set negative dy to jump up
     lda #$ce
-    sta hero + 6     ; dy low
+    sta hero + o::dy_lo
     lda #$ff
-    sta hero + 7     ; dy high
+    sta hero + o::dy_hi
 
     lda #1
     sta hero_jumping
@@ -459,19 +486,19 @@ update:
     beq @gravity_apply
 
     ; check if dy is zero and skip gravity if so
-    lda hero + 6   ; ylo
+    lda hero + o::dy_lo
     bne @gravity_apply
-    lda hero + 7   ; yhi
+    lda hero + o::dy_hi
     beq @gravity_done
 
 @gravity_apply:
     clc
-    lda hero + 6   ; dylo
+    lda hero + o::dy_lo
     adc #4
-    sta hero + 6
-    lda hero + 7   ; dyhi
+    sta hero + o::dy_lo
+    lda hero + o::dy_hi 
     adc #0
-    sta hero + 7
+    sta hero + o::dy_hi
 
 @gravity_done:
     ; dummy work
@@ -493,42 +520,42 @@ refresh:
     ; update objects state
 
     ; save current state to previous
-    lda objects_state + 0   ; xlo
-    sta objects_state + 9   ; xlo prv
-    lda objects_state + 1   ; xhi
-    sta objects_state + 10  ; xhi prv
-    lda objects_state + 2   ; ylo
-    sta objects_state + 11  ; ylo prv
-    lda objects_state + 3   ; yhi
-    sta objects_state + 12  ; yhi prv
+    lda objects_state + o::x_lo
+    sta objects_state + o::x_prv_lo
+    lda objects_state + o::x_hi
+    sta objects_state + o::x_prv_hi
+    lda objects_state + o::y_lo
+    sta objects_state + o::y_prv_lo
+    lda objects_state + o::y_hi
+    sta objects_state + o::y_prv_hi
 
     ; add dx to x
     clc
-    lda objects_state + 0   ; xlo
-    adc objects_state + 4   ; dxlo
-    sta objects_state + 0
-    lda objects_state + 1   ; xhi
-    adc objects_state + 5   ; dxhi
-    sta objects_state + 1
+    lda objects_state + o::x_lo
+    adc objects_state + o::dx_lo
+    sta objects_state + o::x_lo
+    lda objects_state + o::x_hi
+    adc objects_state + o::dx_hi
+    sta objects_state + o::x_hi
 
     ; add dy to y
     clc
-    lda objects_state + 2   ; ylo
-    adc objects_state + 6   ; dylo
-    sta objects_state + 2
-    lda objects_state + 3   ; yhi
-    adc objects_state + 7   ; dyhi
-    sta objects_state + 3
+    lda objects_state + o::y_lo
+    adc objects_state + o::dy_lo
+    sta objects_state + o::y_lo
+    lda objects_state + o::y_hi
+    adc objects_state + o::dy_hi
+    sta objects_state + o::y_hi
 
     ; center camera on hero
     ; todo: move this to "user" code
-    lda hero + 0     ; xlo
+    lda hero + o::x_lo
     lsr
     lsr
     lsr
     lsr
     sta tmp1
-    lda hero + 1     ; xhi
+    lda hero + o::x_hi
     tax
     asl
     asl
@@ -553,20 +580,20 @@ refresh:
     ; place object in camera coordinate system
 
     ; put object world x coordinates in tmp1, tmp2 (lo,hi) by removing fraction
-    lda objects_state + 0   ; xlo
+    lda objects_state + o::x_lo
     lsr                     ; shift out the sub-pixel coordinate
     lsr
     lsr
     lsr
     sta tmp1
-    lda objects_state + 1   ; xhi
+    lda objects_state + o::x_hi
     asl
     asl
     asl
     asl
     ora tmp1
     sta tmp1                ; low bits of world x in pixels
-    lda objects_state + 1   ; xhi
+    lda objects_state + o::x_hi
     lsr
     lsr
     lsr
@@ -586,7 +613,7 @@ refresh:
 
     ; update sprite x position
     lda tmp1                    ; x low
-    sta sprites_state + 0       ; update x low
+    sta sprites_state + s::sx
     ; check if 9'th bit of sprite x needs to be set
     lda tmp2                    ; x high
     and #1                      ; check 9'th bit considering the sub-pixels
@@ -602,19 +629,19 @@ refresh:
 @msb_done:
 
     ; update sprite y position
-    lda objects_state + 2       ; y low bits
+    lda objects_state + o::y_lo
     lsr
     lsr
     lsr
     lsr
-    sta tmp1                    ; now low bits in screen coordinates
-    lda objects_state + 3       ; y high bits
+    sta tmp1                    ; low bits in screen coordinates
+    lda objects_state + o::y_hi
     asl
     asl
     asl
     asl
     ora tmp1
-    sta sprites_state + 1       ; sprite screen y
+    sta sprites_state + s::sy
 
     ;
     ; update sprite hardware
