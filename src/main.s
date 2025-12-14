@@ -108,6 +108,7 @@ screen_active:       .res 1  ; active screen (0 or 1)
 tmp1:                .res 1  ; temporary
 tmp2:                .res 1  ; temporary
 hero_jumping:        .res 1  ; 1 if in jump
+frame_counter:       .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -261,6 +262,7 @@ program:
     sta camera_x_hi
     sta screen_active       ; active screen  0
     sta hero_jumping
+    sta frame_counter
 
     ; set foreground and background
     lda #COLOR_BLACK
@@ -396,15 +398,6 @@ update:
     lda #$ff
     sta objects_state + 5     ; dx high
 
-    ; ; add 1 to camera x in pixels
-    ; sec                     ; set carry for subtraction
-    ; lda camera_x_lo         ; load low byte
-    ; sbc #1                  ; subtract value (and borrow if needed)
-    ; sta camera_x_lo         ; store result low byte
-    ; lda camera_x_hi         ; load high byte
-    ; sbc #0                  ; subtract borrow only (if carry was clear)
-    ; sta camera_x_hi         ; store result high byte
-
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
@@ -415,15 +408,6 @@ update:
     sta objects_state + 4     ; dx low
     lda #0
     sta objects_state + 5     ; dx high
-
-    ; ; subtract 1 from camera x in pixels
-    ; clc                     ; clear carry for addition
-    ; lda camera_x_lo         ; load low byte
-    ; adc #1                  ; add value
-    ; sta camera_x_lo         ; store result low byte
-    ; lda camera_x_hi         ; load high byte
-    ; adc #0                  ; add carry only (if overflow from low byte)
-    ; sta camera_x_hi         ; store result high byte
 
 ; @up:
 ;     lda VIC_DATA_PORT_A 
@@ -464,6 +448,12 @@ update:
 
     lda hero_jumping
     bne @gravity_apply
+
+    ; every n'th frame apply gravity
+    inc frame_counter
+    lda frame_counter
+    and #$f
+    beq @gravity_apply
 
     ; check if dy is zero and skip gravity if so
     lda objects_state + 6   ; ylo
