@@ -313,9 +313,9 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    lda objects_state + 6
-    sta VIC_BORDER
-
+    ; lda objects_state + 6   ; dylo
+    ; sta VIC_BORDER
+ 
 ;    inc camera_x_lo
 
     ; check if sprite 0 has collided with background
@@ -391,7 +391,7 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #$fc
+    lda #$f8
     sta objects_state + 4     ; dx low
     lda #$ff
     sta objects_state + 5     ; dx high
@@ -411,7 +411,7 @@ update:
     ; bne @up
     bne @fire
 
-    lda #4
+    lda #8
     sta objects_state + 4     ; dx low
     lda #0
     sta objects_state + 5     ; dx high
@@ -527,6 +527,35 @@ refresh:
     adc objects_state + 7   ; dyhi
     sta objects_state + 3
 
+    ; center camera on hero
+    ; todo: move this to "user" code
+    lda objects_state + 0     ; xlo
+    lsr
+    lsr
+    lsr
+    lsr
+    sta tmp1
+    lda objects_state + 1     ; xhi
+    tax
+    asl
+    asl
+    asl
+    asl
+    ora tmp1
+    sta camera_x_lo
+    txa
+    lsr
+    lsr
+    lsr
+    lsr
+    sta camera_x_hi
+    sec
+    lda camera_x_lo
+    sbc #320/2-8
+    sta camera_x_lo
+    lda camera_x_hi
+    sbc #0
+    sta camera_x_hi
 
     ; place object in camera coordinate system
 
