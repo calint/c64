@@ -86,11 +86,22 @@ COLOR_GREY_2    = 12
 COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
+
+;
 ; application
+;
+
+; maving velocity to left and right
 MOVE_DY_LOW     = 8
+
+; when moving, at regular frame intervals hero makes a "skip" (a small jump)
 MOVE_SKIP_FRM   = %1111 
+
+; amount of dy when hero "skips" while walking
 MOVE_SKIP_AMNT  = 20
-JUMP_DY_LOW     = 50
+
+; jump velocity
+JUMP_DY_LOW     = 40
 
 ;-------------------------------------------------------------------------------
 ; zero page
