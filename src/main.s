@@ -466,7 +466,9 @@ update:
     bne @gravity_apply
 
     ; every n'th frame apply gravity for collision with floor detection
-    inc frame_counter ; note: best result when frame counter is increased here
+    inc frame_counter 
+    ; note: best result when frame counter is increased here when interacting
+    ;       with the move "skip"
     lda frame_counter
     and #$f
     beq @gravity_apply
