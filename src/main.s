@@ -772,7 +772,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
+    .byte   0<<4&$ff,   0>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
