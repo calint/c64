@@ -1,4 +1,6 @@
+;
 ; generated code, do not edit
+;
 
 sprites_data_0:
 .byte %00000011, %11100000, %00000000 ; 0

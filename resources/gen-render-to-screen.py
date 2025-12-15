@@ -11,7 +11,9 @@ screen_y_offset = int(sys.argv[2])
 num_rows = int(sys.argv[3])
 lines = []
 
-print("; generated code, do not edit")
+print("    ;")
+print("    ; generated code, do not edit")
+print("    ;")
 for i in range(num_rows):
     tile_row = i
     screen_row = screen_y_offset + i

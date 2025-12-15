@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 num_sprites = 8
-print("; generated code, do not edit")
+print("    ;")
+print("    ; generated code, do not edit")
+print("    ;")
 code = []
 for sprite_num in range(num_sprites):
     offset = sprite_num * 4

@@ -235,22 +235,11 @@ tile_map:                   ; the tile map included from resources
 ;-------------------------------------------------------------------------------
 ; program
 ;-------------------------------------------------------------------------------
-; 1. setup
-; 2. render
-; 3. if tile map doesn't need refresh jump to 4.
-; 3.1. render tile map offscreen
-; 3.2. wait for vblank
-; 3.3. jump to 4.2.
-; 4. game_loop
-; 4.1. wait for vblank
-; 4.2. update sprites
-; 5. update
-; 6. jmp to 2.
 .assert * <= $5900, error, "segment overflows into CODE"
 .org $5900
 .segment "CODE"
 program:
-
+.out .sprintf("      program: $%04X", program)
 ;-------------------------------------------------------------------------------
 ; object struct with short name `o` for code brevity
 ;-------------------------------------------------------------------------------
@@ -281,11 +270,7 @@ program:
 .endstruct
 
 ;-------------------------------------------------------------------------------
-.out .sprintf("      program: $%04X", program)
-    ;
-    ; application setup
-    ;
-
+    
     sei                     ; disable interrupts
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff

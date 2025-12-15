@@ -1,4 +1,6 @@
-; generated code, do not edit
+    ;
+    ; generated code, do not edit
+    ;
     ; sprite 0
     lda sprites_state + s::sx
     sta VIC_SPRITE_0_X

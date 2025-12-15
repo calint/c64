@@ -18,7 +18,9 @@ width = int(root.attrib["width"])
 height = int(root.attrib["height"])
 data = root.find("layer").find("data").text.strip().split(",")
 
+print(";")
 print("; generated code, do not edit")
+print(";")
 for row in range(height):
     row_data = []
     for col in range(width):

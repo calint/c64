@@ -9,7 +9,9 @@ if len(sys.argv) < 2:
 
 filename = sys.argv[1]
 
+print(";")
 print("; generated code, do not edit")
+print(";")
 with Image.open(filename) as img:
     if img.mode != "P":
         print("Error: The PNG is not paletted.")
