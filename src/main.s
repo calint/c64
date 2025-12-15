@@ -279,6 +279,14 @@ program:
 
     sei                     ; disable interrupts
 
+    ; ; initialize stack
+    ; ldx $ff                 ; low byte of stack
+    ; txs                     ; high byte of stack is $01
+    ;
+    ; cld                     ; clear decimal mode
+    ;
+    ; note: not really necessary since initialized at boot by kernal
+
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
     lda #%00110101          ; see https://sta.c64.org/cbm64mem.html
     sta $01
@@ -292,16 +300,16 @@ program:
     lda #0
     sta camera_x_lo
     sta camera_x_hi
-    sta screen_active       ; active screen  0
+    sta screen_active
     sta hero_jumping
     sta frame_counter
 
-    ; set foreground and background
+    ; set background
     lda #COLOR_BLACK
     sta VIC_BG_COLOR
 
     ; set all color ram to white
-    lda #COLOR_WHITE        ; white color
+    lda #COLOR_WHITE
     ldx #0                  ; initialize index
  :  sta color_ram+$000,x    ; color ram starts at $d800
     sta color_ram+$100,x    ; continue through
