@@ -346,9 +346,6 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; increase counter used to do periodic actions
-;    inc frame_counter
-
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
