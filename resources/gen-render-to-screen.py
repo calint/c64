@@ -13,7 +13,7 @@ lines = []
 
 print("    ;")
 print("    ; generated code, do not edit")
-print("    ;")
+print("    ;\n")
 for i in range(num_rows):
     tile_row = i
     screen_row = screen_y_offset + i

@@ -12,7 +12,7 @@ filename = sys.argv[2]
 
 print(";")
 print("; generated code, do not edit")
-print(";")
+print(";\n")
 with Image.open(filename) as img:
     if img.mode != "P":
         print("Error: PNG must be paletted.")
@@ -23,7 +23,7 @@ with Image.open(filename) as img:
 
     for row in range(0, img_height, sprite_height):
         for col in range(0, img_width, sprite_width):
-            print(f"\nsprites_data_{label_ix}:")
+            print(f"sprites_data_{label_ix}:")
             label_ix += 1
 
             for y in range(row, row + sprite_height):
@@ -37,4 +37,4 @@ with Image.open(filename) as img:
                         byte_val = (byte_val << 1) | (0 if pixel == 0 else 1)
                     bytes_out.append(f"%{byte_val:08b}")
                 print(f".byte {', '.join(bytes_out)} ; {y - row}")
-            print(".byte 0")
+            print(".byte 0\n")

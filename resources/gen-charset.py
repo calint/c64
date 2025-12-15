@@ -11,7 +11,7 @@ filename = sys.argv[1]
 
 print(";")
 print("; generated code, do not edit")
-print(";")
+print(";\n")
 with Image.open(filename) as img:
     if img.mode != "P":
         print("Error: The PNG is not paletted.")
@@ -38,3 +38,4 @@ with Image.open(filename) as img:
                         byte_value = (byte_value << 1) | bit
                     print(f".byte %{byte_value:08b}", end="")
                 print()
+            print()

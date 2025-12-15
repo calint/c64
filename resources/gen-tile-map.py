@@ -20,7 +20,7 @@ data = root.find("layer").find("data").text.strip().split(",")
 
 print(";")
 print("; generated code, do not edit")
-print(";")
+print(";\n")
 for row in range(height):
     row_data = []
     for col in range(width):

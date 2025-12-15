@@ -3,7 +3,7 @@
 num_sprites = 8
 print("    ;")
 print("    ; generated code, do not edit")
-print("    ;")
+print("    ;\n")
 code = []
 for sprite_num in range(num_sprites):
     offset = sprite_num * 4
