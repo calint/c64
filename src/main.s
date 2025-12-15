@@ -92,7 +92,7 @@ COLOR_GREY_3    = 15
 ;
 
 ; maving velocity to left and right
-MOVE_DY_LOW = 8
+MOVE_DX_LOW = 8
 
 ; when moving, at regular frame intervals hero makes a "skip" (a small jump)
 MOVE_SKIP_FRM = %1111 
@@ -102,6 +102,9 @@ MOVE_SKIP_AMNT = 20
 
 ; jump velocity
 JUMP_DY_LOW = 40
+
+; gravity as pixels + fraction to add to velocity every frame
+GRAVITY = 3
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -336,15 +339,15 @@ main_loop:
 ;-------------------------------------------------------------------------------
 update:
 ;-------------------------------------------------------------------------------
-
+    ; note: previous x and y for objects are saved at `refresh`
+    ;       state must be consistent when `udpate` is done 
+ 
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; lda hero + 6   ; dylo
-    ; sta VIC_BORDER
- 
-;    inc camera_x_lo
+    ; increase counter used to do periodic actions
+;    inc frame_counter
 
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
@@ -354,18 +357,12 @@ update:
     ; sprite has collided with background, restore state to previous x and y and
     ; set dx, dy to 0
 
-    ; lda #COLOR_WHITE
-    ; sta VIC_BORDER
-
     lda hero + o::x_prv_lo
     sta hero + o::x_lo
-
     lda hero + o::x_prv_hi
     sta hero + o::x_hi
-
     lda hero + o::y_prv_lo
     sta hero + o::y_lo
-
     lda hero + o::y_prv_hi
     sta hero + o::y_hi
 
@@ -380,9 +377,11 @@ update:
     ; ror hero + 7   ; dy high
     ; ror hero + 6   ; dy low
 
+    ; stop the jump logic
     lda #0
     sta hero_jumping
-    ; note: `dx_lo`` and `dx_hi` are set to 0 in @controls
+
+    ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
     sta hero + o::dy_lo
     sta hero + o::dy_hi
 
@@ -396,22 +395,23 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #(256-MOVE_DY_LOW)
+    lda #(256-MOVE_DX_LOW)
     sta hero + o::dx_lo
     lda #$ff
     sta hero + o::dx_hi
 
-    ; every now and then make a small jump when moving
+    ; regularly "skip" (small jump) when moving
     lda frame_counter
     and #MOVE_SKIP_FRM
     bne @right
 
-    ; check that dy is 0
+    ; don't "skip" if dy is not 0
     lda hero + o::dy_lo
     bne @right
     lda hero + o::dy_hi
     bne @right
 
+    ; "skip" by a negative dy
     lda #(256-MOVE_SKIP_AMNT)
     sta hero + o::dy_lo
     lda #$ff
@@ -420,48 +420,29 @@ update:
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
-    ; bne @up
     bne @fire
 
-    lda #MOVE_DY_LOW
+    lda #MOVE_DX_LOW
     sta hero + o::dx_lo
     lda #0
     sta hero + o::dx_hi
 
-    ; every now and then make a small jump when moving
+    ; regularly "skip" (small jump) when moving
     lda frame_counter
     and #MOVE_SKIP_FRM
     bne @fire
 
-    ; check that dy is 0
+    ; don't "skip" if dy is not 0
     lda hero + o::dy_lo
     bne @fire
     lda hero + o::dy_hi
     bne @fire
 
+    ; "skip" by a negative dy
     lda #(256-MOVE_SKIP_AMNT)
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
-
-; @up:
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_UP
-;     bne @down
-;
-;     lda #$ff
-;     sta hero + 6     ; dy low
-;     sta hero + 7     ; dy high
-;
-; @down:
-;     lda VIC_DATA_PORT_A 
-;     and #JOYSTICK_DOWN
-;     bne @fire
-;
-;     lda #1
-;     sta hero + 6     ; dy low
-;     lda #0
-;     sta hero + 7     ; dy high
 
 @fire:
     ; is hero already jumping?
@@ -478,16 +459,17 @@ update:
     lda #$ff
     sta hero + o::dy_hi
 
+    ; flag for hero is in a jump
     lda #1
     sta hero_jumping
 
 @controls_done:
-
+    ; apply gravity if hero is in a jump
     lda hero_jumping
     bne @gravity_apply
 
-    ; every n'th frame apply gravity
-    inc frame_counter
+    ; every n'th frame apply gravity for collision with floor detection
+    inc frame_counter ; note: best result when frame counter is increased here
     lda frame_counter
     and #$f
     beq @gravity_apply
@@ -499,28 +481,22 @@ update:
     beq @gravity_done
 
 @gravity_apply:
+    ; increase dy
     clc
     lda hero + o::dy_lo
-    adc #4
+    adc #GRAVITY
     sta hero + o::dy_lo
     lda hero + o::dy_hi 
     adc #0
     sta hero + o::dy_hi
 
 @gravity_done:
-    ; dummy work
- ;    ldy #4
- ;    ldx #0
- ; :  dex
- ;    bne :-
- ;    dey
- ;    bne :-
 
 ;-------------------------------------------------------------------------------
 refresh:
 ;-------------------------------------------------------------------------------
 
-    ; set border color to illustrate duration of update
+    ; set border color to illustrate duration of this pass
     lda #BORDER_LOOP
     sta VIC_BORDER
 
@@ -621,17 +597,18 @@ refresh:
     ; update sprite x position
     lda tmp1                    ; x low
     sta sprites_state + s::sx
+
     ; check if 9'th bit of sprite x needs to be set
     lda tmp2                    ; x high
-    and #1                      ; check 9'th bit considering the sub-pixels
+    and #1                      ; check 9'th bit considering
     beq @msb_off                ; zero, msb off
     lda sprites_msb_x           ; msb on
-    ora #%00000001              ; set 9'th bit of sprite 0 x
+    ora #%00000001              ; set sprite 0 9'th bit x
     sta sprites_msb_x
     jmp @msb_done
 @msb_off:
-    lda sprites_msb_x
-    and #%11111110              ; set sprite 0 9'th bit to 0
+    lda sprites_msb_x           ; set sprite 0 x 9'th bit to 0
+    and #%11111110
     sta sprites_msb_x
 @msb_done:
 
@@ -700,8 +677,9 @@ render:
     clc                     ; clear unknown carry flag state
     adc #1                  ; add 1
     and #%00000111          ; mask to 3 bits
-    sta screen_offset       ; store screen shift
+    sta screen_offset       ; store screen shift right offset
     tay                     ; store in y for later use
+
     ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
     ; with adjustment if screen_offset != 0
     txa                     ; restore camera_x_lo
@@ -729,8 +707,8 @@ render_tile_map:
 ;-------------------------------------------------------------------------------
 
     ; initiate tile map position and screen column
-    ldx tile_map_x
-    ldy #0
+    ldx tile_map_x          ; tile map left edge
+    ldy #0                  ; screen column start
 
     ; jump to unrolled loop for current screen
     lda screen_active
@@ -791,13 +769,6 @@ objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
-
-    ; top left (31, 50) on visible are in 38 column mode
-    ;.byte  31<<4&$ff,  31>>4,  50<<4&$ff, 50>>4,     0,    0,    1,    0, sprites_data_1>>6,       0,     0,      0,      0
-
-    ; standing on bottom tile row
-    ;.byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,  $ff,  $ff,    0,    0, sprites_data_1>>6,       0,     0,      0,      0
-
 hero:
     .byte 170<<4&$ff, 170>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
 
