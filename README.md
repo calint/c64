@@ -9,6 +9,7 @@ experiments with bare metal commodore 64
 * user defined character set in png bitmap
 * control scroll by user
 * sprites with collision detection
+* a miniature game with 15 minutes playtime
 
 ## tools
 
