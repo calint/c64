@@ -270,7 +270,7 @@ program:
 .endstruct
 
 ;-------------------------------------------------------------------------------
-    
+
     sei                     ; disable interrupts
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
