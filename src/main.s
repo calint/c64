@@ -94,7 +94,7 @@ COLOR_GREY_3    = 15
 ; maving velocity to left and right
 MOVE_DX_LOW = 8
 
-; when moving, at regular frame intervals hero makes a "skip" (a small jump)
+; when moving, hero makes a "skip" (a small jump) at interval
 MOVE_SKIP_FRM = %1111 
 
 ; amount of dy when hero "skips" while moving
@@ -105,6 +105,9 @@ JUMP_DY_LOW = 40
 
 ; gravity as pixels + fraction to add to velocity every frame
 GRAVITY = 3
+
+; gravity applied when hero is not jumping at interval
+GRAVITY_FRM = %1111
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -470,7 +473,7 @@ update:
     ; note: best result when frame counter is increased here when interacting
     ;       with the move "skip"
     lda frame_counter
-    and #$f
+    and #GRAVITY_FRM
     beq @gravity_apply
 
     ; check if dy is zero and skip gravity if so
