@@ -109,6 +109,12 @@ GRAVITY = 3
 ; gravity applied when hero is not jumping at interval
 GRAVITY_FRM = %1111
 
+; tile id for pickable item
+TILE_ID_PICKABLE = 33
+
+; tile id for empty
+TILE_ID_EMPTY = 32
+
 ;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
@@ -125,6 +131,8 @@ tmp1:                .res 1  ; temporary
 tmp2:                .res 1  ; temporary
 hero_jumping:        .res 1  ; 1 if in jump
 frame_counter:       .res 1
+ptr1:                .res 2  ; temporary pointer
+pickables:           .res 1  ; number of picked items
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -303,6 +311,7 @@ program:
     sta screen_active
     sta hero_jumping
     sta frame_counter
+    sta pickables
 
     ; set background
     lda #COLOR_BLACK
@@ -360,7 +369,7 @@ update:
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
     and #%00000001
-    beq @controls
+    beq @collision_reaction_done
 
     ; sprite has collided with background, restore state to previous x and y and
     ; set dx, dy to 0
@@ -392,6 +401,94 @@ update:
     ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
     sta hero + o::dy_lo
     sta hero + o::dy_hi
+
+@collision_reaction_done:
+    ; convert hero world x, y to tile map coordinates
+    ; round to nearest tile by adding half of a tile times fraction (4 * 16)
+    lda hero + o::x_lo
+    clc
+    adc #4 * 16
+    sta tmp1
+    lda hero + o::x_hi
+    adc #0
+    sta tmp2
+    ; tmp1, tmp2 now contains the rounded value of world x with fraction
+    lda tmp1
+    ; shift right pixel fraction and 8 pixels of a tile
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    sta tmp1
+    lda tmp2
+    asl
+    ora tmp1
+    ; acc now contains tile x
+    tay
+
+    lda hero + o::y_lo
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    sta tmp1
+    lda hero + o::y_hi
+    asl
+    ora tmp1
+    ; acc now contains tile y
+    tax                     ; save for later use
+    ; make pointer to tile x, y
+    lda #<tile_map          ; low byte of address to `tile_map`
+    sta ptr1
+    lda #>tile_map
+    sta ptr1 + 1
+    txa                     ; acc contains tile y
+    clc
+    adc ptr1 + 1
+    sta ptr1 + 1
+
+    ; check top left tile
+    lda (ptr1), y
+    cmp #TILE_ID_PICKABLE
+    bne :+
+    inc pickables
+    lda #TILE_ID_EMPTY
+    sta (ptr1), y
+
+    ; check top right tile
+:   iny
+    lda (ptr1), y
+    cmp #TILE_ID_PICKABLE
+    bne :+
+    inc pickables
+    lda #TILE_ID_EMPTY
+    sta (ptr1), y
+
+    ; check bottom right tile
+:   inc ptr1 + 1
+    lda (ptr1), y
+    cmp #TILE_ID_PICKABLE
+    bne :+
+    inc pickables
+    lda #TILE_ID_EMPTY
+    sta (ptr1), y
+
+    ; check bottom left tile
+:   dey
+    lda (ptr1), y
+    cmp #TILE_ID_PICKABLE
+    bne :+
+    inc pickables
+    lda #TILE_ID_EMPTY
+    sta (ptr1), y
+:
+    ; done checking for pickables
 
 @controls:
     lda #0
