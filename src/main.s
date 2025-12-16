@@ -542,7 +542,9 @@ refresh:
 
     ; center camera on hero
     ; todo: move this to "user" code
+    ; make x and y to tmp1 and tmp2 in world pixel coordinates
     lda hero + o::x_lo
+    ; remove pixel fraction
     lsr
     lsr
     lsr
@@ -550,21 +552,26 @@ refresh:
     sta tmp1
     lda hero + o::x_hi
     tax
+    ; make room for 4 bits from tmp1
     asl
     asl
     asl
     asl
+    ; or the 4 lowest high bits
     ora tmp1
     sta camera_x_lo
     txa
+    ; remove the ored 4 lowest bits
     lsr
     lsr
     lsr
     lsr
     sta camera_x_hi
+
+    ; center camera on object with 16 pixels wide sprite
     sec
     lda camera_x_lo
-    sbc #320/2-8            ; -8 to move center sprite of width 16
+    sbc #320/2-8            ; 320 screen width, -8 to move to center of sprite
     sta camera_x_lo
     lda camera_x_hi
     sbc #0
