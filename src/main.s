@@ -601,6 +601,10 @@ update:
    lda #0
    sta hero + o::x_lo
    sta hero + o::x_hi
+   sta hero + o::dx_lo
+   sta hero + o::dx_hi
+   sta hero + o::dy_lo
+   sta hero + o::dy_hi
    lda #(10*8)<<4&$ff       ; start falling from row 10
    sta hero + o::y_lo
    lda #(10*8)>>4
