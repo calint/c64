@@ -618,7 +618,7 @@ update:
     ; every n'th frame apply gravity for collision with floor detection
     inc frame_counter 
     ; note: best result when frame counter is increased here when interacting
-    ;       with the move "skip"
+    ;       with the move "skip" use of same variable
     lda frame_counter
     and #GRAVITY_FRM
     beq @gravity_apply
@@ -756,7 +756,7 @@ refresh:
     lda sprites_msb_x           ; msb on
     ora #%00000001              ; set sprite 0 9'th bit x
     sta sprites_msb_x
-    jmp @msb_done
+    jmp @msb_done               ; note: see .byte $2C trick
 @msb_off:
     lda sprites_msb_x           ; set sprite 0 x 9'th bit to 0
     and #%11111110
