@@ -564,7 +564,7 @@ refresh:
     sta camera_x_hi
     sec
     lda camera_x_lo
-    sbc #320/2-8
+    sbc #320/2-8            ; -8 to move center sprite of width 16
     sta camera_x_lo
     lda camera_x_hi
     sbc #0
