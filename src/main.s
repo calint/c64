@@ -375,7 +375,7 @@ update:
     sta hero + o::y_hi
 
     ; ; half the dx, dy
-    ; note: this would be nicer but it does not work for now
+    ; ; note: this would be nicer but it does not work for now
     ; lda hero + 5   ; dx high
     ; cmp #$80
     ; ror hero + 5   ; dx high
