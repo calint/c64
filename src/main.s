@@ -552,11 +552,11 @@ update:
 @fire:
     ; is hero already jumping?
     lda hero_jumping
-    bne @controls_done
+    bne @space
 
     lda VIC_DATA_PORT_A
     and #JOYSTICK_FIRE
-    bne @controls_done
+    bne @space
 
     ; set negative dy to jump up
     lda #(256-JUMP_DY_LOW)
@@ -567,6 +567,19 @@ update:
     ; flag for hero is in a jump
     lda #1
     sta hero_jumping
+
+@space:
+   lda VIC_DATA_PORT_B
+   and #16
+   bne @controls_done
+
+   lda #0
+   sta hero + o::x_lo
+   sta hero + o::x_hi
+   lda #(10*8)<<4&$ff       ; start falling from row 10
+   sta hero + o::y_lo
+   lda #(10*8)>>4
+   sta hero + o::y_hi
 
 @controls_done:
     ; apply gravity if hero is in a jump
