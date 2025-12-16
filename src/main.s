@@ -593,7 +593,8 @@ refresh:
     lsr
     sta tmp2                ; high bits of world x in pixels 
  
-    ; add left border (40-column display) to map object coordinates of tile map
+    ; add left border (40-column display)
+    ; note: map object to coordinates of tile map
     clc
     lda tmp1
     adc #24                 ; left border
@@ -645,7 +646,8 @@ refresh:
     asl
     asl
     ora tmp1
-    ; add top border (25 rows display) to map object to coordinates of tile map
+    ; add top border (25 rows display)
+    ; note: map object to coordinates of tile map
     clc
     adc #50
     sta sprites_state + s::sy
