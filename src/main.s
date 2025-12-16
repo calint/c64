@@ -59,7 +59,7 @@ SID_V1_FREQ_HI  = $d401
 SID_V1_CTRL     = $d404
 SID_V1_AD       = $d405
 SID_V1_SR       = $d406
-SID_MODE_VOL    = $D418
+SID_MODE_VOL    = $d418
 SPRITE_IX_OFST  = $03f8     ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
@@ -101,25 +101,31 @@ COLOR_GREY_3    = 15
 MOVE_DX_LOW = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval
-MOVE_SKIP_FRM = %1111 
+MOVE_SKIP_INTERVAL = %1111 
 
 ; amount of dy when hero "skips" while moving
-MOVE_SKIP_AMNT = 20
+MOVE_SKIP_VELOCITY = 20
 
-; jump velocity
-JUMP_DY_LOW = 40
+; initial velocity upwards when jumping
+JUMP_VELOCITY_LO = 40
 
 ; gravity as pixels + fraction to add to velocity every frame
 GRAVITY = 3
 
 ; gravity applied when hero is not jumping at interval
-GRAVITY_FRM = %1111
+GRAVITY_INTERVAL = %1111
 
 ; tile id for pickable item
 TILE_ID_PICKABLE = 33
 
 ; tile id for empty
 TILE_ID_EMPTY = 32
+
+; y position when restarting including sub-pixels
+;RESTART_Y_LO = ((10 * 8) << 4) & $ff
+;RESTART_Y_HI = (10 * 8) >> 4
+RESTART_Y_LO = 0
+RESTART_Y_HI = $ff
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -525,14 +531,14 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #(256-MOVE_DX_LOW)
+    lda #256 - MOVE_DX_LOW
     sta hero + o::dx_lo
     lda #$ff
     sta hero + o::dx_hi
 
     ; regularly "skip" (small jump) when moving
     lda frame_counter
-    and #MOVE_SKIP_FRM
+    and #MOVE_SKIP_INTERVAL
     bne @right
 
     ; don't "skip" if dy is not 0
@@ -542,7 +548,7 @@ update:
     bne @right
 
     ; "skip" by a negative dy
-    lda #(256-MOVE_SKIP_AMNT)
+    lda #256 - MOVE_SKIP_VELOCITY
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -559,7 +565,7 @@ update:
 
     ; regularly "skip" (small jump) when moving
     lda frame_counter
-    and #MOVE_SKIP_FRM
+    and #MOVE_SKIP_INTERVAL
     bne @fire
 
     ; don't "skip" if dy is not 0
@@ -569,7 +575,7 @@ update:
     bne @fire
 
     ; "skip" by a negative dy
-    lda #(256-MOVE_SKIP_AMNT)
+    lda #256 - MOVE_SKIP_VELOCITY
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -577,14 +583,14 @@ update:
 @fire:
     ; is hero already jumping?
     lda hero_jumping
-    bne @space
+    bne @return
 
     lda VIC_DATA_PORT_A
     and #JOYSTICK_FIRE
-    bne @space
+    bne @return
 
     ; set negative dy to jump up
-    lda #(256-JUMP_DY_LOW)
+    lda #256 - JUMP_VELOCITY_LO
     sta hero + o::dy_lo
     lda #$ff
     sta hero + o::dy_hi
@@ -593,9 +599,11 @@ update:
     lda #1
     sta hero_jumping
 
-@space:
+@return:
+   lda #$fe       ; set row 0 (invert bit 0)
+   sta VIC_DATA_PORT_A
    lda VIC_DATA_PORT_B
-   and #16
+   and #2
    bne @controls_done
 
    lda #0
@@ -605,9 +613,9 @@ update:
    sta hero + o::dx_hi
    sta hero + o::dy_lo
    sta hero + o::dy_hi
-   lda #(10*8)<<4&$ff       ; start falling from row 10
+   lda #RESTART_Y_LO 
    sta hero + o::y_lo
-   lda #(10*8)>>4
+   lda #RESTART_Y_HI
    sta hero + o::y_hi
 
 @controls_done:
@@ -620,7 +628,7 @@ update:
     ; note: best result when frame counter is increased here when interacting
     ;       with the move "skip" use of same variable
     lda frame_counter
-    and #GRAVITY_FRM
+    and #GRAVITY_INTERVAL
     beq @gravity_apply
 
     ; check if dy is zero and skip gravity if so
