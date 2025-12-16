@@ -685,7 +685,7 @@ refresh:
 
     ; center camera on hero
     ; todo: move this to "user" code
-    ; make x and y to tmp1 and tmp2 in world pixel coordinates
+    ; make hero x to tmp1 (x lo) and tmp2 (x hi) in world pixel coordinates
     lda hero + o::x_lo
     ; remove pixel fraction
     lsr
@@ -703,6 +703,7 @@ refresh:
     ; or the 4 lowest high bits
     ora tmp1
     sta camera_x_lo
+    sta tmp1
     txa                     ; restore hero x_hi
     ; remove the "ored" 4 lowest bits
     lsr
@@ -710,6 +711,8 @@ refresh:
     lsr
     lsr
     sta camera_x_hi
+    sta tmp2
+    ; tmp1 and tmp2 now contains x_lo, x_hi
 
     ; center camera on object with 16 pixels wide sprite
     sec
@@ -721,38 +724,7 @@ refresh:
     sta camera_x_hi
 
     ; place object in camera coordinate system
-
-    ; put object world x coordinates in tmp1, tmp2 (lo,hi) by removing fraction
-    lda hero + o::x_lo
-    lsr                     ; shift out the sub-pixel coordinate
-    lsr
-    lsr
-    lsr
-    sta tmp1
-    lda hero + o::x_hi
-    asl
-    asl
-    asl
-    asl
-    ora tmp1
-    sta tmp1                ; low bits of world x in pixels
-    lda hero + o::x_hi
-    lsr
-    lsr
-    lsr
-    lsr
-    sta tmp2                ; high bits of world x in pixels 
  
-    ; add left border (40-column display)
-    ; note: map object to coordinates of tile map
-    clc
-    lda tmp1
-    adc #24                 ; left border
-    sta tmp1
-    lda tmp2
-    adc #0
-    sta tmp2
-
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda tmp1
@@ -760,6 +732,15 @@ refresh:
     sta tmp1
     lda tmp2
     sbc camera_x_hi
+    sta tmp2
+
+    ; add left border (40-column display)
+    clc
+    lda tmp1
+    adc #24                 ; left border
+    sta tmp1
+    lda tmp2
+    adc #0
     sta tmp2
 
     ; update sprite position
