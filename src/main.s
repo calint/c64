@@ -64,7 +64,7 @@ BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
 BORDER_LOOP     = COLOR_YELLOW 
-RASTER_BORDER   = 250       ; raster interrupt at bottom border
+RASTER_BORDER   = 251       ; raster value below bottom border (PAL)
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
 JOYSTICK_LEFT   = 4         ; bit when joystick is left
@@ -593,6 +593,16 @@ refresh:
     lsr
     sta tmp2                ; high bits of world x in pixels 
  
+    ; add left border (40-column display) to map object coordinates of tile map
+    clc
+    lda tmp1
+    adc #24                 ; left border
+    sta tmp1
+    lda tmp2
+    adc #0
+    sta tmp2
+
+
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda tmp1
@@ -635,6 +645,9 @@ refresh:
     asl
     asl
     ora tmp1
+    ; add top border (25 rows display) to map object to coordinates of tile map
+    clc
+    adc #50
     sta sprites_state + s::sy
 
     ;
@@ -780,7 +793,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   0<<4&$ff,   0>>4, 226<<4&$ff, 226>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
+    .byte   0<<4&$ff,   0>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
