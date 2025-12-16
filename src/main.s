@@ -690,7 +690,7 @@ refresh:
     lsr
     sta tmp1
     lda hero + o::x_hi
-    tax
+    tax                     ; save for later use
     ; make room for 4 bits from tmp1
     asl
     asl
@@ -699,8 +699,8 @@ refresh:
     ; or the 4 lowest high bits
     ora tmp1
     sta camera_x_lo
-    txa
-    ; remove the ored 4 lowest bits
+    txa                     ; restore hero x_hi
+    ; remove the "ored" 4 lowest bits
     lsr
     lsr
     lsr
@@ -748,7 +748,6 @@ refresh:
     lda tmp2
     adc #0
     sta tmp2
-
 
     ; put object coordinates on screen by subtracting camera x position
     sec
