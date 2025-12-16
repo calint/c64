@@ -54,6 +54,12 @@ VIC_SPR_SPR_COL = $d01e     ; vic-ii sprite vs sprite collision bits
 VIC_SPR_BG_COL  = $d01f     ; vic-ii sprite vs background collision bits
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
+SID_V1_FREQ_LO  = $d400
+SID_V1_FREQ_HI  = $d401
+SID_V1_CTRL     = $d404
+SID_V1_AD       = $d405
+SID_V1_SR       = $d406
+SID_MODE_VOL    = $D418
 SPRITE_IX_OFST  = $03f8     ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
@@ -298,6 +304,34 @@ program:
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
     lda #%00110101          ; see https://sta.c64.org/cbm64mem.html
     sta $01
+
+    ;
+    ; initialize sound
+    ;
+
+    ; set waveform to triangle (closest to sine)
+    lda #$11                ; triangle wave + gate bit
+    sta SID_V1_CTRL
+ 
+    ; set adsr (attack/decay/sustain/release)
+    lda #$00                ; fast attack, fast decay
+    sta SID_V1_AD
+    lda #$ff                ; max sustain, max release
+    sta SID_V1_SR
+
+    ; set volume to maximum
+    lda #$0f                ; volume 15
+    sta SID_MODE_VOL
+
+    ; lda #$12
+    ; sta SID_V1_FREQ_LO
+    ; lda #$01
+    ; sta SID_V1_FREQ_HI
+    ;
+    ; lda #$23
+    ; sta SID_V1_FREQ_LO
+    ; lda #$02
+    ; sta SID_V1_FREQ_HI
 
     ;
     ; setup first render
@@ -611,6 +645,10 @@ update:
     sta hero + o::dy_hi
 
 @gravity_done:
+
+;-------------------------------------------------------------------------------
+sound:
+;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 refresh:
