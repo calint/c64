@@ -798,8 +798,7 @@ update:
     iny                     ; next sprite byte
     lda hud_lines, x        ; load the pattern
     sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
+
 ;-------------------------------------------------------------------------------
 sound:
 ;-------------------------------------------------------------------------------
