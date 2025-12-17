@@ -684,6 +684,34 @@ update:
     ldy #11 * 3 + 1         ; start row 11, second byte
     jsr @draw_hud_bytes
 
+    ; render progress bar
+
+    ; get (approximate) number of dots in the line
+    lda hero + o::x_hi
+    ; shift to fit graph of 21 dots 
+    lsr
+    lsr
+    lsr
+    ; acc now contains number of dots in the progress line
+    ; multiply by 3 bytes per row
+    sta tmp1
+    asl
+    clc
+    adc tmp1
+    ; render on sprite
+    tax
+    ldy #18 * 3             ; start at row 18, first byte
+    lda progress_lines, x
+    sta sprites_data_47, y
+    inx
+    iny
+    lda progress_lines, x
+    sta sprites_data_47, y
+    inx
+    iny
+    lda progress_lines, x
+    sta sprites_data_47, y
+
     jmp @hud_done           ; or next part of your code
 
 @draw_hud_bytes:
@@ -968,6 +996,7 @@ render_tile_map:
     jmp main_loop
 
 ;-------------------------------------------------------------------------------
+.align 16
 sprites_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("sprites_state: $%04X", sprites_state)
@@ -975,7 +1004,7 @@ sprites_state:
 sprite_hero:
     .byte   0,   0, sprites_data_0 >>6, 1
 sprite_hud:
-    .byte  54,  51, sprites_data_47>>6, 15
+    .byte  28,  51, sprites_data_47>>6, 15
     .byte 114, 150, sprites_data_2 >>6, 3
     .byte 138, 150, sprites_data_3 >>6, 4
     .byte 162, 150, sprites_data_4 >>6, 5
@@ -987,11 +1016,12 @@ sprites_msb_x: ; 9'th bit of x-coordinate
 sprites_enable:
     .byte %00000011
 sprites_double_width:
-    .byte %00000000
+    .byte %00000010
 sprites_double_height:
-    .byte %00000000
+    .byte %00000010
 
 ;-------------------------------------------------------------------------------
+.align 16
 objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04X", objects_state)
@@ -1004,6 +1034,7 @@ hero:
 .assert * <= $d000, error, "segment overflows into I/O"
 
 ;-------------------------------------------------------------------------------
+.align 16
 hud_lines:
 ;-------------------------------------------------------------------------------
 .byte %11111111, %11111111
@@ -1016,6 +1047,34 @@ hud_lines:
 .byte %01010101, %01010111
 .byte %01010101, %01010101
 
+;-------------------------------------------------------------------------------
+.align 16
+progress_lines:
+;-------------------------------------------------------------------------------
+.byte %11000000, %00000000, %00000011
+.byte %11100000, %00000000, %00000011
+.byte %11110000, %00000000, %00000011
+.byte %11111000, %00000000, %00000011
+.byte %11111100, %00000000, %00000011
+.byte %11111110, %00000000, %00000011
+.byte %11111111, %00000000, %00000011
+.byte %11111111, %10000000, %00000011
+.byte %11111111, %11000000, %00000011
+.byte %11111111, %11100000, %00000011
+.byte %11111111, %11110000, %00000011
+.byte %11111111, %11111000, %00000011
+.byte %11111111, %11111100, %00000011
+.byte %11111111, %11111110, %00000011
+.byte %11111111, %11111111, %00000011
+.byte %11111111, %11111111, %10000011
+.byte %11111111, %11111111, %11000011
+.byte %11111111, %11111111, %11100011
+.byte %11111111, %11111111, %11110011
+.byte %11111111, %11111111, %11111011
+.byte %11111111, %11111111, %11111111
+
+;-------------------------------------------------------------------------------
+.out .sprintf("   free bytes: %d", $d800 - *)
 ;-------------------------------------------------------------------------------
 ; color ram
 ;-------------------------------------------------------------------------------
