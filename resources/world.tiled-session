@@ -14,11 +14,11 @@
             "scaleInEditor": 8
         },
         "tile-map.tmx": {
-            "scale": 4,
+            "scale": 5.5962,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 333.375,
-                "y": 69.625
+                "x": -22.24723919802723,
+                "y": 104.80325935456204
             }
         }
     },
