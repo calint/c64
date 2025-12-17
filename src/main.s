@@ -145,6 +145,8 @@ hero_jumping:        .res 1  ; 1 if in jump
 frame_counter:       .res 1
 ptr1:                .res 2  ; temporary pointer
 pickables:           .res 1  ; number of picked items
+infinities:          .res 1  ; number of restarts from stuck position
+restarting:          .res 1  ; if restarting
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -352,6 +354,8 @@ program:
     sta hero_jumping
     sta frame_counter
     sta pickables
+    lda #7
+    sta infinities
 
     ; set background
     lda #COLOR_BLACK
@@ -438,6 +442,9 @@ update:
     lda #0
     sta hero_jumping
 
+    ; restart sequence done
+    sta restarting
+
     ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
     sta hero + o::dy_lo
     sta hero + o::dy_hi
@@ -463,7 +470,9 @@ update:
     tay
 
     lda hero + o::y_lo
-    lsr
+    clc
+    adc #4 * 16
+    ror
     lsr
     lsr
     lsr
@@ -583,11 +592,11 @@ update:
 @fire:
     ; is hero already jumping?
     lda hero_jumping
-    bne @return
+    bne @key_return
 
     lda VIC_DATA_PORT_A
     and #JOYSTICK_FIRE
-    bne @return
+    bne @key_return
 
     ; set negative dy to jump up
     lda #256 - JUMP_VELOCITY_LO
@@ -599,24 +608,38 @@ update:
     lda #1
     sta hero_jumping
 
-@return:
-   lda #$fe       ; set row 0 (invert bit 0)
-   sta VIC_DATA_PORT_A
-   lda VIC_DATA_PORT_B
-   and #2
-   bne @controls_done
+@key_return:
+    ; if restarting skip this step
+    lda restarting
+    bne @controls_done
 
-   lda #0
-   sta hero + o::x_lo
-   sta hero + o::x_hi
-   sta hero + o::dx_lo
-   sta hero + o::dx_hi
-   sta hero + o::dy_lo
-   sta hero + o::dy_hi
-   lda #RESTART_Y_LO 
-   sta hero + o::y_lo
-   lda #RESTART_Y_HI
-   sta hero + o::y_hi
+    lda #$fe       ; set row 0 (invert bit 0)
+    sta VIC_DATA_PORT_A
+    lda VIC_DATA_PORT_B
+    and #2
+    bne @controls_done
+
+    lda #1
+    sta restarting
+
+    ; if infinities left
+    lda infinities
+    beq @controls_done
+
+    dec infinities
+
+    ; set restart position
+    lda #0
+    sta hero + o::x_lo
+    sta hero + o::x_hi
+    sta hero + o::dx_lo
+    sta hero + o::dx_hi
+    sta hero + o::dy_lo
+    sta hero + o::dy_hi
+    lda #RESTART_Y_LO 
+    sta hero + o::y_lo
+    lda #RESTART_Y_HI
+    sta hero + o::y_hi
 
 @controls_done:
     ; apply gravity if hero is in a jump
@@ -649,6 +672,134 @@ update:
 
 @gravity_done:
 
+@hud:
+    ; render pickables count
+
+    ldy #3 * 3 + 1          ; start at second byte on line 3 in sprite
+    ; row 1
+    lda pickables
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 2
+    lda pickables
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 3
+    lda pickables
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 4
+    lda pickables
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 5
+    lda pickables
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+
+    ; render infinities
+
+    ldy #11 * 3 + 1         ; start at second byte on line 3 in sprite
+    ; row 1
+    lda infinities
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 2
+    lda infinities
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 3
+    lda infinities
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 4
+    lda infinities
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
+    ; row 5
+    lda infinities
+    asl                     ; multiply by 2
+    tax                     ; put in x
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    inx                     ; next hud byte
+    iny                     ; next sprite byte
+    lda hud_lines, x        ; load the pattern
+    sta sprites_data_47, y  ; store in sprite
+    iny                     ; move to sprite second byte in next row
+    iny
 ;-------------------------------------------------------------------------------
 sound:
 ;-------------------------------------------------------------------------------
@@ -913,7 +1064,7 @@ sprites_state:
 sprite_hero:
     .byte   0,   0, sprites_data_0 >>6, 1
 sprite_hud:
-    .byte  55,  50, sprites_data_47>>6, 15
+    .byte  54,  51, sprites_data_47>>6, 15
     .byte 114, 150, sprites_data_2 >>6, 3
     .byte 138, 150, sprites_data_3 >>6, 4
     .byte 162, 150, sprites_data_4 >>6, 5
@@ -940,6 +1091,19 @@ hero:
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
+
+;-------------------------------------------------------------------------------
+hud_lines:
+;-------------------------------------------------------------------------------
+.byte %11111111, %11111111
+.byte %01111111, %11111111
+.byte %01011111, %11111111
+.byte %01010111, %11111111
+.byte %01010101, %11111111
+.byte %01010101, %01111111
+.byte %01010101, %01011111
+.byte %01010101, %01010111
+.byte %01010101, %01010101
 
 ;-------------------------------------------------------------------------------
 ; color ram
