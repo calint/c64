@@ -629,8 +629,9 @@ update:
     dec infinities
 
     ; set restart position
-    lda #0
+    lda #4 * 16             ; middle of first tile
     sta hero + o::x_lo
+    lda #0
     sta hero + o::x_hi
     sta hero + o::dx_lo
     sta hero + o::dx_hi
@@ -672,132 +673,43 @@ update:
 
 @gravity_done:
 
-@hud:
+@render_hud:
     ; render pickables count
+    lda pickables
+    ldy #3 * 3 + 1          ; start row 3, second byte
+    jsr @draw_hud_bytes
 
-    ldy #3 * 3 + 1          ; start at second byte on line 3 in sprite
-    ; row 1
-    lda pickables
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 2
-    lda pickables
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 3
-    lda pickables
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 4
-    lda pickables
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 5
-    lda pickables
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
+    ; render infinities count
+    lda infinities
+    ldy #11 * 3 + 1         ; start row 11, second byte
+    jsr @draw_hud_bytes
 
-    ; render infinities
+    jmp @hud_done           ; or next part of your code
 
-    ldy #11 * 3 + 1         ; start at second byte on line 3 in sprite
-    ; row 1
-    lda infinities
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
+@draw_hud_bytes:
+    asl                     ; multiply value by 2
+    sta tmp1                ; store base index for hud_lines
+    ldx #4                  ; loop for 5 rows
+@row_loop:
+    stx tmp2                ; save row counter
+    ldx tmp1                ; get hud_lines index
+    lda hud_lines, x        ; load pattern byte 1
     sta sprites_data_47, y  ; store in sprite
     inx                     ; next hud byte
     iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
+    lda hud_lines, x        ; load pattern byte 2
     sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
+ 
+    ; advance y to the second byte of the next row
     iny
-    ; row 2
-    lda infinities
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
     iny
-    ; row 3
-    lda infinities
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 4
-    lda infinities
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    iny                     ; move to sprite second byte in next row
-    iny
-    ; row 5
-    lda infinities
-    asl                     ; multiply by 2
-    tax                     ; put in x
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load the pattern
-    sta sprites_data_47, y  ; store in sprite
+ 
+    ldx tmp2                ; restore row counter
+    dex
+    bpl @row_loop
+    rts
+
+@hud_done:
 
 ;-------------------------------------------------------------------------------
 sound:
@@ -1085,7 +997,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   0<<4&$ff,   0>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
+    .byte   4<<4&$ff,   4>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
