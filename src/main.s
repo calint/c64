@@ -130,10 +130,11 @@ RESTART_Y_LO = 0
 RESTART_Y_HI = $ff
 
 ; animation frame time interval (AND is 0)
-ANIMATION_FRAME_RATE = %111
+ANIMATION_FRAME_RATE_MOVING = %111
+ANIMATION_FRAME_RATE_IDLE = %11111
 
 ; animate still
-ANIMATE_STILL = 0
+ANIMATE_IDLE = 0
 
 ; animate move right
 ANIMATE_RIGHT = 1
@@ -164,6 +165,7 @@ ptr1:                 .res 2  ; temporary pointer
 pickables:            .res 1  ; number of picked items
 infinities:           .res 1  ; number of restarts from stuck position
 restarting:           .res 1  ; if restarting
+animation_frame_rate: .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -374,6 +376,8 @@ program:
     sta hero_animation_frame
     sta frame_counter
     sta pickables
+    lda #ANIMATION_FRAME_RATE_IDLE
+    sta animation_frame_rate
     lda #7
     sta infinities
 
@@ -573,6 +577,8 @@ update:
     sta hero_animation
     lda #0
     sta hero_animation_frame
+    lda #ANIMATION_FRAME_RATE_MOVING
+    sta animation_frame_rate
     :
 
     lda #256 - MOVE_DX_LO
@@ -612,6 +618,8 @@ update:
     sta hero_animation
     lda #0
     sta hero_animation_frame
+    lda #ANIMATION_FRAME_RATE_MOVING
+    sta animation_frame_rate
     :
 
     lda #MOVE_DX_LO
@@ -695,9 +703,16 @@ update:
     ; if hero is not moving animate idle
     lda hero_moving
     bne :+
-    lda #ANIMATE_STILL
+    ; if hero already still continue animation
+    lda hero_animation
+    cmp #ANIMATE_IDLE
+    beq :+
+    ; start hero still animation
+    lda #ANIMATE_IDLE
     sta hero_animation
-    sta hero_animation_frame  ; ANIMATE_STILL == 0
+    sta hero_animation_frame  ; ANIMATE_IDLE == 0
+    lda #ANIMATION_FRAME_RATE_IDLE
+    sta animation_frame_rate
     :
 
     ; apply gravity if hero is in a jump
@@ -798,12 +813,12 @@ update:
 
 @animation:
     lda frame_counter
-    and #ANIMATION_FRAME_RATE
+    and animation_frame_rate
     bne @animation_done
 
 @animation_still:
     lda hero_animation
-    cmp #ANIMATE_STILL
+    cmp #ANIMATE_IDLE
     bne @animation_right
 
     lda #<hero_animation_still
@@ -1199,7 +1214,9 @@ progress_lines:
 ;-------------------------------------------------------------------------------
 hero_animation_still:
 ;-------------------------------------------------------------------------------
-.byte (sprites_data + 64 * 8) / 64
+.byte (sprites_data + 64 *  8) / 64
+.byte (sprites_data + 64 *  9) / 64
+.byte (sprites_data + 64 * 10) / 64
 .byte 0
 
 ;-------------------------------------------------------------------------------
