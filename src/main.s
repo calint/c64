@@ -69,7 +69,7 @@ TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
-BORDER_LOOP     = COLOR_YELLOW 
+BORDER_REFRESH  = COLOR_YELLOW 
 RASTER_BORDER   = 251       ; raster value below bottom border (PAL)
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
@@ -98,7 +98,7 @@ COLOR_GREY_3    = 15
 ;
 
 ; maving velocity to left and right
-MOVE_DX_LOW = 8
+MOVE_DX_LO = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval
 MOVE_SKIP_INTERVAL = %1111 
@@ -542,7 +542,7 @@ update:
     and #JOYSTICK_LEFT
     bne @right
 
-    lda #256 - MOVE_DX_LOW
+    lda #256 - MOVE_DX_LO
     sta hero + o::dx_lo
     lda #$ff
     sta hero + o::dx_hi
@@ -569,7 +569,7 @@ update:
     and #JOYSTICK_RIGHT
     bne @fire
 
-    lda #MOVE_DX_LOW
+    lda #MOVE_DX_LO
     sta hero + o::dx_lo
     lda #0
     sta hero + o::dx_hi
@@ -751,7 +751,7 @@ refresh:
 ;-------------------------------------------------------------------------------
 
     ; set border color to illustrate duration of this pass
-    lda #BORDER_LOOP
+    lda #BORDER_REFRESH
     sta VIC_BORDER
 
     ; update objects state
