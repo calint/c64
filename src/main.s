@@ -848,19 +848,20 @@ refresh:
 
     ; update sprite x position
     lda tmp1                    ; x low
-    sta sprites_state + s::sx
+    sta sprite_hero + s::sx
+    sta sprite_hero + .sizeof(s) * 1 + s::sx
 
     ; check if 9'th bit of sprite x needs to be set
     lda tmp2                    ; x high
     and #1                      ; check 9'th bit considering
     beq @msb_off                ; zero, msb off
     lda sprites_msb_x           ; msb on
-    ora #%00000001              ; set sprite 0 9'th bit x
+    ora #%00000011              ; set sprite 0 and 1 9'th bit x
     sta sprites_msb_x
     jmp @msb_done               ; note: see .byte $2C trick
 @msb_off:
-    lda sprites_msb_x           ; set sprite 0 x 9'th bit to 0
-    and #%11111110
+    lda sprites_msb_x           ; set sprite 0 and 1 x 9'th bit to 0
+    and #%11111100
     sta sprites_msb_x
 @msb_done:
 
@@ -881,7 +882,8 @@ refresh:
     ; note: map object to coordinates of tile map
     clc
     adc #50
-    sta sprites_state + s::sy
+    sta sprite_hero + s::sy
+    sta sprite_hero + .sizeof(s) * 1 + s::sy
 
     ;
     ; update sprite hardware
@@ -1004,24 +1006,24 @@ sprites_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,               data, color
-sprite_hero:
-    .byte   0,   0, sprites_data_0 >>6, 1
+sprite_hero: ; hero is composed of 2 sprites
+    .byte   0,   0, sprites_data_0 >>6, COLOR_WHITE
+    .byte   0,   0, sprites_data_1 >>6, COLOR_GREY_1
 sprite_hud:
     .byte  28,  51, sprites_data_47>>6, 15
-    .byte 114, 150, sprites_data_2 >>6, 3
     .byte 138, 150, sprites_data_3 >>6, 4
     .byte 162, 150, sprites_data_4 >>6, 5
     .byte 186, 150, sprites_data_5 >>6, 6
     .byte 234, 150, sprites_data_6 >>6, 7
     .byte   2, 150, sprites_data_7 >>6, 8
 sprites_msb_x: ; 9'th bit of x-coordinate
-    .byte %00000010
+    .byte %00000100
 sprites_enable:
-    .byte %00000011
+    .byte %00000111
 sprites_double_width:
-    .byte %00000010
+    .byte %00000100
 sprites_double_height:
-    .byte %00000010
+    .byte %00000100
 
 ;-------------------------------------------------------------------------------
 .align 16
