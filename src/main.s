@@ -100,19 +100,19 @@ COLOR_GREY_3    = 15
 ; maving velocity to left and right
 MOVE_DX_LO = 8
 
-; when moving, hero makes a "skip" (a small jump) at interval
-MOVE_SKIP_INTERVAL = %1111 
+; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
+MOVE_SKIP_INTERVAL = %1111
 
 ; amount of dy when hero "skips" while moving
 MOVE_SKIP_VELOCITY = 20
 
 ; initial velocity upwards when jumping
-JUMP_VELOCITY_LO = 40
+JUMP_VELOCITY_LO = 33
 
 ; gravity as pixels + fraction to add to velocity every frame
 GRAVITY = 3
 
-; gravity applied when hero is not jumping at interval
+; gravity applied when hero is not jumping at interval (AND is 0)
 GRAVITY_INTERVAL = %1111
 
 ; tile id for pickable item
@@ -129,6 +129,18 @@ RESTART_X_HI = 0
 RESTART_Y_LO = 0
 RESTART_Y_HI = $ff
 
+; animation frame time interval (AND is 0)
+ANIMATION_FRAME_RATE = %111
+
+; animate still
+ANIMATE_STILL = 0
+
+; animate move right
+ANIMATE_RIGHT = 1
+
+; animate move left
+ANIMATE_LEFT = 2
+
 ;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
@@ -136,19 +148,22 @@ RESTART_Y_HI = $ff
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04X", zero_page)
-camera_x_lo:         .res 1  ; low byte of camera x
-camera_x_hi:         .res 1  ; high byte of camera x
-tile_map_x:          .res 1  ; tile map x offset in characters
-screen_offset:       .res 1  ; number of pixels (0-7) screen is shifted right
-screen_active:       .res 1  ; active screen (0 or 1)
-tmp1:                .res 1  ; temporary
-tmp2:                .res 1  ; temporary
-hero_jumping:        .res 1  ; 1 if in jump
-frame_counter:       .res 1
-ptr1:                .res 2  ; temporary pointer
-pickables:           .res 1  ; number of picked items
-infinities:          .res 1  ; number of restarts from stuck position
-restarting:          .res 1  ; if restarting
+camera_x_lo:          .res 1  ; low byte of camera x
+camera_x_hi:          .res 1  ; high byte of camera x
+tile_map_x:           .res 1  ; tile map x offset in characters
+screen_offset:        .res 1  ; number of pixels (0-7) screen is shifted right
+screen_active:        .res 1  ; active screen (0 or 1)
+tmp1:                 .res 1  ; temporary
+tmp2:                 .res 1  ; temporary
+hero_jumping:         .res 1  ; 1 if in jump
+hero_moving:          .res 1  ; 0 if hero is idle
+hero_animation:       .res 1  ; 0 still, 1 right, 2 left
+hero_animation_frame: .res 1  ; frame number in animation
+frame_counter:        .res 1
+ptr1:                 .res 2  ; temporary pointer
+pickables:            .res 1  ; number of picked items
+infinities:           .res 1  ; number of restarts from stuck position
+restarting:           .res 1  ; if restarting
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -354,6 +369,9 @@ program:
     sta camera_x_hi
     sta screen_active
     sta hero_jumping
+    sta hero_moving
+    sta hero_animation
+    sta hero_animation_frame
     sta frame_counter
     sta pickables
     lda #7
@@ -537,11 +555,25 @@ update:
     lda #0
     sta hero + o::dx_lo 
     sta hero + o::dx_hi
+    sta hero_moving
 
+@left:
     ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
     bne @right
+
+    lda #1
+    sta hero_moving
+
+    lda hero_animation
+    cmp #ANIMATE_LEFT
+    beq :+
+    lda #ANIMATE_LEFT
+    sta hero_animation
+    lda #0
+    sta hero_animation_frame
+    :
 
     lda #256 - MOVE_DX_LO
     sta hero + o::dx_lo
@@ -569,6 +601,18 @@ update:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
     bne @fire
+
+    lda #1
+    sta hero_moving
+
+    lda hero_animation
+    cmp #ANIMATE_RIGHT
+    beq :+
+    lda #ANIMATE_RIGHT
+    sta hero_animation
+    lda #0
+    sta hero_animation_frame
+    :
 
     lda #MOVE_DX_LO
     sta hero + o::dx_lo
@@ -610,6 +654,7 @@ update:
     ; flag for hero is in a jump
     lda #1
     sta hero_jumping
+    sta hero_moving
 
 @key_return:
     ; if restarting skip this step
@@ -647,6 +692,14 @@ update:
     sta hero + o::y_hi
 
 @controls_done:
+    ; if hero is not moving animate idle
+    lda hero_moving
+    bne :+
+    lda #ANIMATE_STILL
+    sta hero_animation
+    sta hero_animation_frame  ; ANIMATE_STILL == 0
+    :
+
     ; apply gravity if hero is in a jump
     lda hero_jumping
     bne @gravity_apply
@@ -743,6 +796,58 @@ update:
 
 @hud_done:
 
+@animation:
+    lda frame_counter
+    and #ANIMATION_FRAME_RATE
+    bne @animation_done
+
+@animation_still:
+    lda hero_animation
+    cmp #ANIMATE_STILL
+    bne @animation_right
+
+    lda #<hero_animation_still
+    sta ptr1
+    lda #>hero_animation_still
+    sta ptr1 + 1
+    jmp @animation_do
+
+@animation_right:
+    lda hero_animation
+    cmp #ANIMATE_RIGHT
+    bne @animation_left
+
+    lda #<hero_animation_right
+    sta ptr1
+    lda #>hero_animation_right
+    sta ptr1 + 1
+    jmp @animation_do
+
+@animation_left:
+    lda hero_animation
+    cmp #ANIMATE_LEFT
+    bne @animation_done
+
+    lda #<hero_animation_left
+    sta ptr1
+    lda #>hero_animation_left
+    sta ptr1 + 1
+    jmp @animation_do
+
+@animation_do:
+    ldy hero_animation_frame
+    lda (ptr1), y
+    bne :+
+    ; last frame, loop back
+    lda #0
+    sta hero_animation_frame
+    tay
+    lda (ptr1), y
+:   sta hero + o::sprite
+    inc hero_animation_frame
+
+@animation_done:
+
 ;-------------------------------------------------------------------------------
 sound:
 ;-------------------------------------------------------------------------------
@@ -784,6 +889,9 @@ refresh:
     lda hero + o::y_hi
     adc hero + o::dy_hi
     sta hero + o::y_hi
+
+    lda hero + o::sprite
+    sta sprite_hero + s::data
 
     ; center camera on hero
     ; todo: move this to "user" code
@@ -850,7 +958,6 @@ refresh:
     ; update sprite x position
     lda tmp1                    ; x low
     sta sprite_hero + s::sx
-    sta sprite_hero + .sizeof(s) * 1 + s::sx
 
     ; check if 9'th bit of sprite x needs to be set
     lda tmp2                    ; x high
@@ -884,7 +991,6 @@ refresh:
     clc
     adc #50
     sta sprite_hero + s::sy
-    sta sprite_hero + .sizeof(s) * 1 + s::sy
 
     ;
     ; update sprite hardware
@@ -1010,21 +1116,21 @@ sprites_state:
 sprite_hero: ; hero is composed of 2 sprites
     .byte   0,   0, sprites_data_0 >>6, COLOR_WHITE
     .byte   0,   0, sprites_data_1 >>6, COLOR_GREY_1
-sprite_hud:
-    .byte  28,  51, sprites_data_47>>6, 15
     .byte 138, 150, sprites_data_3 >>6, 4
     .byte 162, 150, sprites_data_4 >>6, 5
     .byte 186, 150, sprites_data_5 >>6, 6
     .byte 234, 150, sprites_data_6 >>6, 7
     .byte   2, 150, sprites_data_7 >>6, 8
+sprite_hud:
+    .byte  28,  51, sprites_data_47>>6, 15
 sprites_msb_x: ; 9'th bit of x-coordinate
-    .byte %00000100
+    .byte %11000000
 sprites_enable:
-    .byte %00000111
+    .byte %10000001
 sprites_double_width:
-    .byte %00000100
+    .byte %10000000
 sprites_double_height:
-    .byte %00000100
+    .byte %10000000
 
 ;-------------------------------------------------------------------------------
 .align 16
@@ -1033,7 +1139,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   4<<4&$ff,   4>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_1>>6,      0,      0,      0,      0
+    .byte   4<<4&$ff,   4>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
@@ -1078,6 +1184,37 @@ progress_lines:
 .byte %11111111, %11111111, %11110011
 .byte %11111111, %11111111, %11111011
 .byte %11111111, %11111111, %11111111
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+.byte %11000000, %00000000, %00000011
+
+;-------------------------------------------------------------------------------
+hero_animation_still:
+;-------------------------------------------------------------------------------
+.byte (sprites_data + 64 * 8) / 64
+.byte 0
+
+;-------------------------------------------------------------------------------
+hero_animation_right:
+;-------------------------------------------------------------------------------
+.byte (sprites_data + 64 * 1) / 64
+.byte (sprites_data + 64 * 0) / 64
+.byte 0
+
+;-------------------------------------------------------------------------------
+hero_animation_left:
+;-------------------------------------------------------------------------------
+.byte (sprites_data + 64 * 3) / 64
+.byte (sprites_data + 64 * 2) / 64
+.byte 0
 
 ;-------------------------------------------------------------------------------
 .out .sprintf("   free bytes: %d", $d800 - *)
