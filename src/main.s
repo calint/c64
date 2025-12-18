@@ -124,6 +124,8 @@ TILE_ID_EMPTY = 32
 ; y position when restarting including sub-pixels
 ;RESTART_Y_LO = ((10 * 8) << 4) & $ff
 ;RESTART_Y_HI = (10 * 8) >> 4
+RESTART_X_LO = 4 << 4
+RESTART_X_HI = 0
 RESTART_Y_LO = 0
 RESTART_Y_HI = $ff
 
@@ -629,10 +631,11 @@ update:
     dec infinities
 
     ; set restart position
-    lda #4 * 16             ; middle of first tile
+    lda #RESTART_X_LO
     sta hero + o::x_lo
-    lda #0
+    lda #RESTART_X_HI
     sta hero + o::x_hi
+    lda #0
     sta hero + o::dx_lo
     sta hero + o::dx_hi
     sta hero + o::dy_lo
