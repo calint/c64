@@ -412,9 +412,10 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; check if sprite 0 has collided with background
+    ; check if sprite 0 or 1 has collided with background
+    ; this is the hero composed of 2 overlapping sprites
     lda VIC_SPR_BG_COL
-    and #%00000001
+    and #%00000011
     beq @collision_reaction_done
 
     ; sprite has collided with background, restore state to previous x and y and
