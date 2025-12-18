@@ -22,7 +22,7 @@ experiments with bare metal commodore 64
 
 ## howto
 
-* use joystick on port 2
+* use joystick on port 2 and "return" key
 
 ## screenshots
 
