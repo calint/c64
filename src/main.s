@@ -133,7 +133,7 @@ RESTART_Y_HI = $ff
 ANIMATION_FRAME_RATE_MOVING = %111
 ANIMATION_FRAME_RATE_IDLE = %11111
 
-; animate still
+; animate idle
 ANIMATE_IDLE = 0
 
 ; animate move right
@@ -158,7 +158,7 @@ tmp1:                 .res 1  ; temporary
 tmp2:                 .res 1  ; temporary
 hero_jumping:         .res 1  ; 1 if in jump
 hero_moving:          .res 1  ; 0 if hero is idle
-hero_animation:       .res 1  ; 0 still, 1 right, 2 left
+hero_animation:       .res 1  ; 0 idle, 1 right, 2 left
 hero_animation_frame: .res 1  ; frame number in animation
 frame_counter:        .res 1
 ptr1:                 .res 2  ; temporary pointer
@@ -703,11 +703,11 @@ update:
     ; if hero is not moving animate idle
     lda hero_moving
     bne :+
-    ; if hero already still continue animation
+    ; if hero already idle continue animation
     lda hero_animation
     cmp #ANIMATE_IDLE
     beq :+
-    ; start hero still animation
+    ; start hero idle animation
     lda #ANIMATE_IDLE
     sta hero_animation
     sta hero_animation_frame  ; ANIMATE_IDLE == 0
@@ -816,14 +816,14 @@ update:
     and animation_frame_rate
     bne @animation_done
 
-@animation_still:
+@animation_idle:
     lda hero_animation
     cmp #ANIMATE_IDLE
     bne @animation_right
 
-    lda #<hero_animation_still
+    lda #<hero_animation_idle
     sta ptr1
-    lda #>hero_animation_still
+    lda #>hero_animation_idle
     sta ptr1 + 1
     jmp @animation_do
 
@@ -1212,7 +1212,7 @@ progress_lines:
 .byte %11000000, %00000000, %00000011
 
 ;-------------------------------------------------------------------------------
-hero_animation_still:
+hero_animation_idle:
 ;-------------------------------------------------------------------------------
 .byte (sprites_data + 64 *  8) / 64
 .byte (sprites_data + 64 *  9) / 64
