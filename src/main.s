@@ -1137,15 +1137,15 @@ sprite_hero: ; hero is composed of 2 sprites
     .byte 234, 150, sprites_data_6 >>6, 7
     .byte   2, 150, sprites_data_7 >>6, 8
 sprite_hud:
-    .byte  28,  51, sprites_data_47>>6, 15
+    .byte  54,  51, sprites_data_47>>6, 15
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %11000000
 sprites_enable:
     .byte %10000001
 sprites_double_width:
-    .byte %10000000
+    .byte %00000000
 sprites_double_height:
-    .byte %10000000
+    .byte %00000000
 
 ;-------------------------------------------------------------------------------
 .align 16
