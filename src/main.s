@@ -165,6 +165,7 @@ ptr1:                 .res 2  ; temporary pointer
 pickables:            .res 1  ; number of picked items
 infinities:           .res 1  ; number of restarts from stuck position
 restarting:           .res 1  ; if restarting
+animation_base_ptr:   .res 2  ; pointer animation frames 
 animation_frame_rate: .res 1
 
 ;-------------------------------------------------------------------------------
@@ -378,6 +379,10 @@ program:
     sta pickables
     lda #ANIMATION_FRAME_RATE_IDLE
     sta animation_frame_rate
+    lda #<hero_animation_idle
+    sta animation_base_ptr
+    lda #>hero_animation_idle
+    sta animation_base_ptr + 1
     lda #7
     sta infinities
 
@@ -582,6 +587,10 @@ update:
     ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
     sta animation_frame_rate
+    lda #<hero_animation_left
+    sta animation_base_ptr
+    lda #>hero_animation_left
+    sta animation_base_ptr + 1
     :
 
     lda #256 - MOVE_DX_LO
@@ -626,6 +635,10 @@ update:
     ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
     sta animation_frame_rate
+    lda #<hero_animation_right
+    sta animation_base_ptr
+    lda #>hero_animation_right
+    sta animation_base_ptr + 1
     :
 
     lda #MOVE_DX_LO
@@ -716,9 +729,13 @@ update:
     ; start hero idle animation
     lda #ANIMATE_IDLE
     sta hero_animation
-    sta hero_animation_frame  ; ANIMATE_IDLE == 0
+    sta hero_animation_frame  ; note: ANIMATE_IDLE == 0
     lda #ANIMATION_FRAME_RATE_IDLE
     sta animation_frame_rate
+    lda #<hero_animation_idle
+    sta animation_base_ptr
+    lda #>hero_animation_idle
+    sta animation_base_ptr + 1
     :
 
     ; apply gravity if hero is in a jump
@@ -822,48 +839,14 @@ update:
     and animation_frame_rate
     bne @animation_done
 
-@animation_idle:
-    lda hero_animation
-    cmp #ANIMATE_IDLE
-    bne @animation_right
-
-    lda #<hero_animation_idle
-    sta ptr1
-    lda #>hero_animation_idle
-    sta ptr1 + 1
-    jmp @animation_do
-
-@animation_right:
-    lda hero_animation
-    cmp #ANIMATE_RIGHT
-    bne @animation_left
-
-    lda #<hero_animation_right
-    sta ptr1
-    lda #>hero_animation_right
-    sta ptr1 + 1
-    jmp @animation_do
-
-@animation_left:
-    lda hero_animation
-    cmp #ANIMATE_LEFT
-    bne @animation_done
-
-    lda #<hero_animation_left
-    sta ptr1
-    lda #>hero_animation_left
-    sta ptr1 + 1
-    jmp @animation_do
-
-@animation_do:
     ldy hero_animation_frame
-    lda (ptr1), y
+    lda (animation_base_ptr), y
     bne :+
     ; last frame, loop back
     lda #0
     sta hero_animation_frame
     tay
-    lda (ptr1), y
+    lda (animation_base_ptr), y
 :   sta hero + o::sprite
     inc hero_animation_frame
 
