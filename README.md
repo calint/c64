@@ -24,8 +24,8 @@ experiments with bare metal commodore 64
 
 * use joystick on port 2 and "return" key
 * snapshots of binary can be found in `/snapshots`
-* compiled and run using `run.sh` on linux and `run.bat` on windows
-  - *note*: requires dependencies
+* compile and run using `run.sh` on linux and `run.bat` on windows
+  * *note*: requires dependencies
 
 ## screenshots
 
