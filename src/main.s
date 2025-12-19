@@ -1137,7 +1137,7 @@ sprite_hero: ; hero is composed of 2 sprites
     .byte 234, 150, sprites_data_6 >>6, 7
     .byte   2, 150, sprites_data_7 >>6, 8
 sprite_hud:
-    .byte  54,  51, sprites_data_47>>6, 15
+    .byte  54,  51, sprites_data_47>>6, COLOR_WHITE
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %11000000
 sprites_enable:
