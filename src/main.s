@@ -1138,9 +1138,9 @@ sprites_double_height:
 objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
+    ;            xlo,  xhi, ylo, yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   4<<4&$ff,   4>>4,          0,    $ff,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
+    .byte   4<<4&$ff, 4>>4,   0, $ff,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
