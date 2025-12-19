@@ -435,14 +435,13 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; check if sprite 0 or 1 has collided with background
-    ; this is the hero composed of 2 overlapping sprites
+    ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
-    and #%00000011
+    and #%00000001
     beq @collision_reaction_done
 
-    ; sprite has collided with background, restore state to previous x and y and
-    ; set dx, dy to 0
+    ; sprite has collided with background, restore state previous x,y and set
+    ; dx, dy to 0
 
     lda hero + o::x_prv_lo
     sta hero + o::x_lo
@@ -464,16 +463,16 @@ update:
     ; ror hero + 7   ; dy high
     ; ror hero + 6   ; dy low
 
-    ; stop the jump logic
     lda #0
+    ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
+    sta hero + o::dy_lo
+    sta hero + o::dy_hi
+
+    ; stop the jump logic
     sta hero_jumping
 
     ; restart sequence done
     sta hero_restarting
-
-    ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
-    sta hero + o::dy_lo
-    sta hero + o::dy_hi
 
 @collision_reaction_done:
     ; convert hero world x, y to tile map coordinates
@@ -599,10 +598,9 @@ update:
     and #MOVE_SKIP_INTERVAL
     bne @right
 
-    ; don't "skip" if dy is not 0
+    ; "skip" if dy is 0
     lda hero + o::dy_lo
-    bne @right
-    lda hero + o::dy_hi
+    ora hero + o::dy_hi
     bne @right
 
     ; "skip" by a negative dy
@@ -647,10 +645,9 @@ update:
     and #MOVE_SKIP_INTERVAL
     bne @fire
 
-    ; don't "skip" if dy is not 0
+    ; "skip" if dy is 0
     lda hero + o::dy_lo
-    bne @fire
-    lda hero + o::dy_hi
+    ora hero + o::dy_hi
     bne @fire
 
     ; "skip" by a negative dy
@@ -748,8 +745,7 @@ update:
 
     ; check if dy is zero and skip gravity if so
     lda hero + o::dy_lo
-    bne @gravity_apply
-    lda hero + o::dy_hi
+    ora hero + o::dy_hi
     beq @gravity_done
 
 @gravity_apply:
@@ -960,19 +956,13 @@ refresh:
     lda tmp1                    ; x low
     sta sprite_hero + s::sx
 
-    ; check if 9'th bit of sprite x needs to be set
-    lda tmp2                    ; x high
-    and #1                      ; check 9'th bit considering
-    beq @msb_off                ; zero, msb off
+    ; set sprite 0 9'th bit if x (tmp1, tmp2) is greater than 256 
     lda sprites_msb_x           ; msb on
-    ora #%00000011              ; set sprite 0 and 1 9'th bit x
-    sta sprites_msb_x
-    jmp @msb_done               ; note: see .byte $2C trick
-@msb_off:
-    lda sprites_msb_x           ; set sprite 0 and 1 x 9'th bit to 0
-    and #%11111100
-    sta sprites_msb_x
-@msb_done:
+    and #%11111110
+    ldx tmp2                    ; check if tmp2 is zero
+    beq :+                      ; note: see .byte $2c trick to skip 2 bytes
+    ora #%00000001              ; set sprite 0 x 9'th bit
+:   sta sprites_msb_x
 
     ; update sprite y position
     lda hero + o::y_lo
