@@ -130,8 +130,8 @@ RESTART_Y_LO = 0
 RESTART_Y_HI = $ff
 
 ; animation frame time interval (AND is 0)
-ANIMATION_FRAME_RATE_MOVING = %111
-ANIMATION_FRAME_RATE_IDLE = %11111
+ANIMATION_RATE_MOVING = %111
+ANIMATION_RATE_IDLE = %11111
 
 ; animation enumeration
 ANIMATE_IDLE = 0
@@ -373,7 +373,7 @@ program:
     sta hero_animation_frame
     sta frame_counter
     sta hero_pickables
-    lda #ANIMATION_FRAME_RATE_IDLE
+    lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
     lda #<hero_animation_idle
     sta hero_animation_ptr
@@ -581,7 +581,7 @@ update:
     lda #0
     sta hero_animation_frame
     ; set frame rate for "moving" animation
-    lda #ANIMATION_FRAME_RATE_MOVING
+    lda #ANIMATION_RATE_MOVING
     sta hero_animation_rate
     lda #<hero_animation_left
     sta hero_animation_ptr
@@ -629,7 +629,7 @@ update:
     lda #0
     sta hero_animation_frame
     ; set frame rate for "moving" animation
-    lda #ANIMATION_FRAME_RATE_MOVING
+    lda #ANIMATION_RATE_MOVING
     sta hero_animation_rate
     lda #<hero_animation_right
     sta hero_animation_ptr
@@ -726,7 +726,7 @@ update:
     lda #ANIMATE_IDLE
     sta hero_animation
     sta hero_animation_frame  ; note: ANIMATE_IDLE == 0
-    lda #ANIMATION_FRAME_RATE_IDLE
+    lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
     lda #<hero_animation_idle
     sta hero_animation_ptr
