@@ -381,14 +381,6 @@ program:
     sta hero_animation_ptr + 1
     lda #7
     sta hero_infinities
-    lda #RESTART_X_LO
-    sta hero + o::x_lo
-    lda #RESTART_X_HI
-    sta hero + o::x_hi
-    lda #RESTART_Y_LO 
-    sta hero + o::y_lo
-    lda #RESTART_Y_HI
-    sta hero + o::y_hi
 
     ; set background
     lda #COLOR_BLACK
@@ -1148,7 +1140,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   4<<4&$ff,   4>>4, 170<<4&$ff, 170>>4,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
+    .byte   4<<4&$ff,   4>>4,          0,    $ff,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
