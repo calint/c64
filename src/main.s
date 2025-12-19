@@ -381,6 +381,14 @@ program:
     sta hero_animation_ptr + 1
     lda #7
     sta hero_infinities
+    lda #RESTART_X_LO
+    sta hero + o::x_lo
+    lda #RESTART_X_HI
+    sta hero + o::x_hi
+    lda #RESTART_Y_LO 
+    sta hero + o::y_lo
+    lda #RESTART_Y_HI
+    sta hero + o::y_hi
 
     ; set background
     lda #COLOR_BLACK
