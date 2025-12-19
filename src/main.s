@@ -124,8 +124,8 @@ TILE_ID_EMPTY = 32
 ; y position when restarting including sub-pixels
 ;RESTART_Y_LO = ((10 * 8) << 4) & $ff
 ;RESTART_Y_HI = (10 * 8) >> 4
-RESTART_X_LO = 4 << 4
-RESTART_X_HI = 0
+RESTART_X_LO = (4 << 4) & $ff
+RESTART_X_HI = (4 >> 4)
 RESTART_Y_LO = 0
 RESTART_Y_HI = $ff
 
@@ -570,13 +570,16 @@ update:
     lda #1
     sta hero_moving
 
+    ; if hero already animating "left" continue
     lda hero_animation
     cmp #ANIMATE_LEFT
     beq :+
+    ; start animating "left"
     lda #ANIMATE_LEFT
     sta hero_animation
     lda #0
     sta hero_animation_frame
+    ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
     sta animation_frame_rate
     :
@@ -611,13 +614,16 @@ update:
     lda #1
     sta hero_moving
 
+    ; if hero already animating "right" continue
     lda hero_animation
     cmp #ANIMATE_RIGHT
     beq :+
+    ; start animating "right"
     lda #ANIMATE_RIGHT
     sta hero_animation
     lda #0
     sta hero_animation_frame
+    ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
     sta animation_frame_rate
     :
@@ -1154,7 +1160,7 @@ objects_state:
 .out .sprintf("objects_state: $%04X", objects_state)
     ;            xlo,    xhi,        ylo,    yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   4<<4&$ff,   4>>4, 176<<4&$ff, 176>>4,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
+    .byte   4<<4&$ff,   4>>4, 170<<4&$ff, 170>>4,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
