@@ -158,8 +158,8 @@ hero_animation_frame: .res 1  ; frame number in animation
 hero_animation_ptr:   .res 2  ; pointer to base of animation frames 
 hero_animation_rate:  .res 1  ; frame rate for current animation (AND = 0)
 hero_pickables:       .res 1  ; number of picked items
-hero_infinities:      .res 1  ; number of restarts
-hero_restarting:      .res 1  ; if restarting
+hero_infinities:      .res 1  ; number of restarts remaining
+hero_restarting:      .res 1  ; 1 when restarting sequence
 tmp1:                 .res 1  ; temporary
 tmp2:                 .res 1  ; temporary
 ptr1:                 .res 2  ; temporary pointer
