@@ -133,13 +133,9 @@ RESTART_Y_HI = $ff
 ANIMATION_FRAME_RATE_MOVING = %111
 ANIMATION_FRAME_RATE_IDLE = %11111
 
-; animate idle
+; animation enumeration
 ANIMATE_IDLE = 0
-
-; animate move right
 ANIMATE_RIGHT = 1
-
-; animate move left
 ANIMATE_LEFT = 2
 
 ;-------------------------------------------------------------------------------
@@ -154,19 +150,19 @@ camera_x_hi:          .res 1  ; high byte of camera x
 tile_map_x:           .res 1  ; tile map x offset in characters
 screen_offset:        .res 1  ; number of pixels (0-7) screen is shifted right
 screen_active:        .res 1  ; active screen (0 or 1)
-tmp1:                 .res 1  ; temporary
-tmp2:                 .res 1  ; temporary
+frame_counter:        .res 1  ; frame counter used for AND = 0 intervals
 hero_jumping:         .res 1  ; 1 if in jump
 hero_moving:          .res 1  ; 0 if hero is idle
 hero_animation:       .res 1  ; 0 idle, 1 right, 2 left
 hero_animation_frame: .res 1  ; frame number in animation
-frame_counter:        .res 1
+hero_animation_ptr:   .res 2  ; pointer to base of animation frames 
+hero_animation_rate:  .res 1  ; frame rate for current animation (AND = 0)
+hero_pickables:       .res 1  ; number of picked items
+hero_infinities:      .res 1  ; number of restarts
+hero_restarting:      .res 1  ; if restarting
+tmp1:                 .res 1  ; temporary
+tmp2:                 .res 1  ; temporary
 ptr1:                 .res 2  ; temporary pointer
-pickables:            .res 1  ; number of picked items
-infinities:           .res 1  ; number of restarts from stuck position
-restarting:           .res 1  ; if restarting
-animation_base_ptr:   .res 2  ; pointer animation frames 
-animation_frame_rate: .res 1
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -376,15 +372,15 @@ program:
     sta hero_animation
     sta hero_animation_frame
     sta frame_counter
-    sta pickables
+    sta hero_pickables
     lda #ANIMATION_FRAME_RATE_IDLE
-    sta animation_frame_rate
+    sta hero_animation_rate
     lda #<hero_animation_idle
-    sta animation_base_ptr
+    sta hero_animation_ptr
     lda #>hero_animation_idle
-    sta animation_base_ptr + 1
+    sta hero_animation_ptr + 1
     lda #7
-    sta infinities
+    sta hero_infinities
 
     ; set background
     lda #COLOR_BLACK
@@ -473,7 +469,7 @@ update:
     sta hero_jumping
 
     ; restart sequence done
-    sta restarting
+    sta hero_restarting
 
     ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
     sta hero + o::dy_lo
@@ -527,7 +523,7 @@ update:
     lda (ptr1), y
     cmp #TILE_ID_PICKABLE
     bne :+
-    inc pickables
+    inc hero_pickables
     lda #TILE_ID_EMPTY
     sta (ptr1), y
 
@@ -536,7 +532,7 @@ update:
     lda (ptr1), y
     cmp #TILE_ID_PICKABLE
     bne :+
-    inc pickables
+    inc hero_pickables
     lda #TILE_ID_EMPTY
     sta (ptr1), y
 
@@ -545,7 +541,7 @@ update:
     lda (ptr1), y
     cmp #TILE_ID_PICKABLE
     bne :+
-    inc pickables
+    inc hero_pickables
     lda #TILE_ID_EMPTY
     sta (ptr1), y
 
@@ -554,7 +550,7 @@ update:
     lda (ptr1), y
     cmp #TILE_ID_PICKABLE
     bne :+
-    inc pickables
+    inc hero_pickables
     lda #TILE_ID_EMPTY
     sta (ptr1), y
 :
@@ -586,11 +582,11 @@ update:
     sta hero_animation_frame
     ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
-    sta animation_frame_rate
+    sta hero_animation_rate
     lda #<hero_animation_left
-    sta animation_base_ptr
+    sta hero_animation_ptr
     lda #>hero_animation_left
-    sta animation_base_ptr + 1
+    sta hero_animation_ptr + 1
     :
 
     lda #256 - MOVE_DX_LO
@@ -634,11 +630,11 @@ update:
     sta hero_animation_frame
     ; set frame rate for "moving" animation
     lda #ANIMATION_FRAME_RATE_MOVING
-    sta animation_frame_rate
+    sta hero_animation_rate
     lda #<hero_animation_right
-    sta animation_base_ptr
+    sta hero_animation_ptr
     lda #>hero_animation_right
-    sta animation_base_ptr + 1
+    sta hero_animation_ptr + 1
     :
 
     lda #MOVE_DX_LO
@@ -685,7 +681,7 @@ update:
 
 @key_return:
     ; if restarting skip this step
-    lda restarting
+    lda hero_restarting
     bne @controls_done
 
     lda #$fe       ; set row 0 (invert bit 0)
@@ -695,13 +691,13 @@ update:
     bne @controls_done
 
     lda #1
-    sta restarting
+    sta hero_restarting
 
     ; if infinities left
-    lda infinities
+    lda hero_infinities
     beq @controls_done
 
-    dec infinities
+    dec hero_infinities
 
     ; set restart position
     lda #RESTART_X_LO
@@ -731,11 +727,11 @@ update:
     sta hero_animation
     sta hero_animation_frame  ; note: ANIMATE_IDLE == 0
     lda #ANIMATION_FRAME_RATE_IDLE
-    sta animation_frame_rate
+    sta hero_animation_rate
     lda #<hero_animation_idle
-    sta animation_base_ptr
+    sta hero_animation_ptr
     lda #>hero_animation_idle
-    sta animation_base_ptr + 1
+    sta hero_animation_ptr + 1
     :
 
     ; apply gravity if hero is in a jump
@@ -770,12 +766,12 @@ update:
 
 @render_hud:
     ; render pickables count
-    lda pickables
+    lda hero_pickables
     ldy #3 * 3 + 1          ; start row 3, second byte
     jsr @draw_hud_bytes
 
     ; render infinities count
-    lda infinities
+    lda hero_infinities
     ldy #11 * 3 + 1         ; start row 11, second byte
     jsr @draw_hud_bytes
 
@@ -835,18 +831,19 @@ update:
 @hud_done:
 
 @animation:
+@animation_hero:
     lda frame_counter
-    and animation_frame_rate
+    and hero_animation_rate
     bne @animation_done
 
     ldy hero_animation_frame
-    lda (animation_base_ptr), y
+    lda (hero_animation_ptr), y
     bne :+
     ; last frame, loop back
     lda #0
     sta hero_animation_frame
     tay
-    lda (animation_base_ptr), y
+    lda (hero_animation_ptr), y
 :   sta hero + o::sprite
     inc hero_animation_frame
 
