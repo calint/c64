@@ -75,6 +75,8 @@ BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
 BORDER_REFRESH  = COLOR_YELLOW 
 RASTER_BORDER   = 251       ; raster value below bottom border (PAL)
+KEYBOARD_ROW_0  = $fe       ; scan row 0 (keys: inst/del, return, etc.)
+KEYBOARD_RETURN = 2         ; bit mask for "return" key in row 0
 JOYSTICK_UP     = 1         ; bit when joystick is up
 JOYSTICK_DOWN   = 2         ; bit when joystick is down
 JOYSTICK_LEFT   = 4         ; bit when joystick is left
@@ -126,6 +128,9 @@ RESTART_Y = -16 << SUBPIXEL_SHIFT
 ; animation frame time interval (AND is 0)
 ANIMATION_RATE_MOVING = %111
 ANIMATION_RATE_IDLE = %11111
+
+; initial infinities hero has
+INITIAL_INFINITIES = 7
 
 ; animation enumeration
 ANIMATE_IDLE = 0
@@ -405,7 +410,7 @@ program:
     sta hero_animation_ptr
     lda #>hero_animation_idle
     sta hero_animation_ptr + 1
-    lda #7
+    lda #INITIAL_INFINITIES
     sta hero_infinities
 
     ; set background
@@ -704,10 +709,10 @@ update:
     lda hero_restarting
     bne @controls_done
 
-    lda #$fe       ; set row 0 (invert bit 0)
+    lda #KEYBOARD_ROW_0
     sta VIC_DATA_PORT_A
     lda VIC_DATA_PORT_B
-    and #2
+    and #KEYBOARD_RETURN
     bne @controls_done
 
     lda #1
