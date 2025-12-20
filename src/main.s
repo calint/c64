@@ -98,7 +98,7 @@ COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
 
 ;
-; application
+; game
 ;
 
 ; maving velocity to left and right
@@ -119,19 +119,9 @@ GRAVITY = 3
 ; gravity applied when hero is not jumping at interval (AND is 0)
 GRAVITY_INTERVAL = %1111
 
-; tile id for pickable item
-TILE_ID_PICKABLE = 33
-
-; tile id for empty
-TILE_ID_EMPTY = 32
-
-; y position when restarting including sub-pixels
-;RESTART_Y_LO = ((10 * 8) << 4) & $ff
-;RESTART_Y_HI = (10 * 8) >> 4
-RESTART_X_LO = (4 << 4) & $ff
-RESTART_X_HI = (4 >> 4)
-RESTART_Y_LO = 0
-RESTART_Y_HI = $ff
+; x and y position when restarting including sub-pixels
+RESTART_X = (TILE_WIDTH / 2) << 4
+RESTART_Y = -16 << 4
 
 ; animation frame time interval (AND is 0)
 ANIMATION_RATE_MOVING = %111
@@ -142,6 +132,12 @@ ANIMATE_IDLE = 0
 ANIMATE_RIGHT = 1
 ANIMATE_LEFT = 2
 
+; tile id for pickable item
+TILE_ID_PICKABLE = 33
+
+; tile id for empty
+TILE_ID_EMPTY = 32
+
 ; hud start line to draw number of pickables
 HUD_PICKABLES_LINE = 4
 
@@ -150,6 +146,9 @@ HUD_INFINITIES_LINE = 12
 
 ; number of lines to render in the hud for pickables and infinities
 HUD_RENDER_LINES = 3
+
+; sprite used for hud
+HUD_SPRITE_DATA = sprites_data_47
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -706,18 +705,18 @@ update:
     dec hero_infinities
 
     ; set restart position
-    lda #RESTART_X_LO
+    lda #<RESTART_X
     sta hero + o::x_lo
-    lda #RESTART_X_HI
+    lda #>RESTART_X
     sta hero + o::x_hi
     lda #0
     sta hero + o::dx_lo
     sta hero + o::dx_hi
     sta hero + o::dy_lo
     sta hero + o::dy_hi
-    lda #RESTART_Y_LO 
+    lda #<RESTART_Y 
     sta hero + o::y_lo
-    lda #RESTART_Y_HI
+    lda #>RESTART_Y
     sta hero + o::y_hi
 
 @controls_done:
@@ -772,12 +771,12 @@ update:
 @render_hud:
     ; render pickables count
     lda hero_pickables
-    ldy #HUD_PICKABLES_LINE * 3 + 1          ; start row 3, second byte
+    ldy #HUD_PICKABLES_LINE * 3 + 1          ; 3 bytes per row, second byte
     jsr @draw_hud_bytes
 
     ; render infinities count
     lda hero_infinities
-    ldy #HUD_INFINITIES_LINE * 3 + 1         ; start row 11, second byte
+    ldy #HUD_INFINITIES_LINE * 3 + 1         ; 3 bytes per row, second byte
     jsr @draw_hud_bytes
 
     ; render progress bar
@@ -818,7 +817,7 @@ update:
     stx tmp2                ; save row counter
     ldx tmp1                ; get hud_lines index
     lda hud_lines, x        ; load pattern byte 1
-    sta sprites_data_47, y  ; store in sprite
+    sta HUD_SPRITE_DATA, y  ; store in sprite
     inx                     ; next hud byte
     iny                     ; next sprite byte
     lda hud_lines, x        ; load pattern byte 2
