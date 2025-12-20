@@ -60,6 +60,8 @@ SID_V1_SR       = $d406
 SID_MODE_VOL    = $d418
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
+MEMORY_CONFIG   = %00110101 ; ram at $a000-$bfff and $e000-$ffff
+PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
@@ -70,6 +72,7 @@ SCREEN_BRDR_LFT = 24        ; x of first visible pixel (40 column display)
 SCREEN_BRDR_TOP = 50        ; y of first visible pixel
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 TILE_WIDTH      = 8         ; width of tile in pixels
+TILE_PIXEL_MASK = %00000111 ; mask for pixel within tile (0-7)
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
@@ -358,8 +361,8 @@ program:
     ; note: not really necessary since initialized at boot by kernal
 
     ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
-    lda #%00110101          ; see https://sta.c64.org/cbm64mem.html
-    sta $01
+    lda #MEMORY_CONFIG        ; see https://sta.c64.org/cbm64mem.html
+    sta PROCESSOR_PORT
 
     ;
     ; initialize sound
@@ -1057,11 +1060,11 @@ render:
     ; convert camera 16 bit pixel position to tile map x and screen right shift
     lda camera_x_lo         ; camera position low byte
     tax                     ; store in x for later use 
-    and #%00000111          ; get pixel in tile, lower 3 bits
-    eor #%00000111          ; convert to 8 - 1
+    and #TILE_PIXEL_MASK    ; get pixel in tile, lower 3 bits
+    eor #TILE_PIXEL_MASK    ; convert to 8 - 1
     clc                     ; clear unknown carry flag state
     adc #1                  ; add 1
-    and #%00000111          ; mask to 3 bits
+    and #TILE_PIXEL_MASK    ; mask to 3 bits
     sta screen_offset       ; store screen shift right offset
     tay                     ; store in y for later use
 
