@@ -101,19 +101,19 @@ COLOR_GREY_3    = 15
 ; game
 ;
 
-; maving velocity to left and right
+; maving velocity to left and right (including sub-pixels)
 MOVE_DX = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
 MOVE_SKIP_INTERVAL = %1111
 
-; amount of dy when hero "skips" while moving
+; amount of dy when hero "skips" while moving (including sub-pixels)
 MOVE_SKIP_VELOCITY = 20
 
-; initial velocity upwards when jumping
-JUMP_VELOCITY_LO = 33
+; initial velocity upwards when jumping (including sub-pixels)
+JUMP_VELOCITY = 33
 
-; gravity as pixels + fraction to add to velocity every frame
+; gravity to add to velocity every frame (including sub-pixels)
 GRAVITY = 3
 
 ; gravity applied when hero is not jumping at interval (AND is 0)
@@ -683,9 +683,9 @@ update:
     bne @key_return
 
     ; set negative dy to jump up
-    lda #256 - JUMP_VELOCITY_LO
+    lda #<-JUMP_VELOCITY
     sta hero + o::dy_lo
-    lda #$ff
+    lda #>-JUMP_VELOCITY
     sta hero + o::dy_hi
 
     ; flag for hero is in a jump
