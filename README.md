@@ -8,7 +8,6 @@ experiments with bare metal commodore 64
 * edit tile map with tiled
 * user defined character set in png bitmap
 * sprites defined in png bitmap
-* control scroll by user
 * sprites with collision detection
 * miniature game with 15 minutes playtime
 
