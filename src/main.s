@@ -182,7 +182,6 @@ zero_page:
 .out .sprintf("    zero_page: $%04X", zero_page)
 camera_x_lo:          .res 1  ; low byte of camera x
 camera_x_hi:          .res 1  ; high byte of camera x
-tile_map_x:           .res 1  ; tile map x offset in characters
 screen_offset:        .res 1  ; number of pixels (0-7) screen is shifted right
 screen_active:        .res 1  ; active screen (0 or 1)
 frame_counter:        .res 1  ; frame counter used for AND = 0 intervals
@@ -392,7 +391,6 @@ program:
     ;
 
     lda #0
-    sta tile_map_x
     sta camera_x_lo
     sta camera_x_hi
     sta screen_active
@@ -1080,7 +1078,7 @@ render:
     beq :+                  ; if 0, no adjustment needed
     clc                     ; clear unknown carry flag
     adc #1                  ; add 1 to match desired table values 
-:   sta tile_map_x          ; update tile_map_x
+:   tax                     ; transfer to x used in render_tile_map
 
     ; fallthrough
 
@@ -1088,8 +1086,7 @@ render:
 render_tile_map:
 ;-------------------------------------------------------------------------------
 
-    ; initiate tile map position and screen column
-    ldx tile_map_x          ; tile map left edge
+    ; note: x contains tile map x
     ldy #0                  ; screen column start
 
     ; jump to unrolled loop for current screen
