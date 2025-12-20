@@ -144,6 +144,9 @@ HUD_PICKABLES_LINE = 4
 ; hud start line to draw number of infinities
 HUD_INFINITIES_LINE = 12
 
+; hud start line for progress bar
+HUD_PROGRESS_LINE = 18
+
 ; number of lines to render in the hud for pickables and infinities
 HUD_RENDER_LINES = 3
 
@@ -412,10 +415,10 @@ program:
     ; set all color ram to white
     lda #COLOR_WHITE
     ldx #0                  ; initialize index
- :  sta color_ram+$000,x    ; color ram starts at $d800
-    sta color_ram+$100,x    ; continue through
-    sta color_ram+$200,x    ; all 1000 bytes
-    sta color_ram+$300,x    ; of color memory
+ :  sta color_ram + $000, x ; color ram starts at $d800
+    sta color_ram + $100, x ; continue through
+    sta color_ram + $200, x ; all 1000 bytes
+    sta color_ram + $300, x ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
 
@@ -457,7 +460,7 @@ update:
 
     ; check if sprite 0 has collided with background
     lda VIC_SPR_BG_COL
-    and #%00000001
+    and HERO_SPRITE_BIT
     beq @collision_reaction_done
 
     ; sprite has collided with background, restore state previous x,y and set
@@ -808,7 +811,7 @@ update:
     adc tmp1
     ; render on sprite
     tax
-    ldy #18 * 3             ; start at row 18, first byte
+    ldy #HUD_PROGRESS_LINE * 3
     lda progress_lines, x
     sta sprites_data_47, y
     inx
@@ -1049,8 +1052,8 @@ render:
     ; convert camera 16 bit pixel position to tile map x and screen right shift
     lda camera_x_lo         ; camera position low byte
     tax                     ; store in x for later use 
-    and #%00000111          ; get lower 3 bits
-    eor #%00000111          ; invert
+    and #%00000111          ; get pixel in tile, lower 3 bits
+    eor #%00000111          ; convert to 8 - 1
     clc                     ; clear unknown carry flag state
     adc #1                  ; add 1
     and #%00000111          ; mask to 3 bits
