@@ -1121,7 +1121,7 @@ sprites_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,               data, color
-sprite_hero: ; hero is composed of 2 sprites
+sprite_hero:
     .byte   0,   0,       HERO_SPRITE, COLOR_WHITE
     .byte   0,   0, sprites_data_1>>6, COLOR_GREY_1
     .byte 138, 150, sprites_data_3>>6, 4
