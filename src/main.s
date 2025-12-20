@@ -734,12 +734,13 @@ update:
     bne :+
     ; if hero already idle continue animation
     lda hero_animation
-    cmp #ANIMATE_IDLE
+    cmp #ANIMATE_IDLE       ; note: redundant since ANIMATE_IDLE == 0
     beq :+
     ; start hero idle animation
     lda #ANIMATE_IDLE
     sta hero_animation
-    sta hero_animation_frame  ; note: ANIMATE_IDLE == 0
+    lda #0                  ; note: redundant since ANIMATE_IDLE == 0
+    sta hero_animation_frame
     lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
     lda #<hero_animation_idle
