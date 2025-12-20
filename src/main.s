@@ -1061,7 +1061,7 @@ render:
     lda camera_x_lo         ; camera position low byte
     tax                     ; store in x for later use 
     and #TILE_PIXEL_MASK    ; get pixel in tile, lower 3 bits
-    eor #TILE_PIXEL_MASK    ; convert to 8 - 1
+    eor #TILE_PIXEL_MASK    ; invert
     clc                     ; clear unknown carry flag state
     adc #1                  ; add 1
     and #TILE_PIXEL_MASK    ; mask to 3 bits
