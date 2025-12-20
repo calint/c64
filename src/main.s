@@ -409,16 +409,13 @@ main_loop:
 
     ; swap screens
     lda screen_active       ; load active screen
-    bne @to_screen_1        ; if screen 1 active then activate screen 0
-@to_screen_0:
-    lda #SCREEN_0_D018      ; activate screen 0
-    inc screen_active       ; next active screen 1
-    jmp @swap               ; continue to write to register
-@to_screen_1:
-    lda #SCREEN_1_D018      ; activate screen 1
-    lsr screen_active       ; next active screen 0
-@swap:
-    sta VIC_MEM_CTRL        ; write to register
+    eor #1                  ; swap to next active screen
+    sta screen_active
+    lda #SCREEN_0_D018      ; default is to activate screen 0
+    ldx screen_active       ; load next active screen
+    bne :+                  ; if next activate screen is 1 then swap to 0
+    lda #SCREEN_1_D018      ; next active screen is 0, swap to 1
+:   sta VIC_MEM_CTRL
 
     ; set screen right offset in vblank, takes effect next frame
     lda screen_offset
