@@ -120,8 +120,8 @@ GRAVITY = 3
 GRAVITY_INTERVAL = %1111
 
 ; x and y position when restarting including sub-pixels
-RESTART_X = (TILE_WIDTH / 2) << 4
-RESTART_Y = -16 << 4
+RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
+RESTART_Y = -16 << SUBPIXEL_SHIFT
 
 ; animation frame time interval (AND is 0)
 ANIMATION_RATE_MOVING = %111
@@ -149,6 +149,12 @@ HUD_RENDER_LINES = 3
 
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
+
+; number of sub-pixel fraction bits are used (code assumes 4)
+SUBPIXEL_SHIFT = 4
+
+; hero sprite data location for use in register
+HERO_SPRITE = sprites_data_0 >> 6
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -487,7 +493,7 @@ update:
     ; round to nearest tile by adding half of a tile times fraction (4 * 16)
     lda hero + o::x_lo
     clc
-    adc #(TILE_WIDTH / 2) << 4
+    adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
     ror                     ; shift with carry from addition
     lsr
     lsr
@@ -504,7 +510,7 @@ update:
 
     lda hero + o::y_lo
     clc
-    adc #(TILE_WIDTH / 2) << 4
+    adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
     ror                     ; shift with carry from addition
     lsr
     lsr
@@ -1113,7 +1119,7 @@ sprites_state:
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,               data, color
 sprite_hero: ; hero is composed of 2 sprites
-    .byte   0,   0, sprites_data_0 >>6, COLOR_WHITE
+    .byte   0,   0,        HERO_SPRITE, COLOR_WHITE
     .byte   0,   0, sprites_data_1 >>6, COLOR_GREY_1
     .byte 138, 150, sprites_data_3 >>6, 4
     .byte 162, 150, sprites_data_4 >>6, 5
@@ -1136,9 +1142,9 @@ sprites_double_height:
 objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04X", objects_state)
-    ;            xlo,  xhi, ylo, yhi, dxlo, dxhi, dylo, dyhi,            sprite, xprvlo, xprvhi, yprvlo, yprvhi
+    ;            xlo,        xhi,        ylo,        yhi, dxlo, dxhi, dylo, dyhi,      sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte   4<<4&$ff, 4>>4,   0, $ff,    0,    0,    0,    0, sprites_data_0>>6,      0,      0,      0,      0
+    .byte <RESTART_X, >RESTART_X, <RESTART_Y, >RESTART_Y,    0,    0,    0,    0, HERO_SPRITE,      0,      0,      0,      0
 
 
 ;-------------------------------------------------------------------------------
