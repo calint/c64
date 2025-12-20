@@ -60,7 +60,7 @@ SID_V1_SR       = $d406
 SID_MODE_VOL    = $d418
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
-MEMORY_CONFIG   = %00110101 ; ram at $a000-$bfff and $e000-$ffff
+MEMORY_CONFIG   = %00110101 ; enable ram at $a000-$bfff and $e000-$ffff
 PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
@@ -155,8 +155,8 @@ HUD_INFINITIES_LINE = 12
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
 
-; number of lines to render in the hud for pickables and infinities
-HUD_RENDER_LINES = 3
+; number of rows to render in the hud for pickables and infinities
+HUD_RENDER_ROWS = 3
 
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
@@ -352,16 +352,11 @@ program:
 
     sei                     ; disable interrupts
 
-    ; ; initialize stack
-    ; ldx $ff                 ; low byte of stack
-    ; txs                     ; high byte of stack is $01
-    ;
-    ; cld                     ; clear decimal mode
-    ;
-    ; note: not really necessary since initialized at boot by kernal
+    ; initialization of stack and clearing decimal mode omitted since
+    ; initialized by kernal at boot
 
-    ; setup memory mode ram visible at $a000-$bfff and $e000-$ffff
-    lda #MEMORY_CONFIG        ; see https://sta.c64.org/cbm64mem.html
+    ; enable ram at $a000-$bfff and $e000-$ffff
+    lda #MEMORY_CONFIG       ; see https://sta.c64.org/cbm64mem.html
     sta PROCESSOR_PORT
 
     ;
@@ -393,7 +388,7 @@ program:
     ; sta SID_V1_FREQ_HI
 
     ;
-    ; setup first render
+    ; setup first frame
     ;
 
     lda #0
@@ -795,12 +790,12 @@ update:
 @render_hud:
     ; render pickables count
     lda hero_pickables
-    ldy #HUD_PICKABLES_LINE * 3 + 1          ; 3 bytes per row, second byte
+    ldy #HUD_PICKABLES_LINE * 3 + 1    ; 3 bytes per row, second byte
     jsr @draw_hud_bytes
 
     ; render infinities count
     lda hero_infinities
-    ldy #HUD_INFINITIES_LINE * 3 + 1         ; 3 bytes per row, second byte
+    ldy #HUD_INFINITIES_LINE * 3 + 1   ; 3 bytes per row, second byte
     jsr @draw_hud_bytes
 
     ; render progress bar
@@ -819,7 +814,7 @@ update:
     adc tmp1
     ; render on sprite
     tax
-    ldy #HUD_PROGRESS_LINE * 3
+    ldy #HUD_PROGRESS_LINE * 3         ; 3 bytes per row, first byte
     lda progress_lines, x
     sta sprites_data_47, y
     inx
@@ -831,15 +826,15 @@ update:
     lda progress_lines, x
     sta sprites_data_47, y
 
-    jmp @hud_done           ; or next part of your code
+    jmp @hud_done
 
 @draw_hud_bytes:
     asl                     ; multiply value by 2
     sta tmp1                ; store base index for hud_lines
-    ldx #HUD_RENDER_LINES   ; loop for 5 rows
+    ldx #HUD_RENDER_ROWS    ; loop for x lines
 @row_loop:
     stx tmp2                ; save row counter
-    ldx tmp1                ; get hud_lines index
+    ldx tmp1                ; get hud row index
     lda hud_lines, x        ; load pattern byte 1
     sta HUD_SPRITE_DATA, y  ; store in sprite
     inx                     ; next hud byte
