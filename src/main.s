@@ -65,6 +65,8 @@ SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
+SCREEN_BRDR_LFT = 24     ; x of first visible pixel
+SCREEN_BRDR_TOP = 50      ; y of first visible pixel
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
@@ -361,9 +363,8 @@ program:
     ; setup first render
     ;
 
-    lda #$ff                ; value that does not match camera at first render
-    sta tile_map_x
     lda #0
+    sta tile_map_x
     sta camera_x_lo
     sta camera_x_hi
     sta screen_active
@@ -941,7 +942,7 @@ refresh:
     ; add left border (40-column display)
     clc
     lda tmp1
-    adc #24                 ; left border
+    adc #SCREEN_BRDR_LFT    ; left border
     sta tmp1
     lda tmp2
     adc #0
@@ -954,11 +955,11 @@ refresh:
     sta sprite_hero + s::sx
 
     ; set sprite 0 9'th bit if x (tmp1, tmp2) is greater than 256 
-    lda sprites_msb_x           ; msb on
+    lda sprites_msb_x       ; msb on
     and #%11111110
-    ldx tmp2                    ; check if tmp2 is zero
-    beq :+                      ; note: see .byte $2c trick to skip 2 bytes
-    ora #%00000001              ; set sprite 0 x 9'th bit
+    ldx tmp2                ; check if tmp2 is zero
+    beq :+                  ; note: see .byte $2c trick to skip 2 bytes
+    ora #%00000001          ; set sprite 0 x 9'th bit
 :   sta sprites_msb_x
 
     ; update sprite y position
@@ -967,7 +968,7 @@ refresh:
     lsr
     lsr
     lsr
-    sta tmp1                    ; low bits in screen coordinates
+    sta tmp1                ; low bits in screen coordinates
     lda hero + o::y_hi
     asl
     asl
@@ -977,7 +978,7 @@ refresh:
     ; add top border (25 rows display)
     ; note: map object to coordinates of tile map
     clc
-    adc #50
+    adc #SCREEN_BRDR_TOP
     sta sprite_hero + s::sy
 
     ;
