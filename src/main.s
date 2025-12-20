@@ -1066,7 +1066,6 @@ render:
     adc #1                  ; add 1
     and #TILE_PIXEL_MASK    ; mask to 3 bits
     sta screen_offset       ; store screen shift right offset
-    tay                     ; store in y for later use
 
     ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
     ; with adjustment if screen_offset != 0
