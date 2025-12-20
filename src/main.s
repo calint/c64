@@ -156,6 +156,9 @@ HUD_SPRITE = HUD_SPRITE_DATA >> 6
 ; hero sprite data for use in register
 HERO_SPRITE = sprites_data_0 >> 6
 
+; hero sprite bit for use in register
+HERO_SPRITE_BIT = 1
+
 ; number of sub-pixel fraction bits are used (hard constant assumed in code)
 SUBPIXEL_SHIFT = 4
 
@@ -976,10 +979,10 @@ refresh:
 
     ; set sprite 0 9'th bit if x (tmp1, tmp2) is greater than 256 
     lda sprites_msb_x       ; msb on
-    and #%11111110
+    and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if tmp2 is zero
     beq :+                  ; note: see .byte $2c trick to skip 2 bytes
-    ora #%00000001          ; set sprite 0 x 9'th bit
+    ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
 :   sta sprites_msb_x
 
     ; update sprite y position
