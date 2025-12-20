@@ -65,9 +65,11 @@ SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
+SCREEN_WIDTH_PX = 320       ; screen width in pixels for 40 column display
 SCREEN_BRDR_LFT = 24        ; x of first visible pixel (40 column display)
 SCREEN_BRDR_TOP = 50        ; y of first visible pixel
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
+TILE_WIDTH      = 8         ; width of tile in pixels
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
@@ -922,7 +924,7 @@ refresh:
     ; center camera on object with 16 pixels wide sprite
     sec
     lda camera_x_lo
-    sbc #320/2-8            ; 320 screen width, -8 to move to center of sprite
+    sbc #SCREEN_WIDTH_PX / 2 - TILE_WIDTH
     sta camera_x_lo
     lda camera_x_hi
     sbc #0
