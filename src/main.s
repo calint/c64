@@ -142,6 +142,15 @@ ANIMATE_IDLE = 0
 ANIMATE_RIGHT = 1
 ANIMATE_LEFT = 2
 
+; hud start line to draw number of pickables
+HUD_PICKABLES_LINE = 4
+
+; hud start line to draw number of infinities
+HUD_INFINITIES_LINE = 12
+
+; number of lines to render in the hud for pickables and infinities
+HUD_RENDER_LINES = 3
+
 ;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
@@ -763,12 +772,12 @@ update:
 @render_hud:
     ; render pickables count
     lda hero_pickables
-    ldy #3 * 3 + 1          ; start row 3, second byte
+    ldy #HUD_PICKABLES_LINE * 3 + 1          ; start row 3, second byte
     jsr @draw_hud_bytes
 
     ; render infinities count
     lda hero_infinities
-    ldy #11 * 3 + 1         ; start row 11, second byte
+    ldy #HUD_INFINITIES_LINE * 3 + 1         ; start row 11, second byte
     jsr @draw_hud_bytes
 
     ; render progress bar
@@ -804,7 +813,7 @@ update:
 @draw_hud_bytes:
     asl                     ; multiply value by 2
     sta tmp1                ; store base index for hud_lines
-    ldx #4                  ; loop for 5 rows
+    ldx #HUD_RENDER_LINES   ; loop for 5 rows
 @row_loop:
     stx tmp2                ; save row counter
     ldx tmp1                ; get hud_lines index
@@ -821,7 +830,7 @@ update:
  
     ldx tmp2                ; restore row counter
     dex
-    bpl @row_loop
+    bne @row_loop
     rts
 
 @hud_done:
