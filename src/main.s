@@ -150,10 +150,13 @@ HUD_RENDER_LINES = 3
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
 
+; hud sprite data for use in register
+HUD_SPRITE = HUD_SPRITE_DATA >> 6
+
 ; number of sub-pixel fraction bits are used (code assumes 4)
 SUBPIXEL_SHIFT = 4
 
-; hero sprite data location for use in register
+; hero sprite data for use in register
 HERO_SPRITE = sprites_data_0 >> 6
 
 ;-------------------------------------------------------------------------------
@@ -1119,15 +1122,15 @@ sprites_state:
 .out .sprintf("sprites_state: $%04X", sprites_state)
     ;       x,   y,               data, color
 sprite_hero: ; hero is composed of 2 sprites
-    .byte   0,   0,        HERO_SPRITE, COLOR_WHITE
-    .byte   0,   0, sprites_data_1 >>6, COLOR_GREY_1
-    .byte 138, 150, sprites_data_3 >>6, 4
-    .byte 162, 150, sprites_data_4 >>6, 5
-    .byte 186, 150, sprites_data_5 >>6, 6
-    .byte 234, 150, sprites_data_6 >>6, 7
-    .byte   2, 150, sprites_data_7 >>6, 8
+    .byte   0,   0,       HERO_SPRITE, COLOR_WHITE
+    .byte   0,   0, sprites_data_1>>6, COLOR_GREY_1
+    .byte 138, 150, sprites_data_3>>6, 4
+    .byte 162, 150, sprites_data_4>>6, 5
+    .byte 186, 150, sprites_data_5>>6, 6
+    .byte 234, 150, sprites_data_6>>6, 7
+    .byte   2, 150, sprites_data_7>>6, 8
 sprite_hud:
-    .byte  54,  51, sprites_data_47>>6, COLOR_WHITE
+    .byte  54,  51,        HUD_SPRITE, COLOR_WHITE
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %11000000
 sprites_enable:
