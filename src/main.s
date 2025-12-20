@@ -102,7 +102,7 @@ COLOR_GREY_3    = 15
 ;
 
 ; maving velocity to left and right
-MOVE_DX_LO = 8
+MOVE_DX = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
 MOVE_SKIP_INTERVAL = %1111
@@ -153,11 +153,11 @@ HUD_SPRITE_DATA = sprites_data_47
 ; hud sprite data for use in register
 HUD_SPRITE = HUD_SPRITE_DATA >> 6
 
-; number of sub-pixel fraction bits are used (code assumes 4)
-SUBPIXEL_SHIFT = 4
-
 ; hero sprite data for use in register
 HERO_SPRITE = sprites_data_0 >> 6
+
+; number of sub-pixel fraction bits are used (hard constant assumed in code)
+SUBPIXEL_SHIFT = 4
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -605,9 +605,9 @@ update:
     sta hero_animation_ptr + 1
     :
 
-    lda #256 - MOVE_DX_LO
+    lda #<-MOVE_DX
     sta hero + o::dx_lo
-    lda #$ff
+    lda #>-MOVE_DX
     sta hero + o::dx_hi
 
     ; regularly "skip" (small jump) when moving
@@ -652,9 +652,9 @@ update:
     sta hero_animation_ptr + 1
     :
 
-    lda #MOVE_DX_LO
+    lda #<MOVE_DX
     sta hero + o::dx_lo
-    lda #0
+    lda #>MOVE_DX
     sta hero + o::dx_hi
 
     ; regularly "skip" (small jump) when moving
@@ -668,9 +668,9 @@ update:
     bne @fire
 
     ; "skip" by a negative dy
-    lda #256 - MOVE_SKIP_VELOCITY
+    lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy_lo
-    lda #$ff
+    lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
 @fire:
