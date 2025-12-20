@@ -479,7 +479,7 @@ update:
     ; round to nearest tile by adding half of a tile times fraction (4 * 16)
     lda hero + o::x_lo
     clc
-    adc #4 * 16
+    adc #(TILE_WIDTH / 2) << 4
     ror                     ; shift with carry from addition
     lsr
     lsr
@@ -496,8 +496,8 @@ update:
 
     lda hero + o::y_lo
     clc
-    adc #4 * 16
-    ror
+    adc #(TILE_WIDTH / 2) << 4
+    ror                     ; shift with carry from addition
     lsr
     lsr
     lsr
