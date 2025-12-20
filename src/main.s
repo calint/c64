@@ -73,10 +73,6 @@ SCREEN_BRDR_TOP = 50        ; y of first visible pixel
 TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
 TILE_WIDTH      = 8         ; width of tile in pixels
 TILE_PIXEL_MASK = %00000111 ; mask for pixel within tile (0-7)
-BORDER_COLOR    = COLOR_BLUE
-BORDER_RENDER   = COLOR_LHT_BLUE
-BORDER_UPDATE   = COLOR_RED
-BORDER_REFRESH  = COLOR_YELLOW 
 RASTER_BORDER   = 251       ; raster value below bottom border (PAL)
 KEYBOARD_ROW_0  = $fe       ; scan row 0 (keys: inst/del, return, etc.)
 KEYBOARD_RETURN = 2         ; bit mask for "return" key in row 0
@@ -101,6 +97,10 @@ COLOR_GREY_2    = 12
 COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
+BORDER_COLOR    = COLOR_BLUE
+BORDER_RENDER   = COLOR_LHT_BLUE
+BORDER_UPDATE   = COLOR_RED
+BORDER_REFRESH  = COLOR_YELLOW 
 
 ;
 ; game
