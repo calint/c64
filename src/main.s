@@ -52,14 +52,16 @@ VIC_SPR_SPR_COL = $d01e     ; vic-ii sprite vs sprite collision bits
 VIC_SPR_BG_COL  = $d01f     ; vic-ii sprite vs background collision bits
 VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
-SID_V1_FREQ_LO  = $d400
-SID_V1_FREQ_HI  = $d401
-SID_V1_CTRL     = $d404
-SID_V1_AD       = $d405
-SID_V1_SR       = $d406
-SID_MODE_VOL    = $d418
+; SID_V1_FREQ_LO  = $d400
+; SID_V1_FREQ_HI  = $d401
+; SID_V1_CTRL     = $d404
+; SID_V1_AD       = $d405
+; SID_V1_SR       = $d406
+; SID_MODE_VOL    = $d418
 VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
+VIC_CIA_1       = $dc0d     ; cia 1 interrupt control
+VIC_CIA_2       = $dd0d     ; cia 2 interrupt control
 MEMORY_CONFIG   = %00110101 ; enable ram at $a000-$bfff and $e000-$ffff
 PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
@@ -350,41 +352,30 @@ program:
 ;-------------------------------------------------------------------------------
 
     sei                     ; disable interrupts
-
-    ; initialization of stack and clearing decimal mode omitted since
-    ; initialized by kernal at boot
+    ldx #$ff                ; initialize stack
+    txs                     ; copy x to sp
+    cld                     ; clear decimal mode
 
     ; enable ram at $a000-$bfff and $e000-$ffff
-    lda #MEMORY_CONFIG       ; see https://sta.c64.org/cbm64mem.html
+    ; see https://sta.c64.org/cbm64mem.htm
+    lda #MEMORY_CONFIG
     sta PROCESSOR_PORT
+  
+    ; disable cia timers
+    ; note: even with sei, these chips "latch" interrupts
+    lda #$7f                ; bit 7 = 0 (disable all)
+    sta VIC_CIA_1
+    sta VIC_CIA_2
 
-    ;
-    ; initialize sound
-    ;
+    ; acknowledge any existing/pending interrupts
+    lda VIC_CIA_1
+    lda VIC_CIA_2
 
-    ; set waveform to triangle (closest to sine)
-    lda #$11                ; triangle wave + gate bit
-    sta SID_V1_CTRL
- 
-    ; set adsr (attack/decay/sustain/release)
-    lda #$00                ; fast attack, fast decay
-    sta SID_V1_AD
-    lda #$ff                ; max sustain, max release
-    sta SID_V1_SR
-
-    ; set volume to maximum
-    lda #$0f                ; volume 15
-    sta SID_MODE_VOL
-
-    ; lda #$12
-    ; sta SID_V1_FREQ_LO
-    ; lda #$01
-    ; sta SID_V1_FREQ_HI
-    ;
-    ; lda #$23
-    ; sta SID_V1_FREQ_LO
-    ; lda #$02
-    ; sta SID_V1_FREQ_HI
+    ; turn off the shift-key/restore-key interrupt (nmi)
+    lda #<nmi_handler
+    sta $fffa
+    lda #>nmi_handler
+    sta $fffb
 
     ;
     ; setup first frame
@@ -1120,6 +1111,12 @@ render_tile_map:
     sta VIC_BORDER
 
     jmp main_loop
+
+;-------------------------------------------------------------------------------
+nmi_handler:
+;-------------------------------------------------------------------------------
+    rti
+
 
 ;-------------------------------------------------------------------------------
 .align 8
