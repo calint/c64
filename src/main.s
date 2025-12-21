@@ -446,7 +446,7 @@ main_loop:
 update:
 ;-------------------------------------------------------------------------------
     ; note: previous x and y for objects are saved at `refresh`
-    ;       state must be consistent when `update` is done 
+    ;       state must be consistent when `update` is done
  
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
