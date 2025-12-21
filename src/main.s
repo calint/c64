@@ -344,6 +344,9 @@ program:
 .endstruct
 
 ;-------------------------------------------------------------------------------
+    ;
+    ; setup system 
+    ;
 
     sei                     ; disable interrupts
     ldx #$ff                ; initialize stack
