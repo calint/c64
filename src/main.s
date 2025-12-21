@@ -613,9 +613,9 @@ update:
     bne @right
 
     ; "skip" by a negative dy
-    lda #256 - MOVE_SKIP_VELOCITY
+    lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy_lo
-    lda #$ff
+    lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
 @right:
