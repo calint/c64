@@ -500,37 +500,37 @@ update:
 @collision_reaction_done:
 
     ; convert hero world x, y to tile map coordinates
-    ; note: assumes 4 subpixels bits and 3 tile pixels bits
+
+    ; note: assumes 4 subpixels bits and 3 tile pixels bits effectively needing 
+    ;       to do a 16 bit shift left
 
     ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
     lda hero + o::x_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax
+    tax                     ; save `x_lo` for later
     lda hero + o::x_hi
     adc #0                  ; propagate carry into the high byte
-    tay
-    txa
-    rol
-    tya
-    rol
-    ; accumulator now contains tile x
+    tay                     ; save intermediate `x_hi` into register y
+    txa                     ; restore `x_lo`
+    rol                     ; rotate bit 7 into carry
+    tya                     ; restore `x_hi`
+    rol                     ; rotate carry into bit 0
+    ; accumulator is now tile x
     sta tmp1
 
     lda hero + o::y_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax
+    tax                     ; save `y_lo` for later
     lda hero + o::y_hi
     adc #0                  ; propagate carry into the high byte
-    tay
-    txa
-    rol
-    tya
-    rol
-    ; accumulator now contains tile y
-
-    ldy tmp1                ; is now tile x
+    tay                     ; save intermediate `y_hi` for later
+    txa                     ; restore `y_lo`
+    rol                     ; rotate bit 7 into carry
+    tya                     ; restore `y_hi`
+    rol                     ; rotate carry into bit 0
+    ; accumulator is now tile y
 
     ; add it to row pointer
     clc
@@ -539,6 +539,8 @@ update:
     .assert <tile_map = 0, error, "tile_map must be page-aligned"
     lda #0
     sta ptr1
+
+    ldy tmp1                ; is now tile x
 
     ; check top left tile
     lda (ptr1), y
