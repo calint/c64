@@ -500,7 +500,7 @@ update:
 @collision_reaction_done:
 
     ; convert hero world x, y to tile map coordinates
-    ; note: assumes 4 bits of subpixels and 3 bits of tile pixels
+    ; note: assumes 4 subpixels bits and 3 tile pixels bits
 
     ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
     lda hero + o::x_lo
