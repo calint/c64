@@ -104,25 +104,25 @@ BORDER_REFRESH  = COLOR_YELLOW
 ; game
 ;
 
-; moving velocity to left and right (including sub-pixels)
+; moving velocity to left and right (including subpixels)
 MOVE_DX = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
 MOVE_SKIP_INTERVAL = %1111
 
-; amount of dy when hero "skips" while moving (including sub-pixels)
+; amount of dy when hero "skips" while moving (including subpixels)
 MOVE_SKIP_VELOCITY = 20
 
-; initial velocity upwards when jumping (including sub-pixels)
+; initial velocity upwards when jumping (including subpixels)
 JUMP_VELOCITY = 33
 
-; gravity to add to velocity every frame (including sub-pixels)
+; gravity to add to velocity every frame (including subpixels)
 GRAVITY = 3
 
 ; gravity applied when hero is not jumping at interval (AND is 0)
 GRAVITY_INTERVAL = %1111
 
-; x and y position when restarting including sub-pixels
+; x and y position when restarting including subpixels
 RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
 RESTART_Y = -16 << SUBPIXEL_SHIFT
 
@@ -168,7 +168,7 @@ HERO_SPRITE = sprites_data_0 >> 6
 ; hero sprite bit for use in register
 HERO_SPRITE_BIT = 1
 
-; number of sub-pixel fraction bits are used (hard constant assumed in code)
+; number of subpixel fraction bits are used (hard constant assumed in code)
 SUBPIXEL_SHIFT = 4
 
 ;-------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ ptr1:                 .res 2  ; temporary pointer
 .org $0000
 .segment "HEADER"
 header:
-.word $0801                ; prg load address hard-coded
+.word $0801                ; prg load address hard-coded to BASIC segment
 
 ;-------------------------------------------------------------------------------
 ; stack
@@ -362,7 +362,7 @@ program:
     sta PROCESSOR_PORT
   
     ; disable cia timers
-    ; note: even with sei, these chips "latch" interrupts
+    ; note: even with `sei`, these chips "latch" interrupts
     lda #$7f                ; bit 7 = 0 (disable all)
     sta VIC_CIA_1
     sta VIC_CIA_2
@@ -481,7 +481,7 @@ update:
     ; ror hero + 6   ; dy low
 
     lda #0
-    ; note: dx_lo and dx_hi are set to 0 in @controls
+    ; note: `dx_lo` and `dx_hi` are set to 0 in `@controls`
     sta hero + o::dy_lo
     sta hero + o::dy_hi
 
@@ -492,8 +492,10 @@ update:
     sta hero_restarting
 
 @collision_reaction_done:
+
     ; convert hero world x, y to tile map coordinates
-    ; round to nearest tile by adding half of a tile times fraction (4 * 16)
+
+    ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
     lda hero + o::x_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
@@ -508,7 +510,7 @@ update:
     lda hero + o::x_hi
     asl
     ora tmp1
-    ; acc now contains tile x
+    ; accumulator now contains tile x
     tay
 
     lda hero + o::y_lo
@@ -525,14 +527,13 @@ update:
     lda hero + o::y_hi
     asl
     ora tmp1
-    ; acc now contains tile y
+    ; accumulator now contains tile y
 
     ; add it to row pointer
     clc
     adc #>tile_map
     sta ptr1 + 1
-    ; base of column, always 0
-    lda #<tile_map
+    lda #<tile_map          ; note: base of column is 0 due to alignment
     sta ptr1
 
     ; check top left tile
@@ -809,7 +810,7 @@ update:
     sta tmp1
     asl                     ; tmp1 * 2
     clc                     ; + tmp1
-    adc tmp1
+    adc tmp1                ;
 
     ; render on sprite
     tax
@@ -919,7 +920,7 @@ refresh:
 
     ; center camera on hero
 
-    ; make hero x to tmp1 (x lo) and tmp2 (x hi) in world pixel coordinates
+    ; make hero x to `tmp1` (x lo) and `tmp2` (x hi) in world pixel coordinates
     lda hero + o::x_lo
     ; remove pixel fraction
     lsr
@@ -929,24 +930,26 @@ refresh:
     sta tmp1
     lda hero + o::x_hi
     tax                     ; save for later use
-    ; make room for 4 bits from tmp1
+    ; make room for 4 bits from `tmp1`
     asl
     asl
     asl
     asl
-    ; or the 4 lowest high bits
+    ; or the 4 lowest bits from `tmp1`
     ora tmp1
     sta camera_x_lo
     sta tmp1
-    txa                     ; restore hero x_hi
-    ; remove the "ored" 4 lowest bits
+    txa                     ; restore hero `x_hi`
+    ; remove the ORed 4 lowest bits
     lsr
     lsr
     lsr
     lsr
     sta camera_x_hi
     sta tmp2
-    ; tmp1 and tmp2 now contains hero x_lo, x_hi pixels in world coordinates
+
+    ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
+    ; coordinates
 
     ; center camera on object with 16 pixels wide sprite
     sec
@@ -983,7 +986,7 @@ refresh:
     lda tmp1                    ; x low
     sta sprite_hero + s::sx
 
-    ; set hero sprite x 9'th bit if x (tmp1, tmp2) is greater than 256 
+    ; set hero sprite x 9'th bit if x (`tmp1`, `tmp2`) is greater than 256
     lda sprites_msb_x       ; msb on
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if tmp2 is zero
@@ -993,9 +996,9 @@ refresh:
 
     ; update hero sprite y position
 
-    ; remove sub-pixels and compose y into tmp1
+    ; remove subpixels and compose y into `tmp1`
     lda hero + o::y_lo
-    lsr                     ; shift away sub-pixels
+    lsr                     ; shift away subpixels
     lsr
     lsr
     lsr
@@ -1006,6 +1009,8 @@ refresh:
     asl
     asl
     ora tmp1
+    ; `tmp1` now contains y with 0 being at top of screen within border
+
     ; add top border (25 rows display)
     clc
     adc #SCREEN_BRDR_TOP
@@ -1063,25 +1068,25 @@ render:
     and #TILE_PIXEL_MASK    ; mask to 3 bits
     sta screen_offset       ; store screen shift right offset
 
-    ; calculate tile_map_x: (camera_x_hi << 5) | (camera_x_lo >> 3)
-    ; with adjustment if screen_offset != 0
-    txa                     ; restore camera_x_lo
-    lsr                     ; shift right by 3 bits
+    ; calculate tile map x: (camera_x_hi << 5) | (camera_x_lo >> 3) with
+    ; adjustment if `screen_offset` != 0
+    txa                     ; restore `camera_x_lo`
+    lsr                     ; shift away the tile pixels
     lsr
     lsr
     sta tmp1                ; tmp1 = camera_x_lo >> 3
     lda camera_x_hi         ; get high byte
-    asl                     ; shift left by 5 bits 
+    asl                     ; shift left by 5 bits to OR in the lower bits
     asl
     asl
     asl
     asl
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
-    ldx screen_offset       ; check if screen_offset is 0
+    ldx screen_offset       ; check if `screen_offset` is 0
     beq :+                  ; if 0, no adjustment needed
     clc                     ; clear unknown carry flag
     adc #1                  ; add 1 to match desired table values 
-:   tax                     ; transfer to x used in render_tile_map
+:   tax                     ; transfer to x used in `render_tile_map`
 
     ; fallthrough
 
