@@ -157,9 +157,6 @@ HUD_INFINITIES_LINE = 12
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
 
-; number of rows to render in the hud for pickables and infinities
-HUD_RENDER_ROWS = 3
-
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
 
@@ -182,23 +179,24 @@ SUBPIXEL_SHIFT = 4
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04x", zero_page)
-camera_x_lo:          .res 1  ; low byte of camera x
-camera_x_hi:          .res 1  ; high byte of camera x
-screen_offset:        .res 1  ; number of pixels (0-7) screen is shifted right
-screen_active:        .res 1  ; active screen (0 or 1)
-frame_counter:        .res 1  ; frame counter used for AND = 0 intervals
-hero_jumping:         .res 1  ; 1 if in jump
-hero_moving:          .res 1  ; 0 if hero is idle
-hero_animation:       .res 1  ; 0 idle, 1 right, 2 left
-hero_animation_frame: .res 1  ; frame number in animation
-hero_animation_ptr:   .res 2  ; pointer to base of animation frames 
-hero_animation_rate:  .res 1  ; frame rate for current animation (AND = 0)
-hero_pickables:       .res 1  ; number of picked items
-hero_infinities:      .res 1  ; number of restarts remaining
-hero_restarting:      .res 1  ; 1 when restarting sequence
-tmp1:                 .res 1  ; temporary
-tmp2:                 .res 1  ; temporary
-ptr1:                 .res 2  ; temporary pointer
+camera_x_lo:           .res 1  ; low byte of camera x
+camera_x_hi:           .res 1  ; high byte of camera x
+screen_offset:         .res 1  ; number of pixels (0-7) screen is shifted right
+screen_active:         .res 1  ; active screen (0 or 1)
+sprites_bg_collisions: .res 1  ; sprite / background collisions
+frame_counter:         .res 1  ; frame counter used for AND = 0 intervals
+hero_jumping:          .res 1  ; 1 if in jump
+hero_moving:           .res 1  ; 0 if hero is idle
+hero_animation:        .res 1  ; 0 idle, 1 right, 2 left
+hero_animation_frame:  .res 1  ; frame number in animation
+hero_animation_ptr:    .res 2  ; pointer to base of animation frames 
+hero_animation_rate:   .res 1  ; frame rate for current animation (AND = 0)
+hero_pickables:        .res 1  ; number of picked items
+hero_infinities:       .res 1  ; number of restarts remaining
+hero_restarting:       .res 1  ; 1 when restarting sequence
+tmp1:                  .res 1  ; temporary
+tmp2:                  .res 1  ; temporary
+ptr1:                  .res 2  ; temporary pointer
 
 ;-------------------------------------------------------------------------------
 ; program header
@@ -456,7 +454,6 @@ main_loop:
 
     ; set screen right offset in vblank, takes effect next frame
     lda screen_offset
-    ;ora #%1000             ; enable 40 columns
     sta VIC_CTRL_2
 
 ;-------------------------------------------------------------------------------
@@ -469,8 +466,11 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; check if hero sprite has collided with background
+    ; read and save the collisions for this frame
     lda VIC_SPR_BG_COL
+    sta sprites_bg_collisions
+
+    ; check if hero sprite has collided with background
     and HERO_SPRITE_BIT
     beq @collision_reaction_done
 
@@ -815,9 +815,9 @@ update:
     ; acc now contains number of dots in the progress line
     ; multiply by 3 bytes per sprite data row
     sta tmp1
-    asl                     ; tmp1 * 2
-    clc                     ; + tmp1
-    adc tmp1                ;
+    asl
+    clc
+    adc tmp1
 
     ; render on sprite
     tax
@@ -836,26 +836,23 @@ update:
     jmp @hud_done
 
 @draw_hud_bytes:
-    asl                     ; multiply amount by 2 to index data bytes to copy
-    sta tmp1                ; store base index for `hud_lines`
-    ldx #HUD_RENDER_ROWS    ; loop number of lines of indicator
-@row_loop:
-    stx tmp2                ; save row counter
-    ldx tmp1                ; get hud row index
-    lda hud_lines, x        ; load pattern byte 1
-    sta HUD_SPRITE_DATA, y  ; store in sprite
-    inx                     ; next hud byte
-    iny                     ; next sprite byte
-    lda hud_lines, x        ; load pattern byte 2
-    sta sprites_data_47, y  ; store in sprite
+    asl                     ; multiply by 2 to get index into `hud_lines`
+    tax                     ; x now holds the base index for the 2-byte pattern
+
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA, y  ; row 1
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 1, y
  
-    ; advance y to the second byte of the next row
-    iny
-    iny
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA + 3, y ; row 2 (+3 bytes per sprite row)
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 4, y
  
-    ldx tmp2                ; restore row counter
-    dex
-    bne @row_loop
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA + 6, y ; row 3
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 7, y
     rts
 
 @hud_done:
@@ -937,12 +934,12 @@ refresh:
     sta tmp1
     lda hero + o::x_hi
     tax                     ; save for later use
-    ; make room for 4 bits from `tmp1`
+    ; make room for 4 lower bits from `tmp1`
     asl
     asl
     asl
     asl
-    ; or the 4 lowest bits from `tmp1`
+    ; OR the 4 lowest bits from `tmp1`
     ora tmp1
     sta camera_x_lo
     sta tmp1
@@ -1064,12 +1061,12 @@ render:
     sta VIC_BORDER
 
     ; convert camera 16 bit pixel position to tile map x and screen right shift
-    lda camera_x_lo         ; camera position low byte
-    tax                     ; store in x for later use 
-    and #TILE_PIXEL_MASK    ; get pixel in tile, lower 3 bits
+    lda camera_x_lo
+    tax
+    and #TILE_PIXEL_MASK    ; extract sub-tile fine scroll (0-7)
     eor #TILE_PIXEL_MASK    ; start negation by inverting
-    clc                     ; clear unknown carry flag state
-    adc #1                  ; add 1
+    clc
+    adc #1
     and #TILE_PIXEL_MASK    ; mask to 3 bits
     sta screen_offset       ; store screen shift right offset
 
