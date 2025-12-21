@@ -501,10 +501,12 @@ update:
 
     ; convert hero world x, y to tile map coordinates
 
-    ; note: assumes 4 subpixels bits and 3 tile pixels bits effectively needing 
-    ;       to do a 16 bit shift left
-
     ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
+
+    ; note: assumes 4 subpixels bits and 3 tile pixels bits effectively needing
+    ;       to do a 16 bit left shift and using the high byte but rounding
+    ;       complicates it
+
     lda hero + o::x_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
