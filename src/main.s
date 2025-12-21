@@ -56,6 +56,8 @@ VIC_DATA_PORT_A = $dc00     ; joystick 2
 VIC_DATA_PORT_B = $dc01     ; joystick 1
 VIC_CIA_1       = $dc0d     ; cia 1 interrupt control
 VIC_CIA_2       = $dd0d     ; cia 2 interrupt control
+NMI_VECTOR_LO   = $fffa     ; non-maskable interrupt vector (low byte)
+NMI_VECTOR_HI   = $fffb     ; non-maskable interrupt vector (high byte)
 MEMORY_CONFIG   = %00110101 ; enable ram at $a000-$bfff and $e000-$ffff
 PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
@@ -102,7 +104,7 @@ BORDER_REFRESH  = COLOR_YELLOW
 ; game
 ;
 
-; maving velocity to left and right (including sub-pixels)
+; moving velocity to left and right (including sub-pixels)
 MOVE_DX = 8
 
 ; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
@@ -314,6 +316,7 @@ tile_map:                   ; the tile map included from resources
 .segment "CODE"
 program:
 .out .sprintf("      program: $%04X", program)
+
 ;-------------------------------------------------------------------------------
 ; object struct with short name `o` for code brevity
 ;-------------------------------------------------------------------------------
@@ -370,9 +373,9 @@ program:
 
     ; turn off the shift-key/restore-key interrupt (nmi)
     lda #<nmi_handler
-    sta $fffa
+    sta NMI_VECTOR_LO
     lda #>nmi_handler
-    sta $fffb
+    sta NMI_VECTOR_HI
 
     ;
     ; setup first frame
@@ -384,10 +387,11 @@ program:
     sta screen_active
     sta hero_jumping
     sta hero_moving
-    sta hero_animation
     sta hero_animation_frame
     sta frame_counter
     sta hero_pickables
+    lda #ANIMATE_IDLE
+    sta hero_animation
     lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
     lda #<hero_animation_idle
@@ -410,6 +414,7 @@ program:
     sta color_ram + $300, x ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
+    ; note: also writes to the unused 24 nibbles
 
     ; fallthrough
 
@@ -441,7 +446,7 @@ main_loop:
 update:
 ;-------------------------------------------------------------------------------
     ; note: previous x and y for objects are saved at `refresh`
-    ;       state must be consistent when `udpate` is done 
+    ;       state must be consistent when `update` is done 
  
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
@@ -452,7 +457,7 @@ update:
     and HERO_SPRITE_BIT
     beq @collision_reaction_done
 
-    ; sprite has collided with background, restore state previous x,y and set
+    ; hero has collided with background, restore state to previous x,y and set
     ; dx, dy to 0
 
     lda hero + o::x_prv_lo
@@ -568,6 +573,7 @@ update:
     ; done checking for pickables
 
 @controls:
+    ; set non horizontal movement
     lda #0
     sta hero + o::dx_lo 
     sta hero + o::dx_hi
@@ -577,8 +583,9 @@ update:
     ; joystick
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_LEFT
-    bne @right
+    bne @right              ; note: active low
 
+    ; flag hero is moving
     lda #1
     sta hero_moving
 
@@ -624,8 +631,9 @@ update:
 @right:
     lda VIC_DATA_PORT_A 
     and #JOYSTICK_RIGHT
-    bne @fire
+    bne @fire               ; note: active low
 
+    ; flag hero is moving
     lda #1
     sta hero_moving
 
@@ -675,7 +683,7 @@ update:
 
     lda VIC_DATA_PORT_A
     and #JOYSTICK_FIRE
-    bne @key_return
+    bne @key_return         ; note: active low
 
     ; set negative dy to jump up
     lda #<-JUMP_VELOCITY
@@ -683,7 +691,7 @@ update:
     lda #>-JUMP_VELOCITY
     sta hero + o::dy_hi
 
-    ; flag for hero is in a jump
+    ; flag hero is jumping and moving 
     lda #1
     sta hero_jumping
     sta hero_moving
@@ -693,44 +701,48 @@ update:
     lda hero_restarting
     bne @controls_done
 
+    ; check if "return" key is pressed
     lda #KEYBOARD_ROW_0
     sta VIC_DATA_PORT_A
     lda VIC_DATA_PORT_B
     and #KEYBOARD_RETURN
-    bne @controls_done
-
-    lda #1
-    sta hero_restarting
+    bne @controls_done      ; note: active low
 
     ; if infinities left
     lda hero_infinities
     beq @controls_done
 
+    ; flag hero is restarting
+    lda #1
+    sta hero_restarting
+
     dec hero_infinities
 
-    ; set restart position
+    ; set restart position and velocity
     lda #<RESTART_X
     sta hero + o::x_lo
     lda #>RESTART_X
     sta hero + o::x_hi
+    lda #<RESTART_Y 
+    sta hero + o::y_lo
+    lda #>RESTART_Y
+    sta hero + o::y_hi
     lda #0
     sta hero + o::dx_lo
     sta hero + o::dx_hi
     sta hero + o::dy_lo
     sta hero + o::dy_hi
-    lda #<RESTART_Y 
-    sta hero + o::y_lo
-    lda #>RESTART_Y
-    sta hero + o::y_hi
 
 @controls_done:
     ; if hero is not moving animate idle
     lda hero_moving
     bne :+
+
     ; if hero already idle continue animation
     lda hero_animation
     cmp #ANIMATE_IDLE       ; note: redundant since ANIMATE_IDLE == 0
     beq :+
+
     ; start hero idle animation
     lda #ANIMATE_IDLE
     sta hero_animation
@@ -793,14 +805,15 @@ update:
     lsr
     lsr
     ; acc now contains number of dots in the progress line
-    ; multiply by 3 bytes per row
+    ; multiply by 3 bytes per sprite data row
     sta tmp1
-    asl
-    clc
+    asl                     ; tmp1 * 2
+    clc                     ; + tmp1
     adc tmp1
+
     ; render on sprite
     tax
-    ldy #HUD_PROGRESS_LINE * 3         ; 3 bytes per row, first byte
+    ldy #HUD_PROGRESS_LINE * 3    ; 3 bytes per row, first byte
     lda progress_lines, x
     sta sprites_data_47, y
     inx
@@ -815,9 +828,9 @@ update:
     jmp @hud_done
 
 @draw_hud_bytes:
-    asl                     ; multiply value by 2
-    sta tmp1                ; store base index for hud_lines
-    ldx #HUD_RENDER_ROWS    ; loop for x lines
+    asl                     ; multiply amount by 2 to index data bytes to copy
+    sta tmp1                ; store base index for `hud_lines`
+    ldx #HUD_RENDER_ROWS    ; loop number of lines of indicator
 @row_loop:
     stx tmp2                ; save row counter
     ldx tmp1                ; get hud row index
@@ -900,11 +913,12 @@ refresh:
     adc hero + o::dy_hi
     sta hero + o::y_hi
 
+    ; update sprite data index
     lda hero + o::sprite
     sta sprite_hero + s::data
 
     ; center camera on hero
-    ; todo: move this to "user" code
+
     ; make hero x to tmp1 (x lo) and tmp2 (x hi) in world pixel coordinates
     lda hero + o::x_lo
     ; remove pixel fraction
@@ -932,7 +946,7 @@ refresh:
     lsr
     sta camera_x_hi
     sta tmp2
-    ; tmp1 and tmp2 now contains x_lo, x_hi
+    ; tmp1 and tmp2 now contains hero x_lo, x_hi pixels in world coordinates
 
     ; center camera on object with 16 pixels wide sprite
     sec
@@ -963,13 +977,13 @@ refresh:
     adc #0
     sta tmp2
 
-    ; update sprite position
+    ; update hero sprite position
 
-    ; update sprite x position
+    ; update hero sprite x position
     lda tmp1                    ; x low
     sta sprite_hero + s::sx
 
-    ; set sprite 0 9'th bit if x (tmp1, tmp2) is greater than 256 
+    ; set hero sprite x 9'th bit if x (tmp1, tmp2) is greater than 256 
     lda sprites_msb_x       ; msb on
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if tmp2 is zero
@@ -977,7 +991,9 @@ refresh:
     ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
 :   sta sprites_msb_x
 
-    ; update sprite y position
+    ; update hero sprite y position
+
+    ; remove sub-pixels and compose y into tmp1
     lda hero + o::y_lo
     lsr
     lsr
@@ -1074,7 +1090,7 @@ render:
 render_tile_map:
 ;-------------------------------------------------------------------------------
 
-    ; note: x contains tile map x
+    ; note: register x contains tile map x
     ldy #0                  ; screen column start
 
     ; jump to unrolled loop for current screen
@@ -1114,23 +1130,22 @@ nmi_handler:
 ;-------------------------------------------------------------------------------
     rti
 
-
 ;-------------------------------------------------------------------------------
 .align 8
 sprites_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("sprites_state: $%04X", sprites_state)
-    ;       x,   y,              data, color
+    ;       x,   y,               data, color
 sprite_hero:
-    .byte   0,   0,       HERO_SPRITE, COLOR_WHITE
-    .byte   0,   0, sprites_data_1>>6, COLOR_GREY_1
-    .byte 138, 150, sprites_data_3>>6, 4
-    .byte 162, 150, sprites_data_4>>6, 5
-    .byte 186, 150, sprites_data_5>>6, 6
-    .byte 234, 150, sprites_data_6>>6, 7
-    .byte   2, 150, sprites_data_7>>6, 8
+    .byte   0,   0,        HERO_SPRITE, COLOR_WHITE
+    .byte   0,   0, sprites_data_16>>6, COLOR_GREY_1
+    .byte 138, 150, sprites_data_17>>6, 4
+    .byte 162, 150, sprites_data_18>>6, 5
+    .byte 186, 150, sprites_data_19>>6, 6
+    .byte 234, 150, sprites_data_20>>6, 7
+    .byte   2, 150, sprites_data_21>>6, 8
 sprite_hud:
-    .byte  54,  51,        HUD_SPRITE, COLOR_WHITE
+    .byte  54,  51,         HUD_SPRITE, COLOR_WHITE
 sprites_msb_x: ; 9'th bit of x-coordinate
     .byte %11000000
 sprites_enable:
@@ -1226,6 +1241,8 @@ hero_animation_left:
 
 ;-------------------------------------------------------------------------------
 .out .sprintf("   free bytes: %d", $d800 - *)
+;-------------------------------------------------------------------------------
+
 ;-------------------------------------------------------------------------------
 ; color ram
 ;-------------------------------------------------------------------------------
