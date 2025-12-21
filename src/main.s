@@ -4,7 +4,7 @@
 ; $0002 - $00ff: zero page
 ; $0400 - $07e7: default screen (screen 0)
 ; $07f8 - $07ff: sprites data index to address/64 when screen 0 is active
-; $0800 - $0800: 0 so basic program can run
+; $0800        : padding byte so BASIC stub at $0801 works
 ; $0801 - $080d: basic stub to jump to $5900
 ; $1000 - $17ff: default character set (note: vic-ii chip sees rom data)
 ; $1800 - $1fff: alternate character set (note: vic-ii chip sees rom data)
@@ -58,7 +58,7 @@ CIA1_ICR        = $dc0d     ; cia 1 interrupt control and status register
 CIA2_ICR        = $dd0d     ; cia 2 interrupt control and status register
 NMI_VECTOR_LO   = $fffa     ; non-maskable interrupt vector (low byte)
 NMI_VECTOR_HI   = $fffb     ; non-maskable interrupt vector (high byte)
-MEMORY_CONFIG   = %00110101 ; ram everywhere except $d000–$dfff (i/o visible)
+MEMORY_CONFIG   = %00110101 ; disable basic/kernal rom, keep i/o at $d000–$dfff
 PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400, char map at $2000
@@ -435,8 +435,9 @@ program:
 main_loop:
 ;-------------------------------------------------------------------------------
 
-    ; synchronization point: must occur below bottom border on PAL
+    ; synchronization point: must occur below bottom border on pal
     ; (raster >= 251)
+    ; note: timing and raster values assume pal c64
 
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
@@ -501,11 +502,14 @@ update:
 
     ; convert hero world x, y to tile map coordinates
 
-    ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
+    ; bias by half a tile, then extract tile coordinate via bit rotation
 
     ; note: assumes 4 subpixels bits and 3 tile pixels bits effectively needing
     ;       to do a 16 bit left shift and using the high byte but rounding
     ;       complicates it
+
+    .assert SUBPIXEL_SHIFT = 4, error, "code assumes 4 subpixel fraction bits"
+    .assert TILE_WIDTH = 8, error, "code assumes tile width to be 8"
 
     lda hero + o::x_lo
     clc
@@ -995,7 +999,7 @@ refresh:
     lda sprites_msb_x       ; msb on
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if `tmp2` is zero
-    beq :+                  ; note: could use .byte $2c trick to skip 2 bytes
+    beq :+
     ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
 :   sta sprites_msb_x
 
@@ -1061,10 +1065,10 @@ render:
     lda #BORDER_RENDER
     sta VIC_BORDER
 
-    ; convert camera 16 bit pixel position to tile map x and screen right shift
+    ; convert camera 16 bit pixel position to tile map x and screen right offset
     lda camera_x_lo
     tax
-    and #TILE_PIXEL_MASK    ; extract sub-tile fine scroll (0-7)
+    and #TILE_PIXEL_MASK    ; extract sub-tile screen offset (0-7)
     eor #TILE_PIXEL_MASK    ; start negation by inverting
     clc
     adc #1
@@ -1104,7 +1108,7 @@ render_tile_map:
     jmp @screen_1
 
 @screen_0:
-    ; generated unrolled loop with cheaper absolute indexing
+    ; generated unrolled loop using absolute indexed stores (avoids indirect)
     .include "render_to_screen_0.s"
     inx
     iny
@@ -1115,7 +1119,7 @@ render_tile_map:
     jmp @done 
 
 @screen_1:
-    ; generated unrolled loop with cheaper absolute indexing
+    ; generated unrolled loop using absolute indexed stores (avoids indirect)
     .include "render_to_screen_1.s"
     inx
     iny
