@@ -530,7 +530,7 @@ update:
     rol
     ; accumulator now contains tile y
 
-    ldy tmp1
+    ldy tmp1                ; is now tile x
 
     ; add it to row pointer
     clc
