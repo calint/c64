@@ -52,17 +52,17 @@ VIC_SPR_SPR_COL = $d01e     ; vic-ii sprite vs sprite collision bits
 VIC_SPR_BG_COL  = $d01f     ; vic-ii sprite vs background collision bits
 VIC_BORDER      = $d020     ; vic-ii border color register
 VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
-VIC_DATA_PORT_A = $dc00     ; joystick 2
-VIC_DATA_PORT_B = $dc01     ; joystick 1
-VIC_CIA_1       = $dc0d     ; cia 1 interrupt control
-VIC_CIA_2       = $dd0d     ; cia 2 interrupt control
+CIA1_PORT_A     = $dc00     ; joystick 2
+CIA1_PORT_B     = $dc01     ; joystick 1
+CIA1_ICR        = $dc0d     ; cia 1 interrupt control and status register
+CIA2_ICR        = $dd0d     ; cia 2 interrupt control and status register
 NMI_VECTOR_LO   = $fffa     ; non-maskable interrupt vector (low byte)
 NMI_VECTOR_HI   = $fffb     ; non-maskable interrupt vector (high byte)
 MEMORY_CONFIG   = %00110101 ; enable ram at $a000-$bfff and $e000-$ffff
 PROCESSOR_PORT  = $01       ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
-SCREEN_0_D018   = %00011000 ; screen at $0400 char map at $2000
-SCREEN_1_D018   = %11111000 ; screen at $3c00 char map at $2000 
+SCREEN_0_D018   = %00011000 ; screen at $0400, char map at $2000
+SCREEN_1_D018   = %11111000 ; screen at $3c00, char map at $2000 
 SCREEN_WIDTH    = 40        ; screen width in characters
 SCREEN_HEIGHT   = 25        ; screen height in characters
 SCREEN_WIDTH_PX = 320       ; screen width in pixels for 40 column display
@@ -101,7 +101,7 @@ BORDER_UPDATE   = COLOR_RED
 BORDER_REFRESH  = COLOR_YELLOW 
 
 ;
-; game
+; tunable game constants
 ;
 
 ; moving velocity to left and right (including subpixels)
@@ -132,6 +132,10 @@ ANIMATION_RATE_IDLE = %11111
 
 ; initial infinities (respawns) hero has
 INITIAL_INFINITIES = 7
+
+;
+; hard constants coupled with implementation
+;
 
 ; animation enumeration
 ANIMATE_IDLE = 0
@@ -177,7 +181,7 @@ SUBPIXEL_SHIFT = 4
 .org $0002
 .segment "ZERO_PAGE"
 zero_page:
-.out .sprintf("    zero_page: $%04X", zero_page)
+.out .sprintf("    zero_page: $%04x", zero_page)
 camera_x_lo:          .res 1  ; low byte of camera x
 camera_x_hi:          .res 1  ; high byte of camera x
 screen_offset:        .res 1  ; number of pixels (0-7) screen is shifted right
@@ -210,7 +214,7 @@ header:
 .org $0100
 .segment "STACK"
 stack:
-.out .sprintf("        stack: $%04X", stack)
+.out .sprintf("        stack: $%04x", stack)
 .res 256
 
 ;-------------------------------------------------------------------------------
@@ -219,7 +223,7 @@ stack:
 .org $0400
 .segment "SCREEN_0"
 screen_0:
-.out .sprintf("     screen_0: $%04X", screen_0)
+.out .sprintf("     screen_0: $%04x", screen_0)
 .res 1000
 
 ;-------------------------------------------------------------------------------
@@ -229,7 +233,7 @@ screen_0:
 .org $0801
 .segment "BASIC"
 basic:
-.out .sprintf("        basic: $%04X", basic)
+.out .sprintf("        basic: $%04x", basic)
 .word $080b                 ; pointer to next basic line
 .word 10                    ; line number
 .byte $9e                   ; sys token
@@ -244,7 +248,7 @@ basic:
 .org $1000
 .segment "CHARSET_0"
 charset_0:
-.out .sprintf("    charset_0: $%04X", charset_0)
+.out .sprintf("    charset_0: $%04x", charset_0)
     .res $0800
 
 ;-------------------------------------------------------------------------------
@@ -254,7 +258,7 @@ charset_0:
 .org $1800
 .segment "CHARSET_1"
 charset_1:
-.out .sprintf("    charset_1: $%04X", charset_1)
+.out .sprintf("    charset_1: $%04x", charset_1)
     .res $0800
 
 ;-------------------------------------------------------------------------------
@@ -264,7 +268,7 @@ charset_1:
 .org $2000
 .segment "CHARSET_2"
 charset_2:
-.out .sprintf("    charset_2: $%04X", charset_2)
+.out .sprintf("    charset_2: $%04x", charset_2)
     .include "charset_2.s"
 
 ;-------------------------------------------------------------------------------
@@ -274,7 +278,7 @@ charset_2:
 .org $2800
 .segment "CHARSET_3"
 charset_3:
-.out .sprintf("    charset_3: $%04X", charset_3)
+.out .sprintf("    charset_3: $%04x", charset_3)
     .incbin "../resources/charset_3.bin"
 
 ;-------------------------------------------------------------------------------
@@ -285,7 +289,7 @@ charset_3:
 .org $3000
 .segment "SPRITES_DATA"
 sprites_data:
-.out .sprintf(" sprites_data: $%04X", sprites_data)
+.out .sprintf(" sprites_data: $%04x", sprites_data)
     .include "sprites_data.s"
 
 ;-------------------------------------------------------------------------------
@@ -295,7 +299,7 @@ sprites_data:
 .org $3c00
 .segment "SCREEN_1"
 screen_1:
-.out .sprintf("     screen_1: $%04X", screen_1)
+.out .sprintf("     screen_1: $%04x", screen_1)
     .res $400
 
 ;-------------------------------------------------------------------------------
@@ -305,7 +309,7 @@ screen_1:
 .segment "TILE_MAP"
 .org $4000
 tile_map:                   ; the tile map included from resources
-.out .sprintf("     tile_map: $%04X", tile_map)
+.out .sprintf("     tile_map: $%04x", tile_map)
     .include "tile_map.s"
 
 ;-------------------------------------------------------------------------------
@@ -315,7 +319,7 @@ tile_map:                   ; the tile map included from resources
 .org $5900
 .segment "CODE"
 program:
-.out .sprintf("      program: $%04X", program)
+.out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
 ; object struct with short name `o` for code brevity
@@ -364,12 +368,12 @@ program:
     ; disable cia timers
     ; note: even with `sei`, these chips "latch" interrupts
     lda #$7f                ; bit 7 = 0 (disable all)
-    sta VIC_CIA_1
-    sta VIC_CIA_2
+    sta CIA1_ICR
+    sta CIA2_ICR
 
     ; acknowledge any existing/pending interrupts
-    lda VIC_CIA_1
-    lda VIC_CIA_2
+    lda CIA1_ICR
+    lda CIA2_ICR
 
     ; turn off the shift-key/restore-key interrupt (nmi)
     lda #<nmi_handler
@@ -416,22 +420,26 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; note: also writes to the unused 24 nibbles
 
+
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens
-    ; 2. update    - collisions, game logic, input
-    ; 2. refresh   - physics, apply state to sprites, camera
-    ; 3. render    - draw tilemap to offscreen buffer
+    ; 2. update    - collisions, game logic, input, hud
+    ; 3. refresh   - physics, apply state to sprites, camera
+    ; 4. render    - draw tilemap to offscreen buffer
 
     ; coordinate system:
     ; - world coordinates are signed 16-bit fixed point
     ; - upper 12 bits = pixels
     ; - lower 4 bits = subpixels
 
+
 ;-------------------------------------------------------------------------------
 main_loop:
 ;-------------------------------------------------------------------------------
 
-    ; wait for vblank at lower border
+    ; synchronization point: must occur below bottom border on PAL
+    ; (raster >= 251)
+
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
     bne :-
@@ -477,17 +485,6 @@ update:
     sta hero + o::y_lo
     lda hero + o::y_prv_hi
     sta hero + o::y_hi
-
-    ; ; half the dx, dy
-    ; ; note: this would be nicer but it does not work for now
-    ; lda hero + 5   ; dx high
-    ; cmp #$80
-    ; ror hero + 5   ; dx high
-    ; ror hero + 4   ; dx low
-    ; lda hero + 7   ; dy high
-    ; cmp #$80
-    ; ror hero + 7   ; dy high
-    ; ror hero + 6   ; dy low
 
     lda #0
     ; note: `dx_lo` and `dx_hi` will be set to 0 in `@controls`
@@ -592,7 +589,7 @@ update:
 
 @left:
     ; joystick
-    lda VIC_DATA_PORT_A 
+    lda CIA1_PORT_A 
     and #JOYSTICK_LEFT
     bne @right              ; note: active low
 
@@ -640,7 +637,7 @@ update:
     sta hero + o::dy_hi
 
 @right:
-    lda VIC_DATA_PORT_A 
+    lda CIA1_PORT_A 
     and #JOYSTICK_RIGHT
     bne @fire               ; note: active low
 
@@ -692,7 +689,7 @@ update:
     lda hero_jumping
     bne @key_return
 
-    lda VIC_DATA_PORT_A
+    lda CIA1_PORT_A
     and #JOYSTICK_FIRE
     bne @key_return         ; note: active low
 
@@ -714,8 +711,8 @@ update:
 
     ; check if "return" key is pressed
     lda #KEYBOARD_ROW_0
-    sta VIC_DATA_PORT_A
-    lda VIC_DATA_PORT_B
+    sta CIA1_PORT_A
+    lda CIA1_PORT_B
     and #KEYBOARD_RETURN
     bne @controls_done      ; note: active low
 
@@ -751,13 +748,13 @@ update:
 
     ; if hero already idle continue animation
     lda hero_animation
-    cmp #ANIMATE_IDLE       ; note: redundant since ANIMATE_IDLE == 0
+    cmp #ANIMATE_IDLE
     beq :+
 
     ; start hero idle animation
     lda #ANIMATE_IDLE
     sta hero_animation
-    lda #0                  ; note: redundant since ANIMATE_IDLE == 0
+    lda #0
     sta hero_animation_frame
     lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
@@ -1000,7 +997,7 @@ refresh:
     lda sprites_msb_x       ; msb on
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if `tmp2` is zero
-    beq :+                  ; note: see .byte $2c trick to skip 2 bytes
+    beq :+                  ; note: could use .byte $2c trick to skip 2 bytes
     ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
 :   sta sprites_msb_x
 
@@ -1144,7 +1141,7 @@ nmi_handler:
 .align 8
 sprites_state:
 ;-------------------------------------------------------------------------------
-.out .sprintf("sprites_state: $%04X", sprites_state)
+.out .sprintf("sprites_state: $%04x", sprites_state)
     ;       x,   y,               data, color
 sprite_hero:
     .byte   0,   0,        HERO_SPRITE, COLOR_WHITE
@@ -1169,7 +1166,7 @@ sprites_double_height:
 .align 8
 objects_state:
 ;-------------------------------------------------------------------------------
-.out .sprintf("objects_state: $%04X", objects_state)
+.out .sprintf("objects_state: $%04x", objects_state)
     ;            xlo,        xhi,        ylo,        yhi, dxlo, dxhi, dylo, dyhi,      sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
     .byte <RESTART_X, >RESTART_X, <RESTART_Y, >RESTART_Y,    0,    0,    0,    0, HERO_SPRITE,      0,      0,      0,      0
@@ -1260,6 +1257,6 @@ hero_animation_left:
 .org $d800
 .segment "COLOR_RAM"
 color_ram:
-.out .sprintf("    color_ram: $%04X", color_ram)
+.out .sprintf("    color_ram: $%04x", color_ram)
     .res 1000
 
