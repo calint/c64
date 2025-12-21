@@ -989,7 +989,7 @@ refresh:
     ; set hero sprite x 9'th bit if x (`tmp1`, `tmp2`) is greater than 256
     lda sprites_msb_x       ; msb on
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
-    ldx tmp2                ; check if tmp2 is zero
+    ldx tmp2                ; check if `tmp2` is zero
     beq :+                  ; note: see .byte $2c trick to skip 2 bytes
     ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
 :   sta sprites_msb_x
