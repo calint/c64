@@ -989,18 +989,16 @@ refresh:
 
     ; remove subpixels and compose y into `tmp1`
     lda hero + o::y_lo
-    lsr                     ; shift away subpixels
-    lsr
-    lsr
-    lsr
+    .repeat SUBPIXEL_SHIFT
+        lsr
+    .endrepeat
     sta tmp1                ; low bits in screen coordinates
     lda hero + o::y_hi
-    asl                     ; prepare for OR with low bits
-    asl
-    asl
-    asl
+    .repeat SUBPIXEL_SHIFT
+        asl
+    .endrepeat
     ora tmp1
-    ; `tmp1` now contains y with 0 being at top of screen within border
+    ; accumulator now contains y with 0 being at top of screen within border
 
     ; add top border (25 rows display)
     clc
