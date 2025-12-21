@@ -500,40 +500,37 @@ update:
 @collision_reaction_done:
 
     ; convert hero world x, y to tile map coordinates
+    ; note: assumes 4 bits of subpixels and 3 bits of tile pixels
 
     ; round to nearest tile by adding half of a tile times subpixels (4 * 16)
     lda hero + o::x_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    ror                     ; shift with carry from addition
-    lsr                     ; shift away the subpixels and tile pixels
-    lsr
-    lsr
-    lsr
-    lsr
-    lsr
-    sta tmp1
+    tax
     lda hero + o::x_hi
-    asl
-    ora tmp1
-    ; accumulator now contains tile x
+    adc #0                  ; propagate carry into the high byte
     tay
+    txa
+    rol
+    tya
+    rol
+    ; accumulator now contains tile x
+    sta tmp1
 
     lda hero + o::y_lo
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    ror                     ; shift with carry from addition
-    lsr                     ; shift away the subpixels and tile pixels
-    lsr
-    lsr
-    lsr
-    lsr
-    lsr
-    sta tmp1
+    tax
     lda hero + o::y_hi
-    asl
-    ora tmp1
+    adc #0                  ; propagate carry into the high byte
+    tay
+    txa
+    rol
+    tya
+    rol
     ; accumulator now contains tile y
+
+    ldy tmp1
 
     ; add it to row pointer
     clc
