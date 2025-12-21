@@ -452,7 +452,7 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
-    ; check if sprite 0 has collided with background
+    ; check if hero sprite has collided with background
     lda VIC_SPR_BG_COL
     and HERO_SPRITE_BIT
     beq @collision_reaction_done
@@ -481,7 +481,7 @@ update:
     ; ror hero + 6   ; dy low
 
     lda #0
-    ; note: `dx_lo`` and `dx_hi` are set to 0 in `@controls`
+    ; note: dx_lo and dx_hi are set to 0 in @controls
     sta hero + o::dy_lo
     sta hero + o::dy_hi
 
@@ -498,7 +498,7 @@ update:
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
     ror                     ; shift with carry from addition
-    lsr
+    lsr                     ; shift away the subpixels and tile pixels
     lsr
     lsr
     lsr
@@ -515,7 +515,7 @@ update:
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
     ror                     ; shift with carry from addition
-    lsr
+    lsr                     ; shift away the subpixels and tile pixels
     lsr
     lsr
     lsr
@@ -995,19 +995,18 @@ refresh:
 
     ; remove sub-pixels and compose y into tmp1
     lda hero + o::y_lo
-    lsr
+    lsr                     ; shift away sub-pixels
     lsr
     lsr
     lsr
     sta tmp1                ; low bits in screen coordinates
     lda hero + o::y_hi
-    asl
+    asl                     ; prepare for OR with low bits
     asl
     asl
     asl
     ora tmp1
     ; add top border (25 rows display)
-    ; note: map object to coordinates of tile map
     clc
     adc #SCREEN_BRDR_TOP
     sta sprite_hero + s::sy
