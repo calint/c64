@@ -4,7 +4,7 @@
 ; $0002 - $00ff: zero page
 ; $0400 - $07e7: default screen (screen 0)
 ; $07f8 - $07ff: sprites data index to address/64 when screen 0 is active
-; $0800        : padding byte so BASIC stub at $0801 works
+; $0800        : byte must be 0 so BASIC stub at $0801 works
 ; $0801 - $080d: basic stub to jump to $5900
 ; $1000 - $17ff: default character set (note: vic-ii chip sees rom data)
 ; $1800 - $1fff: alternate character set (note: vic-ii chip sees rom data)
