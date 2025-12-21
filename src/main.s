@@ -1,20 +1,20 @@
 ;-------------------------------------------------------------------------------
 ; mapped memory
 ;-------------------------------------------------------------------------------
-; 0x0002 - 0x00ff: zero page
-; 0x0400 - 0x07e7: default screen (screen 0)
-; 0x07f8 - 0x07ff: sprites data index to address/64 when screen 0 is active
-; 0x0800 - 0x0800; 0 so basic program can run
-; 0x0801 - 0x080d: basic stub to jump to $5900
-; 0x1000 - 0x17ff: default character set (note: vic-ii chip sees rom data)
-; 0x1800 - 0x1fff: alternate character set (note: vic-ii chip sees rom data)
-; 0x2000 - 0x27ff: user defined character set 1
-; 0x2800 - 0x2fff: user defined character set 2
-; 0x3000 - 0x3bff: 48 sprite definition data
-; 0x3c00 - 0x3fe7: double buffer screen (screen 1)
-; 0x3ff8 - 0x3fff: sprites data index to address/64 when screen 1 is active
-; 0x4000 - 0x58ff: tile map
-; 0x5900 -       : program
+; $0002 - $00ff: zero page
+; $0400 - $07e7: default screen (screen 0)
+; $07f8 - $07ff: sprites data index to address/64 when screen 0 is active
+; $0800 - $0800: 0 so basic program can run
+; $0801 - $080d: basic stub to jump to $5900
+; $1000 - $17ff: default character set (note: vic-ii chip sees rom data)
+; $1800 - $1fff: alternate character set (note: vic-ii chip sees rom data)
+; $2000 - $27ff: user defined character set 1
+; $2800 - $2fff: user defined character set 2
+; $3000 - $3bff: 48 sprite definition data
+; $3c00 - $3fe7: double buffer screen (screen 1)
+; $3ff8 - $3fff: sprites data index to address/64 when screen 1 is active
+; $4000 - $58ff: tile map
+; $5900 -      : program
 
 ; for more see: linker.cfg, build output and https://sta.c64.org/cbm64mem.html
 
@@ -122,7 +122,7 @@ GRAVITY = 3
 ; gravity applied when hero is not jumping at interval (AND is 0)
 GRAVITY_INTERVAL = %1111
 
-; x and y position when restarting including subpixels
+; restarting position including subpixels
 RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
 RESTART_Y = -16 << SUBPIXEL_SHIFT
 
@@ -130,7 +130,7 @@ RESTART_Y = -16 << SUBPIXEL_SHIFT
 ANIMATION_RATE_MOVING = %111
 ANIMATION_RATE_IDLE = %11111
 
-; initial infinities hero has
+; initial infinities (respawns) hero has
 INITIAL_INFINITIES = 7
 
 ; animation enumeration
@@ -416,7 +416,16 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; note: also writes to the unused 24 nibbles
 
-    ; fallthrough
+    ; frame pipeline:
+    ; 1. main_loop - wait for raster, swap screens
+    ; 2. update    - collisions, game logic, input
+    ; 2. refresh   - physics, apply state to sprites, camera
+    ; 3. render    - draw tilemap to offscreen buffer
+
+    ; coordinate system:
+    ; - world coordinates are signed 16-bit fixed point
+    ; - upper 12 bits = pixels
+    ; - lower 4 bits = subpixels
 
 ;-------------------------------------------------------------------------------
 main_loop:
@@ -481,7 +490,7 @@ update:
     ; ror hero + 6   ; dy low
 
     lda #0
-    ; note: `dx_lo` and `dx_hi` are set to 0 in `@controls`
+    ; note: `dx_lo` and `dx_hi` will be set to 0 in `@controls`
     sta hero + o::dy_lo
     sta hero + o::dy_hi
 
@@ -533,7 +542,8 @@ update:
     clc
     adc #>tile_map
     sta ptr1 + 1
-    lda #<tile_map          ; note: base of column is 0 due to alignment
+    .assert <tile_map = 0, error, "tile_map must be page-aligned"
+    lda #0
     sta ptr1
 
     ; check top left tile
@@ -1033,8 +1043,6 @@ refresh:
     lda sprites_msb_x
     sta VIC_SPRITES_8X
 
-    ; fallthrough
-
 ;-------------------------------------------------------------------------------
 render:
 ;-------------------------------------------------------------------------------
@@ -1087,8 +1095,6 @@ render:
     clc                     ; clear unknown carry flag
     adc #1                  ; add 1 to match desired table values 
 :   tax                     ; transfer to x used in `render_tile_map`
-
-    ; fallthrough
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
