@@ -931,30 +931,12 @@ refresh:
 
     ; make hero x to `tmp1` (x lo) and `tmp2` (x hi) in world pixel coordinates
     lda hero + o::x_lo
-    ; remove pixel fraction
-    lsr
-    lsr
-    lsr
-    lsr
     sta tmp1
     lda hero + o::x_hi
-    tax                     ; save for later use
-    ; make room for 4 lower bits from `tmp1`
-    asl
-    asl
-    asl
-    asl
-    ; OR the 4 lowest bits from `tmp1`
-    ora tmp1
-    sta camera_x_lo
-    sta tmp1
-    txa                     ; restore hero `x_hi`
-    ; remove the ORed 4 lowest bits
-    lsr
-    lsr
-    lsr
-    lsr
-    sta camera_x_hi
+    .repeat SUBPIXEL_SHIFT
+       ror
+       ror tmp1
+    .endrepeat
     sta tmp2
 
     ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
@@ -962,10 +944,10 @@ refresh:
 
     ; center camera on object with 16 pixels wide sprite
     sec
-    lda camera_x_lo
+    lda tmp1
     sbc #SCREEN_WIDTH_PX / 2 - TILE_WIDTH
     sta camera_x_lo
-    lda camera_x_hi
+    lda tmp2
     sbc #0
     sta camera_x_hi
 
