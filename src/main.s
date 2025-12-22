@@ -361,7 +361,7 @@ program:
 .struct s
     sx       .byte ; screen x lower 8 bits
     sy       .byte ; screen y
-    data     .byte ; address / 64 pointing to sprite data
+    data     .byte ; sprite data address / 64
     color    .byte ; color
 .endstruct
 
