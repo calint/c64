@@ -169,8 +169,11 @@ HERO_SPRITE = sprites_data_0 >> 6
 ; hero sprite bit for use in register
 HERO_SPRITE_BIT = 1
 
-; number of subpixel fraction bits are used (hard constant assumed in code)
+; number of subpixel fraction bits are used
 SUBPIXEL_SHIFT = 4
+
+; number of shifts to convert pixels to tile
+TILE_SHIFT = 3
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -934,8 +937,9 @@ refresh:
     sta tmp1
     lda hero + o::x_hi
     .repeat SUBPIXEL_SHIFT
-       ror
-       ror tmp1
+        cmp #$80            ; sets carry bit if negative preserving sign
+        ror
+        ror tmp1
     .endrepeat
     sta tmp2
 
@@ -1058,16 +1062,14 @@ render:
     ; calculate tile map x: (camera_x_hi << 5) | (camera_x_lo >> 3) with
     ; adjustment if `screen_offset` != 0
     txa                     ; restore `camera_x_lo`
-    lsr                     ; shift away the tile pixels
-    lsr
-    lsr
+    .repeat TILE_SHIFT
+        lsr
+    .endrepeat
     sta tmp1                ; tmp1 = camera_x_lo >> 3
     lda camera_x_hi         ; get high byte
-    asl                     ; shift left by 5 bits to OR in the lower bits
-    asl
-    asl
-    asl
-    asl
+    .repeat 8 - TILE_SHIFT  ; note: 8 is number of bits in a byte
+        asl
+    .endrepeat
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
     ldx screen_offset       ; check if `screen_offset` is 0
     beq :+                  ; if 0, no adjustment needed
