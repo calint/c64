@@ -116,7 +116,7 @@ BORDER_REFRESH  = COLOR_YELLOW
 ; moving velocity to left and right (including subpixels)
 MOVE_DX = 8
 
-; when moving, hero makes a "skip" (a small jump) at interval (AND is 0)
+; when moving, hero makes a "skip" (a small jump) at interval mask (AND is 0)
 MOVE_SKIP_INTERVAL = %1111
 
 ; amount of dy when hero "skips" while moving (including subpixels)
@@ -128,14 +128,14 @@ JUMP_VELOCITY = 33
 ; gravity to add to velocity every frame (including subpixels)
 GRAVITY = 3
 
-; gravity applied when hero is not jumping at interval (AND is 0)
+; gravity applied when hero is not jumping at interval mask (AND is 0)
 GRAVITY_INTERVAL = %1111
 
 ; restarting position including subpixels
 RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
 RESTART_Y = -16 << SUBPIXEL_SHIFT
 
-; animation frame time interval (AND is 0)
+; animation rate masks (AND is 0)
 ANIMATION_RATE_MOVING = %111
 ANIMATION_RATE_IDLE = %11111
 
