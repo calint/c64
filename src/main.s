@@ -348,7 +348,7 @@ program:
     dx_hi    .byte
     dy_lo    .byte
     dy_hi    .byte
-    sprite   .byte ; address / 64 pointing to sprite data
+    sprite   .byte ; sprite data address / 64
     x_prv_lo .byte
     x_prv_hi .byte
     y_prv_lo .byte
