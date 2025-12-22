@@ -175,19 +175,19 @@ HUD_PROGRESS_LINE = 18
 ; hard constants coupled with implementation
 ;
 
-; animation enumeration
-ANIMATE_IDLE = 0
-ANIMATE_RIGHT = 1
-ANIMATE_LEFT = 2
-
-; hero sprite bit for use in register
-HERO_SPRITE_BIT = 1
-
 ; number of subpixel fraction bits are used
 SUBPIXEL_SHIFT = 4
 
 ; number of shifts to convert pixels to tile
 TILE_SHIFT = 3
+
+; hero sprite bit for use in register
+HERO_SPRITE_BIT = 1
+
+; animation enumeration
+HERO_ANIMATION_IDLE = 0
+HERO_ANIMATION_RIGHT = 1
+HERO_ANIMATION_LEFT = 2
 
 ;-------------------------------------------------------------------------------
 ; zero page
@@ -409,7 +409,7 @@ program:
     sta hero_animation_frame
     sta frame_counter
     sta hero_pickables
-    lda #ANIMATE_IDLE
+    lda #HERO_ANIMATION_IDLE
     sta hero_animation
     lda #ANIMATION_RATE_IDLE
     sta hero_animation_rate
@@ -621,10 +621,10 @@ update:
 
     ; if hero already animating "left" continue
     lda hero_animation
-    cmp #ANIMATE_LEFT
+    cmp #HERO_ANIMATION_LEFT
     beq :+
     ; start animating "left"
-    lda #ANIMATE_LEFT
+    lda #HERO_ANIMATION_LEFT
     sta hero_animation
     lda #0
     sta hero_animation_frame
@@ -669,10 +669,10 @@ update:
 
     ; if hero already animating "right" continue
     lda hero_animation
-    cmp #ANIMATE_RIGHT
+    cmp #HERO_ANIMATION_RIGHT
     beq :+
     ; start animating "right"
-    lda #ANIMATE_RIGHT
+    lda #HERO_ANIMATION_RIGHT
     sta hero_animation
     lda #0
     sta hero_animation_frame
@@ -770,11 +770,11 @@ update:
 
     ; if hero already idle continue animation
     lda hero_animation
-    cmp #ANIMATE_IDLE
+    cmp #HERO_ANIMATION_IDLE
     beq :+
 
     ; start hero idle animation
-    lda #ANIMATE_IDLE
+    lda #HERO_ANIMATION_IDLE
     sta hero_animation
     lda #0
     sta hero_animation_frame
