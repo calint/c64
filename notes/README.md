@@ -34,3 +34,8 @@
 * 4 banks of 16 KB each, however, bank 0 and 2 have sections that always access
   rom
 * bad lines when VIC blocks CPU from memory access
+
+## Screen on Vice PAL
+
+* 25 row display: first visible pixel y 50, last visible y 249
+* 38 column display: first visible pixel x 31, last visible x 334
