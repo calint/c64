@@ -969,7 +969,7 @@ refresh:
     ; add left border (40-column display)
     clc
     lda tmp1
-    adc #SCREEN_BRDR_LFT    ; left border
+    adc #SCREEN_BRDR_LFT
     sta tmp1
     lda tmp2
     adc #0
