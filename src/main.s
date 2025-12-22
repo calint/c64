@@ -142,20 +142,25 @@ ANIMATION_RATE_IDLE = %11111
 ; initial infinities (respawns) hero has
 INITIAL_INFINITIES = 7
 
-;
-; hard constants coupled with implementation
-;
 
-; animation enumeration
-ANIMATE_IDLE = 0
-ANIMATE_RIGHT = 1
-ANIMATE_LEFT = 2
+;
+; constants coupled with graphics
+;
 
 ; tile id for pickable item
 TILE_ID_PICKABLE = 33
 
 ; tile id for empty
 TILE_ID_EMPTY = 32
+
+; hero sprite data for use in register
+HERO_SPRITE = sprites_data_0 >> 6
+
+; sprite used for hud
+HUD_SPRITE_DATA = sprites_data_47
+
+; hud sprite data for use in register
+HUD_SPRITE = HUD_SPRITE_DATA >> 6
 
 ; hud start line to draw number of pickables
 HUD_PICKABLES_LINE = 4
@@ -166,14 +171,14 @@ HUD_INFINITIES_LINE = 12
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
 
-; sprite used for hud
-HUD_SPRITE_DATA = sprites_data_47
+;
+; hard constants coupled with implementation
+;
 
-; hud sprite data for use in register
-HUD_SPRITE = HUD_SPRITE_DATA >> 6
-
-; hero sprite data for use in register
-HERO_SPRITE = sprites_data_0 >> 6
+; animation enumeration
+ANIMATE_IDLE = 0
+ANIMATE_RIGHT = 1
+ANIMATE_LEFT = 2
 
 ; hero sprite bit for use in register
 HERO_SPRITE_BIT = 1
