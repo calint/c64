@@ -202,15 +202,15 @@ screen_offset:         .res 1  ; number of pixels (0-7) screen is shifted right
 screen_active:         .res 1  ; active screen (0 or 1)
 sprites_bg_collisions: .res 1  ; sprite / background collisions
 frame_counter:         .res 1  ; frame counter used for AND = 0 intervals
-hero_jumping:          .res 1  ; 1 if in jump
-hero_moving:           .res 1  ; 0 if hero is idle
-hero_animation:        .res 1  ; 0 idle, 1 right, 2 left
-hero_animation_frame:  .res 1  ; frame number in animation
-hero_animation_ptr:    .res 2  ; pointer to base of animation frames 
-hero_animation_rate:   .res 1  ; frame rate for current animation (AND = 0)
 hero_pickables:        .res 1  ; number of picked items
 hero_infinities:       .res 1  ; number of restarts remaining
-hero_restarting:       .res 1  ; 1 when restarting sequence
+hero_restarting:       .res 1  ; 0 when not restarting sequence
+hero_moving:           .res 1  ; 0 if hero is idle
+hero_jumping:          .res 1  ; 0 if not in jump
+hero_animation:        .res 1  ; 0 idle, 1 right, 2 left
+hero_animation_ptr:    .res 2  ; pointer to base of animation frames 
+hero_animation_rate:   .res 1  ; frame rate for current animation (AND = 0)
+hero_animation_frame:  .res 1  ; frame number in animation
 tmp1:                  .res 1  ; temporary
 tmp2:                  .res 1  ; temporary
 ptr1:                  .res 2  ; temporary pointer
@@ -556,6 +556,7 @@ update:
     ; accumulator is now tile y
 
     ; add it to row pointer
+    .assert TILE_MAP_WIDTH = 256, error, "tile_map must be 256 for optimization"
     clc
     adc #>tile_map
     sta ptr1 + 1
@@ -564,6 +565,10 @@ update:
     sta ptr1
 
     ldy tmp1                ; is now tile x
+
+    ; check tiles for pickables
+    ; not fully correct but makes for good game play
+    ; note: wraps horizontally into a cylindrical world
 
     ; check top left tile
     lda (ptr1), y
@@ -615,9 +620,8 @@ update:
     and #JOYSTICK_LEFT
     bne @right              ; note: active low
 
-    ; flag hero is moving
-    lda #1
-    sta hero_moving
+    ; flag hero is moving, non-zero value means "moving"
+    inc hero_moving
 
     ; if hero already animating "left" continue
     lda hero_animation
@@ -663,9 +667,8 @@ update:
     and #JOYSTICK_RIGHT
     bne @fire               ; note: active low
 
-    ; flag hero is moving
-    lda #1
-    sta hero_moving
+    ; flag hero is moving, non-zero value
+    inc hero_moving
 
     ; if hero already animating "right" continue
     lda hero_animation
@@ -742,11 +745,10 @@ update:
     lda hero_infinities
     beq @controls_done
 
-    ; flag hero is restarting
-    lda #1
-    sta hero_restarting
-
     dec hero_infinities
+
+    ; non-zero means "restarting"
+    inc hero_restarting
 
     ; set restart position and velocity
     lda #<RESTART_X
@@ -947,6 +949,7 @@ refresh:
     ; center camera on hero
 
     ; make hero x to `tmp1` (x lo) and `tmp2` (x hi) in world pixel coordinates
+    ; signed arithmetic shift right across 16 bits
     lda hero + o::x_lo
     sta tmp1
     lda hero + o::x_hi
