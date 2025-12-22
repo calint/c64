@@ -14,7 +14,16 @@
 ; $3c00 - $3fe7: double buffer screen (screen 1)
 ; $3ff8 - $3fff: sprites data index to address/64 when screen 1 is active
 ; $4000 - $58ff: tile map
-; $5900 -      : program
+; $5900 - $cfff: program
+; $d000 - $d3ff: vic-ii video display
+; $d400 - $d7ff: sid audio
+; $d800 - $dbff: color ram (4 bit nibbles)
+; $dc00 - $dcff: cia #1: keyboard, joystick, mouse, datasette, irq control
+; $dd00 - $ddff: cia #2: serial bus, rs232, nmi control
+; $de00 - $deff: i/o area #1
+; $df00 - $dfff: i/o area #2
+; $e000 - $fff9: free
+; $fffa - $ffff: hardware vectors
 
 ; for more see: linker.cfg, build output and https://sta.c64.org/cbm64mem.html
 
