@@ -432,8 +432,8 @@ program:
 
 
     ; frame pipeline:
-    ; 1. main_loop - wait for raster, swap screens
-    ; 2. update    - collisions, game logic, input, hud
+    ; 1. main_loop - wait for raster, swap screens, set screen offset
+    ; 2. update    - collisions, game logic, input, animation, physics, hud
     ; 3. refresh   - physics, camera, apply state to sprites
     ; 4. render    - draw tile map to offscreen buffer
 
