@@ -614,11 +614,11 @@ update:
     sta hero + o::dx_hi
     sta hero_moving
 
-@left:
+@joystick_left:
     ; joystick
     lda CIA1_PORT_A 
     and #JOYSTICK_LEFT
-    bne @right              ; note: active low
+    bne @joystick_right     ; note: active low
 
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
@@ -649,12 +649,12 @@ update:
     ; regularly "skip" (small jump) when moving
     lda frame_counter
     and #MOVE_SKIP_INTERVAL
-    bne @right
+    bne @joystick_right
 
     ; "skip" if dy is 0
     lda hero + o::dy_lo
     ora hero + o::dy_hi
-    bne @right
+    bne @joystick_right
 
     ; "skip" by a negative dy
     lda #<-MOVE_SKIP_VELOCITY
@@ -662,10 +662,10 @@ update:
     lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
-@right:
+@joystick_right:
     lda CIA1_PORT_A 
     and #JOYSTICK_RIGHT
-    bne @fire               ; note: active low
+    bne @joystick_fire      ; note: active low
 
     ; flag hero is moving, non-zero value
     inc hero_moving
@@ -696,12 +696,12 @@ update:
     ; regularly "skip" (small jump) when moving
     lda frame_counter
     and #MOVE_SKIP_INTERVAL
-    bne @fire
+    bne @joystick_fire
 
     ; "skip" if dy is 0
     lda hero + o::dy_lo
     ora hero + o::dy_hi
-    bne @fire
+    bne @joystick_fire
 
     ; "skip" by a negative dy
     lda #<-MOVE_SKIP_VELOCITY
@@ -709,14 +709,14 @@ update:
     lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
-@fire:
+@joystick_fire:
     ; is hero already jumping?
     lda hero_jumping
-    bne @key_return
+    bne @keyboard_return
 
     lda CIA1_PORT_A
     and #JOYSTICK_FIRE
-    bne @key_return         ; note: active low
+    bne @keyboard_return    ; note: active low
 
     ; set negative dy to jump up
     lda #<-JUMP_VELOCITY
@@ -729,7 +729,7 @@ update:
     sta hero_jumping
     sta hero_moving
 
-@key_return:
+@keyboard_return:
     ; if restarting skip this step
     lda hero_restarting
     bne @controls_done
