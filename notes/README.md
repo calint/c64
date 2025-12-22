@@ -8,7 +8,7 @@
 [x] game mechanics
     platformer elements when climbing and walking on text such as quotes, good
     sayings, paragraphs etc
-[ ] sprites 16x16 of hero climbing, jumping, crouching, walking
+[x] sprites 16x16 of hero climbing, jumping, crouching, walking
 [ ] projectiles could be illustrated in the color map only
 [ ] minor priority: clc may be unnecessary in certain cases
 ```
@@ -28,3 +28,9 @@
 * RMW Double Store
 * Ghost Read
 * Lost BRK
+
+## Curious VIC chip
+
+* 4 banks of 16 KB each, however, bank 0 and 2 have sections that always access
+  rom
+* bad lines when VIC blocks CPU from memory access

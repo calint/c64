@@ -982,7 +982,7 @@ refresh:
     sta sprite_hero + s::sx
 
     ; set hero sprite x 9'th bit if x (`tmp1`, `tmp2`) is greater than 256
-    lda sprites_msb_x       ; msb on
+    lda sprites_msb_x
     and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
     ldx tmp2                ; check if `tmp2` is zero
     beq :+
