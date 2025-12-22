@@ -19,3 +19,12 @@
 * Cycle 17: Bad line DMA starts (not 16 or 18)
 * 50 pixels: Top border in 25-row mode (not 48 or 52)
 * 31 pixels: Left border in 38-column mode
+
+## 6502 hardware bugs
+
+<https://www.youtube.com/watch?v=ZsRRCnque2E>  21:25
+
+* JMP Ind Page Boundary
+* RMW Double Store
+* Ghost Read
+* Lost BRK
