@@ -425,8 +425,8 @@ program:
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens
     ; 2. update    - collisions, game logic, input, hud
-    ; 3. refresh   - physics, apply state to sprites, camera
-    ; 4. render    - draw tilemap to offscreen buffer
+    ; 3. refresh   - physics, camera, apply state to sprites
+    ; 4. render    - draw tile map to offscreen buffer
 
     ; coordinate system:
     ; - world coordinates are signed 16-bit fixed point
