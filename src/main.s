@@ -136,8 +136,8 @@ RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
 RESTART_Y = -16 << SUBPIXEL_SHIFT
 
 ; animation rate masks (AND is 0)
-ANIMATION_RATE_MOVING = %111
-ANIMATION_RATE_IDLE = %11111
+HERO_ANIMATION_RATE_MOVING = %111
+HERO_ANIMATION_RATE_IDLE = %11111
 
 ; initial infinities (respawns) hero has
 INITIAL_INFINITIES = 7
@@ -190,6 +190,45 @@ HERO_ANIMATION_RIGHT = 1
 HERO_ANIMATION_LEFT = 2
 
 ;-------------------------------------------------------------------------------
+; object struct with short name `o` for code brevity
+;-------------------------------------------------------------------------------
+.struct o
+    x_lo     .byte
+    x_hi     .byte
+    y_lo     .byte
+    y_hi     .byte
+    dx_lo    .byte
+    dx_hi    .byte
+    dy_lo    .byte
+    dy_hi    .byte
+    sprite   .byte ; sprite data address / 64
+    x_prv_lo .byte
+    x_prv_hi .byte
+    y_prv_lo .byte
+    y_prv_hi .byte
+.endstruct
+
+;-------------------------------------------------------------------------------
+; sprite struct with short name `s` for code brevity
+;-------------------------------------------------------------------------------
+.struct s
+    sx       .byte ; screen x lower 8 bits
+    sy       .byte ; screen y
+    data     .byte ; sprite data address / 64
+    color    .byte ; color
+.endstruct
+
+;-------------------------------------------------------------------------------
+; animation struct with short name `n` for code brevity
+;-------------------------------------------------------------------------------
+.struct n
+    id      .byte ; unique animation id
+    frame   .byte ; frame number in animation
+    rate    .byte ; frame rate as a bitmask that is ANDed and checked for 0
+    ptr     .word ; pointer to animation table
+.endstruct
+
+;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
 .org $0002
@@ -207,10 +246,7 @@ hero_infinities:       .res 1  ; number of restarts remaining
 hero_restarting:       .res 1  ; 0 when not restarting sequence
 hero_moving:           .res 1  ; 0 if hero is idle
 hero_jumping:          .res 1  ; 0 if not in jump
-hero_animation:        .res 1  ; 0 idle, 1 right, 2 left
-hero_animation_ptr:    .res 2  ; pointer to base of animation frames 
-hero_animation_rate:   .res 1  ; frame rate for current animation (AND = 0)
-hero_animation_frame:  .res 1  ; frame number in animation
+hero_animation:        .tag n  ; animation struct
 tmp1:                  .res 1  ; temporary
 tmp2:                  .res 1  ; temporary
 ptr1:                  .res 2  ; temporary pointer
@@ -337,33 +373,29 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; object struct with short name `o` for code brevity
+; populate the struct `n` (aNimation) with initial values if not already active
 ;-------------------------------------------------------------------------------
-.struct o
-    x_lo     .byte
-    x_hi     .byte
-    y_lo     .byte
-    y_hi     .byte
-    dx_lo    .byte
-    dx_hi    .byte
-    dy_lo    .byte
-    dy_hi    .byte
-    sprite   .byte ; sprite data address / 64
-    x_prv_lo .byte
-    x_prv_hi .byte
-    y_prv_lo .byte
-    y_prv_hi .byte
-.endstruct
+.macro ANIMATION anim_id, anim_rate, anim_table, struct 
+    ; if already animating this state, continue
+    lda struct + n::id
+    cmp #anim_id
+    beq :+
 
-;-------------------------------------------------------------------------------
-; sprite struct with short name `s` for code brevity
-;-------------------------------------------------------------------------------
-.struct s
-    sx       .byte ; screen x lower 8 bits
-    sy       .byte ; screen y
-    data     .byte ; sprite data address / 64
-    color    .byte ; color
-.endstruct
+    lda #anim_id
+    sta struct + n::id
+
+    lda #0
+    sta struct + n::frame
+
+    lda #anim_rate
+    sta struct + n::rate
+
+    lda #<anim_table
+    sta struct + n::ptr
+    lda #>anim_table
+    sta struct + n::ptr + 1
+    :
+.endmacro
 
 ;-------------------------------------------------------------------------------
     ;
@@ -406,17 +438,17 @@ program:
     sta screen_active
     sta hero_jumping
     sta hero_moving
-    sta hero_animation_frame
+    sta hero_animation + n::frame
     sta frame_counter
     sta hero_pickables
     lda #HERO_ANIMATION_IDLE
-    sta hero_animation
-    lda #ANIMATION_RATE_IDLE
-    sta hero_animation_rate
+    sta hero_animation + n::id 
+    lda #HERO_ANIMATION_RATE_IDLE
+    sta hero_animation + n::rate
     lda #<hero_animation_idle
-    sta hero_animation_ptr
+    sta hero_animation + n::ptr
     lda #>hero_animation_idle
-    sta hero_animation_ptr + 1
+    sta hero_animation + n::ptr + 1
     lda #INITIAL_INFINITIES
     sta hero_infinities
 
@@ -623,23 +655,7 @@ update:
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
 
-    ; if hero already animating "left" continue
-    lda hero_animation
-    cmp #HERO_ANIMATION_LEFT
-    beq :+
-    ; start animating "left"
-    lda #HERO_ANIMATION_LEFT
-    sta hero_animation
-    lda #0
-    sta hero_animation_frame
-    ; set frame rate for "moving" animation
-    lda #ANIMATION_RATE_MOVING
-    sta hero_animation_rate
-    lda #<hero_animation_left
-    sta hero_animation_ptr
-    lda #>hero_animation_left
-    sta hero_animation_ptr + 1
-    :
+    ANIMATION HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left, hero_animation
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -670,23 +686,7 @@ update:
     ; flag hero is moving, non-zero value
     inc hero_moving
 
-    ; if hero already animating "right" continue
-    lda hero_animation
-    cmp #HERO_ANIMATION_RIGHT
-    beq :+
-    ; start animating "right"
-    lda #HERO_ANIMATION_RIGHT
-    sta hero_animation
-    lda #0
-    sta hero_animation_frame
-    ; set frame rate for "moving" animation
-    lda #ANIMATION_RATE_MOVING
-    sta hero_animation_rate
-    lda #<hero_animation_right
-    sta hero_animation_ptr
-    lda #>hero_animation_right
-    sta hero_animation_ptr + 1
-    :
+    ANIMATION HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right, hero_animation
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -770,23 +770,7 @@ update:
     lda hero_moving
     bne :+
 
-    ; if hero already idle continue animation
-    lda hero_animation
-    cmp #HERO_ANIMATION_IDLE
-    beq :+
-
-    ; start hero idle animation
-    lda #HERO_ANIMATION_IDLE
-    sta hero_animation
-    lda #0
-    sta hero_animation_frame
-    lda #ANIMATION_RATE_IDLE
-    sta hero_animation_rate
-    lda #<hero_animation_idle
-    sta hero_animation_ptr
-    lda #>hero_animation_idle
-    sta hero_animation_ptr + 1
-    :
+    ANIMATION HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle, hero_animation
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
@@ -884,19 +868,19 @@ update:
 @animation:
 @animation_hero:
     lda frame_counter
-    and hero_animation_rate
+    and hero_animation + n::rate
     bne @animation_done
 
-    ldy hero_animation_frame
-    lda (hero_animation_ptr), y
+    ldy hero_animation + n::frame
+    lda (hero_animation + n::ptr), y
     bne :+
     ; last frame, loop back
     lda #0
-    sta hero_animation_frame
+    sta hero_animation + n::frame
     tay
-    lda (hero_animation_ptr), y
+    lda (hero_animation + n::ptr), y
 :   sta hero + o::sprite
-    inc hero_animation_frame
+    inc hero_animation + n::frame
 
 @animation_done:
 
