@@ -375,7 +375,7 @@ program:
 ;-------------------------------------------------------------------------------
 ; populate the struct `n` with initial values if not already animating same id
 ;-------------------------------------------------------------------------------
-.macro ANIMATE anim_id, anim_rate, anim_table, anim_struct 
+.macro ANIMATE anim_struct, anim_id, anim_rate, anim_table  
     ; if already animating this state, continue
     lda anim_struct + n::id
     cmp #anim_id
@@ -655,7 +655,7 @@ update:
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
 
-    ANIMATE HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left, hero_animation
+    ANIMATE hero_animation, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -686,7 +686,7 @@ update:
     ; flag hero is moving, non-zero value
     inc hero_moving
 
-    ANIMATE HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right, hero_animation
+    ANIMATE hero_animation, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -770,7 +770,7 @@ update:
     lda hero_moving
     bne :+
 
-    ANIMATE HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle, hero_animation
+    ANIMATE hero_animation, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
