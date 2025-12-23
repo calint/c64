@@ -398,6 +398,27 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
+; advance animation frame if rate AND frame_counter == 0
+;-------------------------------------------------------------------------------
+.macro ANIMATE_NEXT anim_struct, obj_struct
+    lda frame_counter
+    and anim_struct + n::rate
+    bne :++
+
+    ldy anim_struct + n::frame
+    lda (anim_struct + n::ptr), y
+    bne :+
+    ; last frame, loop back
+    lda #0
+    sta anim_struct + n::frame
+    tay
+    lda (anim_struct + n::ptr), y
+:   sta obj_struct + o::sprite
+    inc anim_struct + n::frame
+    :
+.endmacro
+
+;-------------------------------------------------------------------------------
     ;
     ; setup system 
     ;
@@ -866,23 +887,7 @@ update:
 @hud_done:
 
 @animation:
-@animation_hero:
-    lda frame_counter
-    and hero_animation + n::rate
-    bne @animation_done
-
-    ldy hero_animation + n::frame
-    lda (hero_animation + n::ptr), y
-    bne :+
-    ; last frame, loop back
-    lda #0
-    sta hero_animation + n::frame
-    tay
-    lda (hero_animation + n::ptr), y
-:   sta hero + o::sprite
-    inc hero_animation + n::frame
-
-@animation_done:
+    ANIMATE_NEXT hero_animation, hero
 
 ;-------------------------------------------------------------------------------
 sound:
