@@ -1157,10 +1157,20 @@ sprites_double_height:
 objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04x", objects_state)
-    ;            xlo,        xhi,        ylo,        yhi, dxlo, dxhi, dylo, dyhi,      sprite, xprvlo, xprvhi, yprvlo, yprvhi
 hero:
-    .byte <RESTART_X, >RESTART_X, <RESTART_Y, >RESTART_Y,    0,    0,    0,    0, HERO_SPRITE,      0,      0,      0,      0
-
+    .byte <RESTART_X     ; x_lo
+    .byte >RESTART_X     ; x_hi
+    .byte <RESTART_Y     ; y_lo
+    .byte >RESTART_Y     ; y_hi
+    .byte 0              ; dx_lo
+    .byte 0              ; dx_hi
+    .byte 0              ; dy_lo
+    .byte 0              ; dy_hi
+    .byte HERO_SPRITE    ; sprite
+    .byte 0              ; x_prv_lo
+    .byte 0              ; x_prv_hi
+    .byte 0              ; y_prv_lo
+    .byte 0              ; y_prv_hi
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
