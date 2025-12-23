@@ -373,27 +373,27 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; populate the struct `n` (aNimation) with initial values if not already active
+; populate the struct `n` with initial values if not already animating same id
 ;-------------------------------------------------------------------------------
-.macro ANIMATION anim_id, anim_rate, anim_table, struct 
+.macro ANIMATE anim_id, anim_rate, anim_table, anim_struct 
     ; if already animating this state, continue
-    lda struct + n::id
+    lda anim_struct + n::id
     cmp #anim_id
     beq :+
 
     lda #anim_id
-    sta struct + n::id
+    sta anim_struct + n::id
 
     lda #0
-    sta struct + n::frame
+    sta anim_struct + n::frame
 
     lda #anim_rate
-    sta struct + n::rate
+    sta anim_struct + n::rate
 
     lda #<anim_table
-    sta struct + n::ptr
+    sta anim_struct + n::ptr
     lda #>anim_table
-    sta struct + n::ptr + 1
+    sta anim_struct + n::ptr + 1
     :
 .endmacro
 
@@ -655,7 +655,7 @@ update:
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
 
-    ANIMATION HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left, hero_animation
+    ANIMATE HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left, hero_animation
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -686,7 +686,7 @@ update:
     ; flag hero is moving, non-zero value
     inc hero_moving
 
-    ANIMATION HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right, hero_animation
+    ANIMATE HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right, hero_animation
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -770,7 +770,7 @@ update:
     lda hero_moving
     bne :+
 
-    ANIMATION HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle, hero_animation
+    ANIMATE HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle, hero_animation
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
