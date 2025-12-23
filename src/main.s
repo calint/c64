@@ -190,6 +190,16 @@ HERO_ANIMATION_RIGHT = 1
 HERO_ANIMATION_LEFT = 2
 
 ;-------------------------------------------------------------------------------
+; animation struct with short name `n` for code brevity
+;-------------------------------------------------------------------------------
+.struct n
+    id      .byte ; unique animation id
+    frame   .byte ; frame number in animation
+    rate    .byte ; frame rate as a bitmask that is ANDed and checked for 0
+    ptr     .word ; pointer to animation table
+.endstruct
+
+;-------------------------------------------------------------------------------
 ; object struct with short name `o` for code brevity
 ;-------------------------------------------------------------------------------
 .struct o
@@ -206,6 +216,7 @@ HERO_ANIMATION_LEFT = 2
     x_prv_hi .byte
     y_prv_lo .byte
     y_prv_hi .byte
+    anim     .tag n
 .endstruct
 
 ;-------------------------------------------------------------------------------
@@ -216,16 +227,6 @@ HERO_ANIMATION_LEFT = 2
     sy       .byte ; screen y
     data     .byte ; sprite data address / 64
     color    .byte ; color
-.endstruct
-
-;-------------------------------------------------------------------------------
-; animation struct with short name `n` for code brevity
-;-------------------------------------------------------------------------------
-.struct n
-    id      .byte ; unique animation id
-    frame   .byte ; frame number in animation
-    rate    .byte ; frame rate as a bitmask that is ANDed and checked for 0
-    ptr     .word ; pointer to animation table
 .endstruct
 
 ;-------------------------------------------------------------------------------
@@ -246,7 +247,6 @@ hero_infinities:       .res 1  ; number of restarts remaining
 hero_restarting:       .res 1  ; 0 when not restarting sequence
 hero_moving:           .res 1  ; 0 if hero is idle
 hero_jumping:          .res 1  ; 0 if not in jump
-hero_animation:        .tag n  ; animation struct
 tmp1:                  .res 1  ; temporary
 tmp2:                  .res 1  ; temporary
 ptr1:                  .res 2  ; temporary pointer
@@ -375,46 +375,51 @@ program:
 ;-------------------------------------------------------------------------------
 ; populate the struct `n` with initial values if not already animating same id
 ;-------------------------------------------------------------------------------
-.macro ANIMATE anim_struct, anim_id, anim_rate, anim_table  
+.macro ANIMATE obj_struct, anim_id, anim_rate, anim_table  
     ; if already animating this state, continue
-    lda anim_struct + n::id
+    lda obj_struct + o::anim + n::id
     cmp #anim_id
     beq :+
 
     lda #anim_id
-    sta anim_struct + n::id
+    sta obj_struct + o::anim + n::id
 
     lda #0
-    sta anim_struct + n::frame
+    sta obj_struct + o::anim + n::frame
 
     lda #anim_rate
-    sta anim_struct + n::rate
+    sta obj_struct + o::anim + n::rate
 
     lda #<anim_table
-    sta anim_struct + n::ptr
+    sta obj_struct + o::anim + n::ptr
     lda #>anim_table
-    sta anim_struct + n::ptr + 1
+    sta obj_struct + o::anim + n::ptr + 1
     :
 .endmacro
 
 ;-------------------------------------------------------------------------------
 ; advance animation frame if rate AND frame_counter == 0
 ;-------------------------------------------------------------------------------
-.macro ANIMATE_NEXT anim_struct, obj_struct
+.macro ANIMATE_NEXT obj_struct
     lda frame_counter
-    and anim_struct + n::rate
+    and obj_struct + o::anim + n::rate
     bne :++
 
-    ldy anim_struct + n::frame
-    lda (anim_struct + n::ptr), y
+    lda obj_struct + o::anim + n::ptr
+    sta ptr1
+    lda obj_struct + o::anim + n::ptr + 1
+    sta ptr1 + 1
+
+    ldy obj_struct + o::anim + n::frame
+    lda (ptr1), y
     bne :+
     ; last frame, loop back
     lda #0
-    sta anim_struct + n::frame
+    sta obj_struct + o::anim + n::frame
     tay
-    lda (anim_struct + n::ptr), y
+    lda (ptr1), y
 :   sta obj_struct + o::sprite
-    inc anim_struct + n::frame
+    inc obj_struct + o::anim + n::frame
     :
 .endmacro
 
@@ -459,17 +464,8 @@ program:
     sta screen_active
     sta hero_jumping
     sta hero_moving
-    sta hero_animation + n::frame
     sta frame_counter
     sta hero_pickables
-    lda #HERO_ANIMATION_IDLE
-    sta hero_animation + n::id 
-    lda #HERO_ANIMATION_RATE_IDLE
-    sta hero_animation + n::rate
-    lda #<hero_animation_idle
-    sta hero_animation + n::ptr
-    lda #>hero_animation_idle
-    sta hero_animation + n::ptr + 1
     lda #INITIAL_INFINITIES
     sta hero_infinities
 
@@ -676,7 +672,7 @@ update:
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
 
-    ANIMATE hero_animation, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
+    ANIMATE hero, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -707,7 +703,7 @@ update:
     ; flag hero is moving, non-zero value
     inc hero_moving
 
-    ANIMATE hero_animation, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
+    ANIMATE hero, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -791,7 +787,7 @@ update:
     lda hero_moving
     bne :+
 
-    ANIMATE hero_animation, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
+    ANIMATE hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
@@ -887,7 +883,7 @@ update:
 @hud_done:
 
 @animation:
-    ANIMATE_NEXT hero_animation, hero
+    ANIMATE_NEXT hero
 
 ;-------------------------------------------------------------------------------
 sound:
@@ -1171,6 +1167,11 @@ hero:
     .byte 0              ; x_prv_hi
     .byte 0              ; y_prv_lo
     .byte 0              ; y_prv_hi
+    .byte HERO_ANIMATION_IDLE      ; n::id
+    .byte 0                        ; n::frame
+    .byte HERO_ANIMATION_RATE_IDLE ; n::rate
+    .byte <hero_animation_idle     ; n::ptr
+    .byte >hero_animation_idle     ;
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
