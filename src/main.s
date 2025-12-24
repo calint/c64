@@ -494,6 +494,60 @@ program:
     lda obj + o::sprite
     sta spr + s::data
 .endmacro
+
+;-------------------------------------------------------------------------------
+; updates object sprite position by converting camera coordinates to screen
+;     obj: address of object struct
+;     spr: address of sprite struct
+; SPR_BIT: hardware sprite bit
+;   cx_lo: camera coordinates x low bits
+;   cx_hi: camera coordinates x high bits
+;-------------------------------------------------------------------------------
+.macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
+    ; add left border (40-column display)
+    clc
+    lda cx_lo
+    adc #SCREEN_BRDR_LFT
+    sta cx_lo
+    lda cx_hi
+    adc #0
+    sta cx_hi
+
+    ; update sprite position
+
+    ; update sprite x position
+    lda cx_lo
+    sta spr + s::sx
+
+    ; set sprite x 9'th bit if `cx` is greater than 256
+    lda sprites_msb_x
+    and #<~SPR_BIT          ; mask out sprite bit
+    ldx cx_hi               ; check if high bits are 0
+    beq :+
+    ora #SPR_BIT            ; set sprite x 9'th bit
+:   sta sprites_msb_x
+
+    ; update sprite y position
+
+    ; remove subpixels and compose y into `tmp1`
+    lda obj + o::y_lo
+    .repeat SUBPIXEL_SHIFT
+        lsr
+    .endrepeat
+    sta tmp1                ; low bits in screen coordinates
+    lda obj + o::y_hi
+    .repeat SUBPIXEL_SHIFT
+        asl
+    .endrepeat
+    ora tmp1
+    ; accumulator now contains y with 0 being at top of screen within border
+
+    ; add top border (25 rows display)
+    clc
+    adc #SCREEN_BRDR_TOP
+    sta spr + s::sy
+.endmacro
+
 ;-------------------------------------------------------------------------------
     ;
     ; setup system 
@@ -980,54 +1034,9 @@ refresh:
     sbc camera_x_hi
     sta tmp2
 
-    ; add left border (40-column display)
-    clc
-    lda tmp1
-    adc #SCREEN_BRDR_LFT
-    sta tmp1
-    lda tmp2
-    adc #0
-    sta tmp2
+    SPRITE_UPDATE_POSITION hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
 
-    ; update hero sprite position
-
-    ; update hero sprite x position
-    lda tmp1                    ; x low
-    sta sprite_hero + s::sx
-
-    ; set hero sprite x 9'th bit if x (`tmp1`, `tmp2`) is greater than 256
-    lda sprites_msb_x
-    and #<~HERO_SPRITE_BIT  ; mask out hero sprite bit
-    ldx tmp2                ; check if `tmp2` is zero
-    beq :+
-    ora #HERO_SPRITE_BIT    ; set hero sprite x 9'th bit
-:   sta sprites_msb_x
-
-    ; update hero sprite y position
-
-    ; remove subpixels and compose y into `tmp1`
-    lda hero + o::y_lo
-    .repeat SUBPIXEL_SHIFT
-        lsr
-    .endrepeat
-    sta tmp1                ; low bits in screen coordinates
-    lda hero + o::y_hi
-    .repeat SUBPIXEL_SHIFT
-        asl
-    .endrepeat
-    ora tmp1
-    ; accumulator now contains y with 0 being at top of screen within border
-
-    ; add top border (25 rows display)
-    clc
-    adc #SCREEN_BRDR_TOP
-    sta sprite_hero + s::sy
-
-    ;
-    ; update sprite hardware
-    ;
-
-    ; 8 sprites
+    ; copy sprite state to hardware registers
     .include "update_sprites_state.s"
 
     ; sprites state bits
