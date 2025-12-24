@@ -360,33 +360,33 @@ program:
 ; same id
 ; 
 ;  input:
-;           obj: address of object struct
-;       anim_id: animation id
-;     anim_rate: rate of animation mask (AND = 0)
-;    anim_table: address of animation sequence
+;    obj: address of object struct
+;    aid: animation id
+;  arate: rate of animation mask (AND = 0)
+; atable: address of animation sequence
 ;
 ; output: -
 ;
 ; clobbers: a
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION obj, anim_id, anim_rate, anim_table  
+.macro OBJECT_ANIMATION obj, aid, arate, atable  
     ; if already animating this state, continue
     lda obj + o::anim + n::id
-    cmp #anim_id
+    cmp #aid
     beq :+
 
-    lda #anim_id
+    lda #aid
     sta obj + o::anim + n::id
 
     lda #0
     sta obj + o::anim + n::frame
 
-    lda #anim_rate
+    lda #arate
     sta obj + o::anim + n::rate
 
-    lda #<anim_table
+    lda #<atable
     sta obj + o::anim + n::ptr
-    lda #>anim_table
+    lda #>atable
     sta obj + o::anim + n::ptr + 1
     :
 .endmacro
@@ -503,12 +503,12 @@ program:
 ; converts object's fixed-point x position to integer world pixels
 ; (arithmetic shift right by SUBPIXEL_SHIFT)
 ;
-;    input:
-;      obj: address to object struct
+;  input:
+;    obj: address to object struct
 ;
-;   output:
-;     tmp1: x low byte
-;     tmp2: x high byte
+;  output:
+;    tmp1: x low byte
+;    tmp2: x high byte
 ;
 ; clobbers: a, tmp1, tmp2
 ;-------------------------------------------------------------------------------
@@ -529,16 +529,15 @@ program:
 ; updates object sprite position by converting camera coordinates to screen
 ;
 ;  input:
-;     obj: address of object struct
-;     spr: address of sprite struct
-; SPR_BIT: hardware sprite bit
-;      cx: 16 bit object x in camera coordinate system
+;    obj: address of object struct
+;    SPR: hardware sprite number
+;     cx: 16 bit object x in camera coordinate system
 ;
 ; output: -
 ;
 ; clobbers: a, x, tmp1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_SPRITE_TO_SCREEN obj, SPR_NUM, cx
+.macro OBJECT_SPRITE_TO_SCREEN obj, SPR, cx
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda cx
@@ -561,15 +560,15 @@ program:
 
     ; update sprite x position
     lda cx
-    sta VIC_SPRITE_X + SPR_NUM * 2
+    sta VIC_SPRITE_X + SPR * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 
     ; set sprite x 9'th bit if `cx` is greater than 256
     lda VIC_SPRITES_8X
-    and #<~(1 << SPR_NUM)   ; mask out sprite bit
+    and #<~(1 << SPR)       ; mask out sprite bit
     ldx cx + 1              ; check if high bits are 0
     beq :+
-    ora #(1 << SPR_NUM)     ; set sprite x 9'th bit
+    ora #(1 << SPR)         ; set sprite x 9'th bit
 :   sta VIC_SPRITES_8X
 
     ; update sprite y position
@@ -590,12 +589,8 @@ program:
     ; add top border (25 rows display)
     clc
     adc #SCREEN_BRDR_TOP
-    sta VIC_SPRITE_Y + SPR_NUM * 2
+    sta VIC_SPRITE_Y + SPR * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
-
-    ; update sprite data index
-    ; lda obj + o::sprite
-    ; SPRITE_SET_IX SPR_NUM
 .endmacro
 
 ;-------------------------------------------------------------------------------
