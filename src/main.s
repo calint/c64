@@ -524,7 +524,7 @@ program:
 ;
 ;   output:
 ;     tmp1: x low byte
-;     tmp2: y high byte
+;     tmp2: x high byte
 ;
 ; clobbers: a, tmp1, tmp2
 ;-------------------------------------------------------------------------------
