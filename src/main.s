@@ -574,7 +574,7 @@ program:
 
     ; update sprite y position
 
-    ; remove subpixels and compose y into `tmp1`
+    ; combines fixed-point y_hi:y_lo >> SUBPIXEL_SHIFT into `tmp1`
     lda obj + o::y_lo
     .repeat SUBPIXEL_SHIFT
         lsr
@@ -601,10 +601,6 @@ program:
     lda obj + o::sprite
     sta screen_0 + SPRITE_IX_OFST + SPR_NUM
     sta screen_1 + SPRITE_IX_OFST + SPR_NUM
-
-    lda VIC_SPRITE_ENBL
-    ora #(1 << SPR_NUM)
-    sta VIC_SPRITE_ENBL
 .endmacro
 
 
@@ -762,8 +758,13 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; note: also writes to the unused 24 nibbles
 
-    ; place hud sprite on screen
+    ; enable hud sprite on screen
     SPRITE_INIT HUD_SPRITE_NUM, HUD_SPRITE_IX, HUD_SPRITE_COLOR, 310, 51
+
+    ; enable hero sprite
+    lda VIC_SPRITE_ENBL
+    ora #(1 << HERO_SPRITE_NUM)
+    sta VIC_SPRITE_ENBL
 
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens, set screen offset
