@@ -402,7 +402,7 @@ program:
 ;
 ; clobbers: a, y, ptr1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION_NEXT obj, SPR_NUM
+.macro OBJECT_ANIMATION_TICK obj, SPR_NUM
     lda frame_counter
     and obj + o::anim + n::rate
     bne :++
@@ -1155,7 +1155,7 @@ update:
 
 @animation:
     ; animate hero
-    OBJECT_ANIMATION_NEXT hero, HERO_SPRITE_NUM
+    OBJECT_ANIMATION_TICK hero, HERO_SPRITE_NUM
 
 @animation_done:
 
