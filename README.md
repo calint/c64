@@ -26,6 +26,12 @@ experiments with bare metal commodore 64
 * compile and run using `run.sh` on linux and `run.bat` on windows
   * *note*: requires dependencies
 
+## notes
+
+* releases are considered finished
+* tagged versions have been played through to completion
+* committed is latest in development code
+
 ## screenshots
 
 ![u r in roome](screenshots/12.png)
