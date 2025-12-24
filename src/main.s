@@ -1036,6 +1036,7 @@ refresh:
     ; update objects state
     OBJECT_UPDATE hero
 
+    ; get world coordinate in pixels for x
     OBJECT_X_TO_WCS hero
 
     ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
@@ -1051,7 +1052,6 @@ refresh:
     sta camera_x_hi
 
     ; place object sprite in screen coordinate system
- 
     OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
 
     ; copy sprites state to hardware registers
