@@ -373,54 +373,87 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; populate the struct `n` with initial values if not already animating same id
+; populate object animation struct with initial values if not already animating
+; same id
+;          obj: address of object struct
+;      anim_id: animation id
+;    anim_rate: rate of animation mask (AND = 0)
+;   anim_table: address of animation sequence
 ;-------------------------------------------------------------------------------
-.macro ANIMATE obj_struct, anim_id, anim_rate, anim_table  
+.macro ANIMATE obj, anim_id, anim_rate, anim_table  
     ; if already animating this state, continue
-    lda obj_struct + o::anim + n::id
+    lda obj + o::anim + n::id
     cmp #anim_id
     beq :+
 
     lda #anim_id
-    sta obj_struct + o::anim + n::id
+    sta obj + o::anim + n::id
 
     lda #0
-    sta obj_struct + o::anim + n::frame
+    sta obj + o::anim + n::frame
 
     lda #anim_rate
-    sta obj_struct + o::anim + n::rate
+    sta obj + o::anim + n::rate
 
     lda #<anim_table
-    sta obj_struct + o::anim + n::ptr
+    sta obj + o::anim + n::ptr
     lda #>anim_table
-    sta obj_struct + o::anim + n::ptr + 1
+    sta obj + o::anim + n::ptr + 1
     :
 .endmacro
 
 ;-------------------------------------------------------------------------------
 ; advance animation frame if rate AND frame_counter == 0
+;   obj: address of object struct
 ;-------------------------------------------------------------------------------
-.macro ANIMATE_NEXT obj_struct
+.macro ANIMATE_NEXT obj
     lda frame_counter
-    and obj_struct + o::anim + n::rate
+    and obj + o::anim + n::rate
     bne :++
 
-    lda obj_struct + o::anim + n::ptr
+    lda obj + o::anim + n::ptr
     sta ptr1
-    lda obj_struct + o::anim + n::ptr + 1
+    lda obj + o::anim + n::ptr + 1
     sta ptr1 + 1
 
-    ldy obj_struct + o::anim + n::frame
+    ldy obj + o::anim + n::frame
     lda (ptr1), y
     bne :+
     ; last frame, loop back
     lda #0
-    sta obj_struct + o::anim + n::frame
+    sta obj + o::anim + n::frame
     tay
     lda (ptr1), y
-:   sta obj_struct + o::sprite
-    inc obj_struct + o::anim + n::frame
+:   sta obj + o::sprite
+    inc obj + o::anim + n::frame
     :
+.endmacro
+
+;-------------------------------------------------------------------------------
+; render vertical bars on hud sprite 
+;    var: contains number of bars
+;   LINE: render on sprite hud line number
+;-------------------------------------------------------------------------------
+.macro HUD_BARS var, LINE
+    lda var                 ; load number of lines to draw
+    asl                     ; multiply by 2 to get index into `hud_lines`
+    tax                     ; x now holds the base index for the 2-byte pattern
+
+    ldy #LINE * 3 + 1       ; 3 bytes per sprite row, second byte
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA, y  ; row 1
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 1, y
+ 
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA + 3, y ; row 2 (+3 bytes per sprite row)
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 4, y
+ 
+    lda hud_lines, x
+    sta HUD_SPRITE_DATA + 6, y ; row 3
+    lda hud_lines + 1, x
+    sta HUD_SPRITE_DATA + 7, y
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -791,7 +824,7 @@ update:
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
-    bne @gravity_apply
+    bne @gravity
 
     ; every n'th frame apply gravity for collision with floor detection
     inc frame_counter 
@@ -799,14 +832,14 @@ update:
     ;       with the move "skip" use of same variable
     lda frame_counter
     and #GRAVITY_INTERVAL
-    beq @gravity_apply
+    beq @gravity
 
     ; check if dy is zero and skip gravity if so
     lda hero + o::dy_lo
     ora hero + o::dy_hi
     beq @gravity_done
 
-@gravity_apply:
+@gravity:
     ; increase dy
     clc
     lda hero + o::dy_lo
@@ -818,16 +851,10 @@ update:
 
 @gravity_done:
 
-@render_hud:
-    ; render pickables count
-    lda hero_pickables
-    ldy #HUD_PICKABLES_LINE * 3 + 1    ; 3 bytes per row, second byte
-    jsr @draw_hud_bytes
-
-    ; render infinities count
-    lda hero_infinities
-    ldy #HUD_INFINITIES_LINE * 3 + 1   ; 3 bytes per row, second byte
-    jsr @draw_hud_bytes
+@hud:
+    ; render hud lines
+    HUD_BARS hero_pickables, HUD_PICKABLES_LINE 
+    HUD_BARS hero_infinities, HUD_INFINITIES_LINE
 
     ; render progress bar
 
@@ -857,28 +884,6 @@ update:
     iny
     lda progress_lines, x
     sta sprites_data_47, y
-
-    jmp @hud_done
-
-@draw_hud_bytes:
-    asl                     ; multiply by 2 to get index into `hud_lines`
-    tax                     ; x now holds the base index for the 2-byte pattern
-
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA, y  ; row 1
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 1, y
- 
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA + 3, y ; row 2 (+3 bytes per sprite row)
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 4, y
- 
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA + 6, y ; row 3
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 7, y
-    rts
 
 @hud_done:
 
