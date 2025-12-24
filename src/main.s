@@ -614,6 +614,26 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
+; restore object state by writing x, y, dx, dy with previous frame values
+;
+;  input:
+;    obj: address to object struct
+;
+; output: -
+;
+; clobbers: a
+.macro OBJECT_RESTORE_STATE obj
+    lda obj + o::x_prv_lo
+    sta obj + o::x_lo
+    lda obj + o::x_prv_hi
+    sta obj + o::x_hi
+    lda obj + o::y_prv_lo
+    sta obj + o::y_lo
+    lda obj + o::y_prv_hi
+    sta obj + o::y_hi
+.endmacro
+
+;-------------------------------------------------------------------------------
     ;
     ; setup system 
     ;
@@ -734,14 +754,7 @@ update:
     ; hero has collided with background, restore state to previous x,y and set
     ; dx, dy to 0
 
-    lda hero + o::x_prv_lo
-    sta hero + o::x_lo
-    lda hero + o::x_prv_hi
-    sta hero + o::x_hi
-    lda hero + o::y_prv_lo
-    sta hero + o::y_lo
-    lda hero + o::y_prv_hi
-    sta hero + o::y_hi
+    OBJECT_RESTORE_STATE hero
 
     lda #0
     ; note: `dx_lo` and `dx_hi` will be set to 0 in `@controls`
