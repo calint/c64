@@ -757,6 +757,8 @@ update:
 @collision_reaction_done:
 
 @pickables:
+    ; check for collision with pickables
+
     ; convert hero world x, y to tile map coordinates
 
     ; bias by half a tile, then extract tile coordinate via bit rotation
@@ -1011,6 +1013,7 @@ update:
 @gravity_done:
 
 @animation:
+    ; animate hero
     ANIMATE_NEXT hero
 
 @animation_done:
