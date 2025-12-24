@@ -214,16 +214,6 @@ HERO_ANIMATION_LEFT = 2
 .endstruct
 
 ;-------------------------------------------------------------------------------
-; sprite struct with short name `s` for code brevity
-;-------------------------------------------------------------------------------
-.struct s
-    sx       .byte ; screen x lower 8 bits
-    sy       .byte ; screen y
-    data     .byte ; sprite data address / 64
-    color    .byte ; color
-.endstruct
-
-;-------------------------------------------------------------------------------
 ; zero page
 ;-------------------------------------------------------------------------------
 .org $0002
