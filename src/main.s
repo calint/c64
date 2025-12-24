@@ -386,7 +386,7 @@ program:
 ;
 ; clobbers: a
 ;-------------------------------------------------------------------------------
-.macro ANIMATE obj, anim_id, anim_rate, anim_table  
+.macro OBJECT_ANIMATION obj, anim_id, anim_rate, anim_table  
     ; if already animating this state, continue
     lda obj + o::anim + n::id
     cmp #anim_id
@@ -418,7 +418,7 @@ program:
 ;
 ; clobbers: a, y, ptr1
 ;-------------------------------------------------------------------------------
-.macro ANIMATE_NEXT obj
+.macro OBJECT_ANIMATION_NEXT obj
     lda frame_counter
     and obj + o::anim + n::rate
     bne :++
@@ -879,7 +879,7 @@ update:
     ; flag hero is moving, non-zero value means "moving"
     inc hero_moving
 
-    ANIMATE hero, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
+    OBJECT_ANIMATION hero, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -910,7 +910,7 @@ update:
     ; flag hero is moving, non-zero value
     inc hero_moving
 
-    ANIMATE hero, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
+    OBJECT_ANIMATION hero, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -994,7 +994,7 @@ update:
     lda hero_moving
     bne :+
 
-    ANIMATE hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
+    OBJECT_ANIMATION hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
     ; apply gravity if hero is in a jump
     lda hero_jumping
@@ -1027,7 +1027,7 @@ update:
 
 @animation:
     ; animate hero
-    ANIMATE_NEXT hero
+    OBJECT_ANIMATION_NEXT hero
 
 @animation_done:
 
