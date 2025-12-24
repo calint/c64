@@ -756,6 +756,7 @@ update:
 
 @collision_reaction_done:
 
+@pickables:
     ; convert hero world x, y to tile map coordinates
 
     ; bias by half a tile, then extract tile coordinate via bit rotation
@@ -843,8 +844,9 @@ update:
     inc hero_pickables
     lda #TILE_ID_EMPTY
     sta (ptr1), y
-:
-    ; done checking for pickables
+    :
+
+@pickables_done:
 
 @controls:
     ; set non horizontal movement
