@@ -502,6 +502,8 @@ program:
 ; SPR_BIT: hardware sprite bit
 ;   cx_lo: object x low in camera coordinate system
 ;   cx_hi: object x high in camera coordinate system
+;
+; trashes: tmp1
 ;-------------------------------------------------------------------------------
 .macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
     ; put object coordinates on screen by subtracting camera x position
@@ -1009,6 +1011,7 @@ refresh:
     ; center camera on hero
 
     ; make hero x to `tmp1` (x lo) and `tmp2` (x hi) in world pixel coordinates
+
     ; signed arithmetic shift right across 16 bits
     lda hero + o::x_lo
     sta tmp1
