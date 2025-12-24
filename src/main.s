@@ -532,7 +532,7 @@ program:
 ;
 ; clobbers: a, tmp1
 ;-------------------------------------------------------------------------------
-.macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
+.macro OBJECT_UPDATE_SPRITE obj, spr, SPR_BIT, cx_lo, cx_hi
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda cx_lo
@@ -1051,7 +1051,7 @@ refresh:
 
     ; place object sprite in screen coordinate system
  
-    SPRITE_UPDATE_POSITION hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
+    OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
 
     ; copy sprites state to hardware registers
     .include "update_sprites_state.s"
