@@ -248,7 +248,7 @@ hero_restarting:       .res 1  ; 0 when not restarting sequence
 hero_moving:           .res 1  ; 0 if hero is idle
 hero_jumping:          .res 1  ; 0 if not in jump
 tmp1:                  .res 1  ; temporary
-tmp2:                  .res 1  ; temporary
+tmp2:                  .res 1  ; temporary (after tmp1 to form temporary word)
 ptr1:                  .res 2  ; temporary pointer
 
 ;-------------------------------------------------------------------------------
@@ -548,42 +548,41 @@ program:
 ;     obj: address of object struct
 ;     spr: address of sprite struct
 ; SPR_BIT: hardware sprite bit
-;   cx_lo: object x low in camera coordinate system
-;   cx_hi: object x high in camera coordinate system
+;      cx: 16 bit object x in camera coordinate system
 ;
 ; output: -
 ;
 ; clobbers: a, x, tmp1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_UPDATE_SPRITE obj, spr, SPR_BIT, cx_lo, cx_hi
+.macro OBJECT_UPDATE_SPRITE obj, spr, SPR_BIT, cx
     ; put object coordinates on screen by subtracting camera x position
     sec
-    lda cx_lo
+    lda cx
     sbc camera_x_lo
-    sta cx_lo
-    lda cx_hi
+    sta cx
+    lda cx + 1
     sbc camera_x_hi
-    sta cx_hi
+    sta cx + 1
 
     ; add left border (40-column display)
     clc
-    lda cx_lo
+    lda cx
     adc #SCREEN_BRDR_LFT
-    sta cx_lo
-    lda cx_hi
+    sta cx
+    lda cx + 1
     adc #0
-    sta cx_hi
+    sta cx + 1
 
     ; update sprite position
 
     ; update sprite x position
-    lda cx_lo
+    lda cx
     sta spr + s::sx
 
     ; set sprite x 9'th bit if `cx` is greater than 256
     lda sprites_msb_x
     and #<~SPR_BIT          ; mask out sprite bit
-    ldx cx_hi               ; check if high bits are 0
+    ldx cx + 1              ; check if high bits are 0
     beq :+
     ora #SPR_BIT            ; set sprite x 9'th bit
 :   sta sprites_msb_x
@@ -638,8 +637,7 @@ program:
 ; centers camera on specified x adding a bias
 ;
 ;  input:
-;   x_lo: center on x low byte
-;   x_hi: center on x high byte
+;     cx: 16 bit x to center on
 ;   BIAS: bias added to calculated center
 ;
 ; output:
@@ -648,12 +646,12 @@ program:
 ;
 ; clobbers: a
 ;-------------------------------------------------------------------------------
-.macro CAMERA_CENTER_ON_X x_lo, x_hi, BIAS
+.macro CAMERA_CENTER_ON_X cx, BIAS
     sec
-    lda x_lo
+    lda cx
     sbc #SCREEN_WIDTH_PX / 2 + BIAS
     sta camera_x_lo
-    lda x_hi
+    lda cx + 1
     sbc #0
     sta camera_x_hi
 .endmacro
@@ -1114,10 +1112,10 @@ refresh:
     ; coordinates
 
     ; center camera on object with 16 pixels wide sprite
-    CAMERA_CENTER_ON_X tmp1, tmp2, -TILE_WIDTH
+    CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
 
     ; place object sprite in screen coordinate system
-    OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
+    OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1
 
     ; copy sprites state to hardware registers
     .include "update_sprites_state.s"
