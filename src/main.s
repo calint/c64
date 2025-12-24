@@ -150,9 +150,6 @@ HUD_SPRITE_NUM = 7
 ; constants coupled with graphics
 ;
 
-; hero sprite data for use in register
-HERO_SPRITE_IX = sprites_data_0 >> 6
-
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
 
