@@ -431,7 +431,7 @@ program:
 
 ;-------------------------------------------------------------------------------
 ; render vertical bars on hud sprite 
-;    var: contains number of bars
+;    var: number of bars
 ;   LINE: render on sprite hud line number
 ;-------------------------------------------------------------------------------
 .macro HUD_BARS var, LINE
@@ -459,7 +459,7 @@ program:
 ;-------------------------------------------------------------------------------
 ; refresh x, y using dx, dy and update sprite definition data
 ;   obj: address of object struct
-;   spr: sprite struct address used by object
+;   spr: address of sprite struct used by object
 ;-------------------------------------------------------------------------------
 .macro OBJECT_REFRESH obj, spr
     ; save current state to previous
@@ -500,8 +500,8 @@ program:
 ;     obj: address of object struct
 ;     spr: address of sprite struct
 ; SPR_BIT: hardware sprite bit
-;   cx_lo: camera coordinates x low bits
-;   cx_hi: camera coordinates x high bits
+;   cx_lo: object x low in camera coordinate system
+;   cx_hi: object x high in camera coordinate system
 ;-------------------------------------------------------------------------------
 .macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
     ; add left border (40-column display)
