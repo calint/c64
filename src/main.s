@@ -1036,7 +1036,7 @@ refresh:
 
     SPRITE_UPDATE_POSITION hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
 
-    ; copy sprite state to hardware registers
+    ; copy sprites state to hardware registers
     .include "update_sprites_state.s"
 
     ; sprites state bits
