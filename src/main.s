@@ -637,8 +637,7 @@ program:
 .macro SPRITE_SET NUM, IX, SX, SY
     ; set sprite index for both screens
     lda #IX
-    sta screen_0 + SPRITE_IX_OFST + NUM
-    sta screen_1 + SPRITE_IX_OFST + NUM
+    SPRITE_SET_IX NUM
 
     ; sprite x position
     lda #<SX
