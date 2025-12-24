@@ -375,10 +375,16 @@ program:
 ;-------------------------------------------------------------------------------
 ; populate object animation struct with initial values if not already animating
 ; same id
-;          obj: address of object struct
-;      anim_id: animation id
-;    anim_rate: rate of animation mask (AND = 0)
-;   anim_table: address of animation sequence
+; 
+;  input:
+;           obj: address of object struct
+;       anim_id: animation id
+;     anim_rate: rate of animation mask (AND = 0)
+;    anim_table: address of animation sequence
+;
+; output: -
+;
+; clobbers: a
 ;-------------------------------------------------------------------------------
 .macro ANIMATE obj, anim_id, anim_rate, anim_table  
     ; if already animating this state, continue
@@ -404,7 +410,13 @@ program:
 
 ;-------------------------------------------------------------------------------
 ; advance animation frame if rate AND frame_counter == 0
-;   obj: address of object struct
+;
+;  input:
+;    obj: address of object struct
+;
+; output: -
+;
+; clobbers: a, y, ptr1
 ;-------------------------------------------------------------------------------
 .macro ANIMATE_NEXT obj
     lda frame_counter
@@ -431,8 +443,12 @@ program:
 
 ;-------------------------------------------------------------------------------
 ; render vertical bars on hud sprite 
+;
+;  input:
 ;    var: number of bars
 ;   LINE: render on sprite hud line number
+;
+; output: -
 ;
 ; clobbers: a, x, y
 ;-------------------------------------------------------------------------------
@@ -460,8 +476,12 @@ program:
 
 ;-------------------------------------------------------------------------------
 ; refresh x, y using dx, dy and update sprite definition data
-;   obj: address of object struct
-;   spr: address of sprite struct used by object
+;
+;  input:
+;    obj: address of object struct
+;    spr: address of sprite struct used by object
+;
+; output: -
 ;
 ; clobbers: a
 ;-------------------------------------------------------------------------------
@@ -493,18 +513,20 @@ program:
     lda obj + o::y_hi
     adc obj + o::dy_hi
     sta obj + o::y_hi
-
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; calculates object x to world coordinate system
-;  obj: address to object struct
+; converts object's fixed-point x position to integer world pixels
+; (arithmetic shift right by SUBPIXEL_SHIFT)
 ;
-; result:
-; tmp1: x low bits
-; tmp2: y high bits
+;    input:
+;      obj: address to object struct
 ;
-; clobbers: a
+;   output:
+;     tmp1: x low byte
+;     tmp2: y high byte
+;
+; clobbers: a, tmp1, tmp2
 ;-------------------------------------------------------------------------------
 .macro OBJECT_X_TO_WCS obj
     ; signed arithmetic shift right across 16 bits
@@ -521,13 +543,17 @@ program:
 
 ;-------------------------------------------------------------------------------
 ; updates object sprite position by converting camera coordinates to screen
+;
+;  input:
 ;     obj: address of object struct
 ;     spr: address of sprite struct
 ; SPR_BIT: hardware sprite bit
 ;   cx_lo: object x low in camera coordinate system
 ;   cx_hi: object x high in camera coordinate system
 ;
-; clobbers: a, tmp1
+; output: -
+;
+; clobbers: a, x, tmp1
 ;-------------------------------------------------------------------------------
 .macro OBJECT_UPDATE_SPRITE obj, spr, SPR_BIT, cx_lo, cx_hi
     ; put object coordinates on screen by subtracting camera x position
