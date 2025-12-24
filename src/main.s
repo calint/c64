@@ -496,6 +496,27 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
+; calculates object x to world coordinate system
+;  obj: address to object struct
+; 
+; result:
+; tmp1: x low bits
+; tmp2: y high bits
+;-------------------------------------------------------------------------------
+.macro OBJECT_X_TO_WCS obj
+    ; signed arithmetic shift right across 16 bits
+    lda obj + o::x_lo
+    sta tmp1
+    lda obj + o::x_hi
+    .repeat SUBPIXEL_SHIFT
+        cmp #$80            ; sets carry bit if negative preserving sign
+        ror
+        ror tmp1
+    .endrepeat
+    sta tmp2
+.endmacro
+
+;-------------------------------------------------------------------------------
 ; updates object sprite position by converting camera coordinates to screen
 ;     obj: address of object struct
 ;     spr: address of sprite struct
@@ -1007,21 +1028,8 @@ refresh:
 
     ; update objects state
     OBJECT_REFRESH hero, sprite_hero
-
-    ; center camera on hero
-
-    ; make hero x to `tmp1` (x lo) and `tmp2` (x hi) in world pixel coordinates
-
-    ; signed arithmetic shift right across 16 bits
-    lda hero + o::x_lo
-    sta tmp1
-    lda hero + o::x_hi
-    .repeat SUBPIXEL_SHIFT
-        cmp #$80            ; sets carry bit if negative preserving sign
-        ror
-        ror tmp1
-    .endrepeat
-    sta tmp2
+    
+    OBJECT_X_TO_WCS hero
 
     ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
     ; coordinates
