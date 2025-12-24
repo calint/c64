@@ -205,7 +205,6 @@ HERO_ANIMATION_LEFT = 2
     dx_hi    .byte
     dy_lo    .byte
     dy_hi    .byte
-    sprite   .byte ; sprite data address / 64
     x_prv_lo .byte
     x_prv_hi .byte
     y_prv_lo .byte
@@ -395,14 +394,15 @@ program:
 ;-------------------------------------------------------------------------------
 ; advance animation frame if rate AND frame_counter == 0
 ;
-;  input:
-;    obj: address of object struct
+;   input:
+;     obj: address of object struct
+; SPR_NUM: hardware sprite number
 ;
-; output: -
+;  output: -
 ;
 ; clobbers: a, y, ptr1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION_NEXT obj
+.macro OBJECT_ANIMATION_NEXT obj, SPR_NUM
     lda frame_counter
     and obj + o::anim + n::rate
     bne :++
@@ -420,7 +420,7 @@ program:
     sta obj + o::anim + n::frame
     tay
     lda (ptr1), y
-:   sta obj + o::sprite
+:   SPRITE_SET_IX SPR_NUM 
     inc obj + o::anim + n::frame
     :
 .endmacro
@@ -594,8 +594,8 @@ program:
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 
     ; update sprite data index
-    lda obj + o::sprite
-    SPRITE_SET_IX SPR_NUM
+    ; lda obj + o::sprite
+    ; SPRITE_SET_IX SPR_NUM
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -812,6 +812,8 @@ program:
     SPRITE_ENABLE HUD_SPRITE_NUM
 
     ; enable and color hero sprite
+    lda #sprites_data_8 / 64
+    SPRITE_SET_IX HERO_SPRITE_NUM
     SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
     SPRITE_ENABLE HERO_SPRITE_NUM
 
@@ -1153,7 +1155,7 @@ update:
 
 @animation:
     ; animate hero
-    OBJECT_ANIMATION_NEXT hero
+    OBJECT_ANIMATION_NEXT hero, HERO_SPRITE_NUM
 
 @animation_done:
 
@@ -1329,7 +1331,6 @@ hero:
     .byte 0              ; dx_hi
     .byte 0              ; dy_lo
     .byte 0              ; dy_hi
-    .byte HERO_SPRITE_IX ; sprite
     .byte 0              ; x_prv_lo
     .byte 0              ; x_prv_hi
     .byte 0              ; y_prv_lo
