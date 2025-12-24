@@ -1113,6 +1113,8 @@ update:
     sta hero + o::dy_hi
 
 @controls_done:
+
+@hero_physics:
     ; if hero is not moving animate idle
     lda hero_moving
     bne :+
@@ -1120,7 +1122,7 @@ update:
     OBJECT_ANIMATION hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
     ; apply gravity if hero is in a jump
-    lda hero_jumping
+:   lda hero_jumping
     bne @gravity
 
     ; every n'th frame apply gravity for collision with floor detection
@@ -1135,6 +1137,8 @@ update:
     lda hero + o::dy_lo
     ora hero + o::dy_hi
     beq @gravity_done
+
+@hero_physics_done:
 
 @gravity:
     ; increase dy
