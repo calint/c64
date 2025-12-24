@@ -595,10 +595,29 @@ program:
 
     ; update sprite data index
     lda obj + o::sprite
-    sta screen_0 + SPRITE_IX_OFST + SPR_NUM
-    sta screen_1 + SPRITE_IX_OFST + SPR_NUM
+    SPRITE_SET_IX SPR_NUM
 .endmacro
 
+;-------------------------------------------------------------------------------
+; restore object state by writing x, y, dx, dy with previous frame values
+;
+;  input:
+;    obj: address to object struct
+;
+; output: -
+;
+; clobbers: a
+;-------------------------------------------------------------------------------
+.macro OBJECT_RESTORE_STATE obj
+    lda obj + o::x_prv_lo
+    sta obj + o::x_lo
+    lda obj + o::x_prv_hi
+    sta obj + o::x_hi
+    lda obj + o::y_prv_lo
+    sta obj + o::y_lo
+    lda obj + o::y_prv_hi
+    sta obj + o::y_hi
+.endmacro
 
 ;-------------------------------------------------------------------------------
 ; initiates a sprite by assigning image data, color and screen x, y and enabling
@@ -689,24 +708,19 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; restore object state by writing x, y, dx, dy with previous frame values
+; sets hardware sprite data source
 ;
 ;  input:
-;    obj: address to object struct
+;    NUM: hardware sprite number
+;      a: sprite data address / 64
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: -
 ;-------------------------------------------------------------------------------
-.macro OBJECT_RESTORE_STATE obj
-    lda obj + o::x_prv_lo
-    sta obj + o::x_lo
-    lda obj + o::x_prv_hi
-    sta obj + o::x_hi
-    lda obj + o::y_prv_lo
-    sta obj + o::y_lo
-    lda obj + o::y_prv_hi
-    sta obj + o::y_hi
+.macro SPRITE_SET_IX NUM
+    sta screen_0 + SPRITE_IX_OFST + NUM
+    sta screen_1 + SPRITE_IX_OFST + NUM
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -808,8 +822,11 @@ program:
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens, set screen offset
     ; 2. update    - collisions, game logic, input, animation, physics, hud
-    ; 3. refresh   - physics, camera, sprites update 
+    ; 3. refresh   - physics, camera, sprites update
     ; 4. render    - draw tile map to offscreen buffer
+
+    ; step 2 and 3 must finish before raster is at top border
+    ; step 4 must finish before raster is at bottom border
 
     ; coordinate system:
     ; - world coordinates are signed 16-bit fixed point
