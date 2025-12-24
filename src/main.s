@@ -433,6 +433,8 @@ program:
 ; render vertical bars on hud sprite 
 ;    var: number of bars
 ;   LINE: render on sprite hud line number
+;
+; clobbers: a, x, y
 ;-------------------------------------------------------------------------------
 .macro HUD_BARS var, LINE
     lda var                 ; load number of lines to draw
@@ -460,6 +462,8 @@ program:
 ; refresh x, y using dx, dy and update sprite definition data
 ;   obj: address of object struct
 ;   spr: address of sprite struct used by object
+;
+; clobbers: a
 ;-------------------------------------------------------------------------------
 .macro OBJECT_REFRESH obj, spr
     ; save current state to previous
@@ -498,10 +502,12 @@ program:
 ;-------------------------------------------------------------------------------
 ; calculates object x to world coordinate system
 ;  obj: address to object struct
-; 
+;
 ; result:
 ; tmp1: x low bits
 ; tmp2: y high bits
+;
+; clobbers: a
 ;-------------------------------------------------------------------------------
 .macro OBJECT_X_TO_WCS obj
     ; signed arithmetic shift right across 16 bits
@@ -524,7 +530,7 @@ program:
 ;   cx_lo: object x low in camera coordinate system
 ;   cx_hi: object x high in camera coordinate system
 ;
-; trashes: tmp1
+; clobbers: a, tmp1
 ;-------------------------------------------------------------------------------
 .macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
     ; put object coordinates on screen by subtracting camera x position
@@ -1028,7 +1034,7 @@ refresh:
 
     ; update objects state
     OBJECT_REFRESH hero, sprite_hero
-    
+
     OBJECT_X_TO_WCS hero
 
     ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
