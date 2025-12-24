@@ -30,22 +30,8 @@
 ;-------------------------------------------------------------------------------
 ; constants
 ;-------------------------------------------------------------------------------
-VIC_SPRITE_0_X  = $d000     ; vic-ii sprite 0 x lower 8 bits
-VIC_SPRITE_0_Y  = $d001     ; vic-ii sprite 0 y
-VIC_SPRITE_1_X  = $d002     ; vic-ii sprite 1 x lower 8 bits
-VIC_SPRITE_1_Y  = $d003     ; vic-ii sprite 1 y
-VIC_SPRITE_2_X  = $d004     ; vic-ii sprite 2 x lower 8 bits
-VIC_SPRITE_2_Y  = $d005     ; vic-ii sprite 2 y
-VIC_SPRITE_3_X  = $d006     ; vic-ii sprite 3 x lower 8 bits
-VIC_SPRITE_3_Y  = $d007     ; vic-ii sprite 3 y
-VIC_SPRITE_4_X  = $d008     ; vic-ii sprite 4 x lower 8 bits
-VIC_SPRITE_4_Y  = $d009     ; vic-ii sprite 4 y
-VIC_SPRITE_5_X  = $d00a     ; vic-ii sprite 5 x lower 8 bits
-VIC_SPRITE_5_Y  = $d00b     ; vic-ii sprite 5 y
-VIC_SPRITE_6_X  = $d00c     ; vic-ii sprite 6 x lower 8 bits
-VIC_SPRITE_6_Y  = $d00d     ; vic-ii sprite 6 y
-VIC_SPRITE_7_X  = $d00e     ; vic-ii sprite 7 x lower 8 bits
-VIC_SPRITE_7_Y  = $d00f     ; vic-ii sprite 7 y
+VIC_SPRITE_X    = $d000     ; vic-ii sprite 0 x lower 8 bits
+VIC_SPRITE_Y    = $d001     ; vic-ii sprite 0 y
 VIC_SPRITES_8X  = $d010     ; vic-ii 9'th bit of x for sprites 0-7
 VIC_CTRL_1      = $d011     ; vic-ii control register 1
 VIC_RASTER_REG  = $d012     ; vic-ii raster register
@@ -68,7 +54,7 @@ CIA2_ICR        = $dd0d     ; cia 2 interrupt control and status register
 NMI_VECTOR_LO   = $fffa     ; non-maskable interrupt vector (low byte)
 NMI_VECTOR_HI   = $fffb     ; non-maskable interrupt vector (high byte)
 MEMORY_CONFIG   = %00110101 ; disable basic/kernal rom, keep i/o at $d000–$dfff
-PROCESSOR_PORT  = $01       ; processor port address
+PROCESSOR_PORT  = $0001     ; processor port address
 SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
 SCREEN_0_D018   = %00011000 ; screen at $0400, char map at $2000
 SCREEN_1_D018   = %11111000 ; screen at $3c00, char map at $2000 
@@ -142,10 +128,11 @@ HERO_ANIMATION_RATE_IDLE = %11111
 ; initial infinities (respawns) hero has
 INITIAL_INFINITIES = 7
 
+; hero sprite color
+HERO_SPRITE_COLOR = 1
 
-;
-; constants coupled with graphics
-;
+; hud sprite color
+HUD_SPRITE_COLOR = 1
 
 ; tile id for pickable item
 TILE_ID_PICKABLE = 33
@@ -153,14 +140,24 @@ TILE_ID_PICKABLE = 33
 ; tile id for empty
 TILE_ID_EMPTY = 32
 
+; hero hardware sprite number
+HERO_SPRITE_NUM = 0
+
+; hud hardware sprite number
+HUD_SPRITE_NUM = 7
+
+;
+; constants coupled with graphics
+;
+
 ; hero sprite data for use in register
-HERO_SPRITE = sprites_data_0 >> 6
+HERO_SPRITE_IX = sprites_data_0 >> 6
 
 ; sprite used for hud
 HUD_SPRITE_DATA = sprites_data_47
 
 ; hud sprite data for use in register
-HUD_SPRITE = HUD_SPRITE_DATA >> 6
+HUD_SPRITE_IX = HUD_SPRITE_DATA >> 6
 
 ; hud start line to draw number of pickables
 HUD_PICKABLES_LINE = 4
@@ -180,9 +177,6 @@ SUBPIXEL_SHIFT = 4
 
 ; number of shifts to convert pixels to tile
 TILE_SHIFT = 3
-
-; hero sprite bit for use in register
-HERO_SPRITE_BIT = 1
 
 ; animation enumeration
 HERO_ANIMATION_IDLE = 0
@@ -554,7 +548,7 @@ program:
 ;
 ; clobbers: a, x, tmp1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_UPDATE_SPRITE obj, spr, SPR_BIT, cx
+.macro OBJECT_UPDATE_SPRITE obj, SPR_NUM, SPR_COLOR, cx
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda cx
@@ -577,15 +571,16 @@ program:
 
     ; update sprite x position
     lda cx
-    sta spr + s::sx
+    sta VIC_SPRITE_X + SPR_NUM * 2
+    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 
     ; set sprite x 9'th bit if `cx` is greater than 256
-    lda sprites_msb_x
-    and #<~SPR_BIT          ; mask out sprite bit
+    lda VIC_SPRITES_8X
+    and #<~(1 << SPR_NUM)   ; mask out sprite bit
     ldx cx + 1              ; check if high bits are 0
     beq :+
-    ora #SPR_BIT            ; set sprite x 9'th bit
-:   sta sprites_msb_x
+    ora #(1 << SPR_NUM)     ; set sprite x 9'th bit
+:   sta VIC_SPRITES_8X
 
     ; update sprite y position
 
@@ -605,11 +600,71 @@ program:
     ; add top border (25 rows display)
     clc
     adc #SCREEN_BRDR_TOP
-    sta spr + s::sy
+    sta VIC_SPRITE_Y + SPR_NUM * 2
+    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
  
+
+    lda #SPR_COLOR
+    sta VIC_SPRITE_COLR + SPR_NUM
+
     ; update sprite data index
     lda obj + o::sprite
-    sta spr + s::data
+    sta screen_0 + SPRITE_IX_OFST + SPR_NUM
+    sta screen_1 + SPRITE_IX_OFST + SPR_NUM
+
+    lda VIC_SPRITE_ENBL
+    ora #(1 << SPR_NUM)
+    sta VIC_SPRITE_ENBL
+.endmacro
+
+
+;-------------------------------------------------------------------------------
+; initiates a sprite by assigning image data, color and screen x, y and enabling
+; it
+;
+;  input:
+;    NUM: sprite hardware number starting at 0 through 7
+;     IX: sprite data address / 64
+;  COLOR: initial color
+;     SX: 16 bit screen x
+;     SY: screen y
+;
+; output: -
+;
+; clobbers: a, x
+;-------------------------------------------------------------------------------
+.macro SPRITE_INIT NUM, IX, COLOR, SX, SY
+    ; set sprite index for both screens
+    lda #IX
+    sta screen_0 + SPRITE_IX_OFST + NUM
+    sta screen_1 + SPRITE_IX_OFST + NUM
+
+    ; sprite x position
+    lda #<SX
+    sta VIC_SPRITE_X + NUM * 2
+    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+
+    ; set sprite x 9'th bit if `cx` is greater than 256
+    lda VIC_SPRITES_8X
+    and #<~(1 << NUM)       ; mask out sprite bit
+    ldx #>SX                ; check if high bits are 0
+    beq :+
+    ora #(1 << NUM)         ; set sprite x 9'th bit
+:   sta VIC_SPRITES_8X
+
+    ; set sprite y
+    lda #SY
+    sta VIC_SPRITE_Y + NUM * 2
+    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+
+    ; color
+    lda #COLOR
+    sta VIC_SPRITE_COLR + NUM
+
+    ; enable
+    lda VIC_SPRITE_ENBL
+    ora #(1 << NUM)
+    sta VIC_SPRITE_ENBL
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -717,6 +772,8 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; note: also writes to the unused 24 nibbles
 
+    ; place hud sprite on screen
+    SPRITE_INIT HUD_SPRITE_NUM, HUD_SPRITE_IX, HUD_SPRITE_COLOR, 310, 51
 
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens, set screen offset
@@ -771,7 +828,7 @@ update:
     sta sprites_bg_collisions
 
     ; check if hero sprite has collided with background
-    and HERO_SPRITE_BIT
+    and #(1 << HERO_SPRITE_NUM)
     beq @collision_reaction_done
 
     ; hero has collided with background, restore state to previous x,y and set
@@ -1115,20 +1172,20 @@ refresh:
     CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
 
     ; place object sprite in screen coordinate system
-    OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1
+    OBJECT_UPDATE_SPRITE hero, HERO_SPRITE_NUM, HERO_SPRITE_COLOR, tmp1
 
     ; copy sprites state to hardware registers
-    .include "update_sprites_state.s"
-
-    ; sprites state bits
-    lda sprites_enable
-    sta VIC_SPRITE_ENBL
-    lda sprites_double_width
-    sta VIC_SPRITE_DBLX
-    lda sprites_double_height
-    sta VIC_SPRITE_DBLY
-    lda sprites_msb_x
-    sta VIC_SPRITES_8X
+    ; .include "update_sprites_state.s"
+    ;
+    ; ; sprites state bits
+    ; lda sprites_enable
+    ; sta VIC_SPRITE_ENBL
+    ; lda sprites_double_width
+    ; sta VIC_SPRITE_DBLX
+    ; lda sprites_double_height
+    ; sta VIC_SPRITE_DBLY
+    ; lda sprites_msb_x
+    ; sta VIC_SPRITES_8X
 
 ;-------------------------------------------------------------------------------
 render:
@@ -1227,31 +1284,6 @@ nmi_handler:
 
 ;-------------------------------------------------------------------------------
 .align 8
-sprites_state:
-;-------------------------------------------------------------------------------
-.out .sprintf("sprites_state: $%04x", sprites_state)
-    ;       x,   y,               data, color
-sprite_hero:
-    .byte   0,   0,        HERO_SPRITE, COLOR_WHITE
-    .byte   0,   0, sprites_data_16>>6, COLOR_GREY_1
-    .byte 138, 150, sprites_data_17>>6, 4
-    .byte 162, 150, sprites_data_18>>6, 5
-    .byte 186, 150, sprites_data_19>>6, 6
-    .byte 234, 150, sprites_data_20>>6, 7
-    .byte   2, 150, sprites_data_21>>6, 8
-sprite_hud:
-    .byte  54,  51,         HUD_SPRITE, COLOR_WHITE
-sprites_msb_x: ; 9'th bit of x-coordinate
-    .byte %11000000
-sprites_enable:
-    .byte %10000001
-sprites_double_width:
-    .byte %00000000
-sprites_double_height:
-    .byte %00000000
-
-;-------------------------------------------------------------------------------
-.align 8
 objects_state:
 ;-------------------------------------------------------------------------------
 .out .sprintf("objects_state: $%04x", objects_state)
@@ -1264,7 +1296,7 @@ hero:
     .byte 0              ; dx_hi
     .byte 0              ; dy_lo
     .byte 0              ; dy_hi
-    .byte HERO_SPRITE    ; sprite
+    .byte HERO_SPRITE_IX ; sprite
     .byte 0              ; x_prv_lo
     .byte 0              ; x_prv_hi
     .byte 0              ; y_prv_lo
