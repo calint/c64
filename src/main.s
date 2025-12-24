@@ -538,7 +538,7 @@ program:
 ;
 ; clobbers: a, x, tmp1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_UPDATE_SPRITE obj, SPR_NUM, SPR_COLOR, cx
+.macro OBJECT_SPRITE_TO_SCREEN obj, SPR_NUM, cx
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda cx
@@ -592,10 +592,6 @@ program:
     adc #SCREEN_BRDR_TOP
     sta VIC_SPRITE_Y + SPR_NUM * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
- 
-
-    lda #SPR_COLOR
-    sta VIC_SPRITE_COLR + SPR_NUM
 
     ; update sprite data index
     lda obj + o::sprite
@@ -619,7 +615,7 @@ program:
 ;
 ; clobbers: a, x
 ;-------------------------------------------------------------------------------
-.macro SPRITE_INIT NUM, IX, COLOR, SX, SY
+.macro SPRITE_SET NUM, IX, SX, SY
     ; set sprite index for both screens
     lda #IX
     sta screen_0 + SPRITE_IX_OFST + NUM
@@ -642,15 +638,54 @@ program:
     lda #SY
     sta VIC_SPRITE_Y + NUM * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+.endmacro
 
-    ; color
-    lda #COLOR
-    sta VIC_SPRITE_COLR + NUM
-
-    ; enable
+;-------------------------------------------------------------------------------
+; enables hardware sprite
+;
+;  input:
+;    NUM: hardware sprite number
+;
+; output: -
+;
+; clobbers: a
+;-------------------------------------------------------------------------------
+.macro SPRITE_ENABLE NUM
     lda VIC_SPRITE_ENBL
     ora #(1 << NUM)
     sta VIC_SPRITE_ENBL
+.endmacro
+
+;-------------------------------------------------------------------------------
+; disable hardware sprite
+;
+;  input:
+;    NUM: hardware sprite number
+;
+; output: -
+;
+; clobbers: a
+;-------------------------------------------------------------------------------
+.macro SPRITE_DISABLE NUM
+    lda VIC_SPRITE_ENBL
+    and #<~(1 << NUM)
+    sta VIC_SPRITE_ENBL
+.endmacro
+
+;-------------------------------------------------------------------------------
+; sets hardware sprite color
+;
+;  input:
+;    NUM: hardware sprite number
+;  COLOR: color
+;
+; output: -
+;
+; clobbers: a
+;-------------------------------------------------------------------------------
+.macro SPRITE_COLOR NUM, COLOR
+    lda #COLOR
+    sta VIC_SPRITE_COLR + NUM
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -758,18 +793,22 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; note: also writes to the unused 24 nibbles
 
-    ; enable hud sprite on screen
-    SPRITE_INIT HUD_SPRITE_NUM, HUD_SPRITE_IX, HUD_SPRITE_COLOR, 310, 51
+    ; hud sprite on screen
+    SPRITE_SET HUD_SPRITE_NUM, HUD_SPRITE_IX, 310, 51
+    SPRITE_COLOR HUD_SPRITE_NUM, HUD_SPRITE_COLOR
+    SPRITE_ENABLE HUD_SPRITE_NUM
 
-    ; enable hero sprite
-    lda VIC_SPRITE_ENBL
-    ora #(1 << HERO_SPRITE_NUM)
-    sta VIC_SPRITE_ENBL
+    ; enable and color hero sprite
+    SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
+    SPRITE_ENABLE HERO_SPRITE_NUM
+
+;-------------------------------------------------------------------------------
+
 
     ; frame pipeline:
     ; 1. main_loop - wait for raster, swap screens, set screen offset
     ; 2. update    - collisions, game logic, input, animation, physics, hud
-    ; 3. refresh   - physics, camera, apply state to sprites
+    ; 3. refresh   - physics, camera, sprites update 
     ; 4. render    - draw tile map to offscreen buffer
 
     ; coordinate system:
@@ -1163,20 +1202,7 @@ refresh:
     CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
 
     ; place object sprite in screen coordinate system
-    OBJECT_UPDATE_SPRITE hero, HERO_SPRITE_NUM, HERO_SPRITE_COLOR, tmp1
-
-    ; copy sprites state to hardware registers
-    ; .include "update_sprites_state.s"
-    ;
-    ; ; sprites state bits
-    ; lda sprites_enable
-    ; sta VIC_SPRITE_ENBL
-    ; lda sprites_double_width
-    ; sta VIC_SPRITE_DBLX
-    ; lda sprites_double_height
-    ; sta VIC_SPRITE_DBLY
-    ; lda sprites_msb_x
-    ; sta VIC_SPRITES_8X
+    OBJECT_SPRITE_TO_SCREEN hero, HERO_SPRITE_NUM, tmp1
 
 ;-------------------------------------------------------------------------------
 render:
