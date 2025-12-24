@@ -457,6 +457,44 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
+; refresh x, y using dx, dy and update sprite definition data
+;   obj: address of object struct
+;   spr: sprite struct address used by object
+;-------------------------------------------------------------------------------
+.macro OBJECT_REFRESH obj, spr
+    ; save current state to previous
+    lda obj + o::x_lo
+    sta obj + o::x_prv_lo
+    lda obj + o::x_hi
+    sta obj + o::x_prv_hi
+    lda obj + o::y_lo
+    sta obj + o::y_prv_lo
+    lda obj + o::y_hi
+    sta obj + o::y_prv_hi
+
+    ; add dx to x
+    clc
+    lda obj + o::x_lo
+    adc obj + o::dx_lo
+    sta obj + o::x_lo
+    lda obj + o::x_hi
+    adc obj + o::dx_hi
+    sta obj + o::x_hi
+
+    ; add dy to y
+    clc
+    lda obj + o::y_lo
+    adc obj + o::dy_lo
+    sta obj + o::y_lo
+    lda obj + o::y_hi
+    adc obj + o::dy_hi
+    sta obj + o::y_hi
+
+    ; update sprite data index
+    lda obj + o::sprite
+    sta spr + s::data
+.endmacro
+;-------------------------------------------------------------------------------
     ;
     ; setup system 
     ;
@@ -903,38 +941,7 @@ refresh:
     sta VIC_BORDER
 
     ; update objects state
-
-    ; save current state to previous
-    lda hero + o::x_lo
-    sta hero + o::x_prv_lo
-    lda hero + o::x_hi
-    sta hero + o::x_prv_hi
-    lda hero + o::y_lo
-    sta hero + o::y_prv_lo
-    lda hero + o::y_hi
-    sta hero + o::y_prv_hi
-
-    ; add dx to x
-    clc
-    lda hero + o::x_lo
-    adc hero + o::dx_lo
-    sta hero + o::x_lo
-    lda hero + o::x_hi
-    adc hero + o::dx_hi
-    sta hero + o::x_hi
-
-    ; add dy to y
-    clc
-    lda hero + o::y_lo
-    adc hero + o::dy_lo
-    sta hero + o::y_lo
-    lda hero + o::y_hi
-    adc hero + o::dy_hi
-    sta hero + o::y_hi
-
-    ; update sprite data index
-    lda hero + o::sprite
-    sta sprite_hero + s::data
+    OBJECT_REFRESH hero, sprite_hero
 
     ; center camera on hero
 
