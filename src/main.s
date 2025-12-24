@@ -504,6 +504,15 @@ program:
 ;   cx_hi: object x high in camera coordinate system
 ;-------------------------------------------------------------------------------
 .macro SPRITE_UPDATE_POSITION obj, spr, SPR_BIT, cx_lo, cx_hi
+    ; put object coordinates on screen by subtracting camera x position
+    sec
+    lda cx_lo
+    sbc camera_x_lo
+    sta cx_lo
+    lda cx_hi
+    sbc camera_x_hi
+    sta cx_hi
+
     ; add left border (40-column display)
     clc
     lda cx_lo
@@ -1023,17 +1032,8 @@ refresh:
     sbc #0
     sta camera_x_hi
 
-    ; place object in camera coordinate system
+    ; place object sprite in screen coordinate system
  
-    ; put object coordinates on screen by subtracting camera x position
-    sec
-    lda tmp1
-    sbc camera_x_lo
-    sta tmp1
-    lda tmp2
-    sbc camera_x_hi
-    sta tmp2
-
     SPRITE_UPDATE_POSITION hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
 
     ; copy sprites state to hardware registers
