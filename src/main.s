@@ -465,7 +465,7 @@ program:
 ;
 ; clobbers: a
 ;-------------------------------------------------------------------------------
-.macro OBJECT_REFRESH obj, spr
+.macro OBJECT_UPDATE obj
     ; save current state to previous
     lda obj + o::x_lo
     sta obj + o::x_prv_lo
@@ -494,9 +494,6 @@ program:
     adc obj + o::dy_hi
     sta obj + o::y_hi
 
-    ; update sprite data index
-    lda obj + o::sprite
-    sta spr + s::data
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -584,6 +581,10 @@ program:
     clc
     adc #SCREEN_BRDR_TOP
     sta spr + s::sy
+ 
+    ; update sprite data index
+    lda obj + o::sprite
+    sta spr + s::data
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -1033,7 +1034,7 @@ refresh:
     sta VIC_BORDER
 
     ; update objects state
-    OBJECT_REFRESH hero, sprite_hero
+    OBJECT_UPDATE hero
 
     OBJECT_X_TO_WCS hero
 
