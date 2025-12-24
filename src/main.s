@@ -165,6 +165,9 @@ HUD_INFINITIES_LINE = 12
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
 
+; initial sprite for hero before animation advances a frame
+HERO_SPRITE_IX_INIT = sprites_data_8 / 64
+
 ;
 ; hard constants coupled with implementation
 ;
@@ -809,7 +812,7 @@ program:
     SPRITE_ENABLE HUD_SPRITE_NUM
 
     ; enable and color hero sprite
-    lda #sprites_data_8 / 64
+    lda #HERO_SPRITE_IX_INIT
     SPRITE_SET_IX HERO_SPRITE_NUM
     SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
     SPRITE_ENABLE HERO_SPRITE_NUM
