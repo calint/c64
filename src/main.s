@@ -1008,6 +1008,11 @@ update:
 
 @gravity_done:
 
+@animation:
+    ANIMATE_NEXT hero
+
+@animation_done:
+
 @hud:
     ; render hud lines
     HUD_BARS hero_pickables, HUD_PICKABLES_LINE 
@@ -1043,9 +1048,6 @@ update:
     sta sprites_data_47, y
 
 @hud_done:
-
-@animation:
-    ANIMATE_NEXT hero
 
 ;-------------------------------------------------------------------------------
 sound:
