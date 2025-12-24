@@ -622,6 +622,7 @@ program:
 ; output: -
 ;
 ; clobbers: a
+;-------------------------------------------------------------------------------
 .macro OBJECT_RESTORE_STATE obj
     lda obj + o::x_prv_lo
     sta obj + o::x_lo
@@ -631,6 +632,30 @@ program:
     sta obj + o::y_lo
     lda obj + o::y_prv_hi
     sta obj + o::y_hi
+.endmacro
+
+;-------------------------------------------------------------------------------
+; centers camera on specified x adding a bias
+;
+;  input:
+;   x_lo: center on x low byte
+;   x_hi: center on x high byte
+;   BIAS: bias added to calculated center
+;
+; output:
+;   camera_x_lo
+;   camera_x_hi
+;
+; clobbers: a
+;-------------------------------------------------------------------------------
+.macro CAMERA_CENTER_ON_X x_lo, x_hi, BIAS
+    sec
+    lda x_lo
+    sbc #SCREEN_WIDTH_PX / 2 + BIAS
+    sta camera_x_lo
+    lda x_hi
+    sbc #0
+    sta camera_x_hi
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -1089,13 +1114,7 @@ refresh:
     ; coordinates
 
     ; center camera on object with 16 pixels wide sprite
-    sec
-    lda tmp1
-    sbc #SCREEN_WIDTH_PX / 2 - TILE_WIDTH
-    sta camera_x_lo
-    lda tmp2
-    sbc #0
-    sta camera_x_hi
+    CAMERA_CENTER_ON_X tmp1, tmp2, -TILE_WIDTH
 
     ; place object sprite in screen coordinate system
     OBJECT_UPDATE_SPRITE hero, sprite_hero, HERO_SPRITE_BIT, tmp1, tmp2
