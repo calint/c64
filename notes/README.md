@@ -5,7 +5,7 @@
 [-] animation should display first frame when initiated
     => it looks better if it does not with a slight delay before hero changes
        after starting to move
-[ ] hero_restarting, hero_moving and hero_jumping to hero_flags
+[x] hero_restarting, hero_moving and hero_jumping to hero_flags
 [x] since writing to tile map needs redraw and there is no useful code to do
     when tile map is not redrawn and only then, redraw map and see cycles budget
     for 50 fps as the hard limit

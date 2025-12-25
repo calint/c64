@@ -185,6 +185,15 @@ SUBPIXEL_SHIFT = 4
 ; shift count for pixel to tile conversion
 TILE_SHIFT = 3
 
+; flags hero restart sequence on-going
+HERO_FLAG_RESTARTING = 1
+
+; flags hero is moving horizontally or in a jump
+HERO_FLAG_MOVING = 2
+
+; flags hero is in a jump
+HERO_FLAG_JUMPING = 4
+
 ;-------------------------------------------------------------------------------
 ; animation struct with short name `n` for code brevity
 ;-------------------------------------------------------------------------------
@@ -229,9 +238,7 @@ sprites_bg_collisions: .res 1  ; sprite to background collisions
 frame_counter:         .res 1  ; counter for bitwise and 0 intervals
 hero_pickables:        .res 1  ; count of picked items
 hero_infinities:       .res 1  ; count of remaining restarts
-hero_restarting:       .res 1  ; non-zero during restart sequence
-hero_moving:           .res 1  ; non-zero if hero is moving horizontally
-hero_jumping:          .res 1  ; non-zero if hero is jumping
+hero_flags:            .res 1  ; flags defined in constants
 tmp1:                  .res 1  ; primary temporary byte
 tmp2:                  .res 1  ; secondary temporary byte or high byte of word
 ptr1:                  .res 2  ; primary temporary pointer
@@ -785,8 +792,7 @@ program:
     sta camera_x_lo
     sta camera_x_hi
     sta screen_active
-    sta hero_jumping
-    sta hero_moving
+    sta hero_flags
     sta frame_counter
     sta hero_pickables
     lda #INITIAL_INFINITIES
@@ -891,10 +897,14 @@ update:
     sta hero + o::dy_hi
 
     ; stop the jump logic
-    sta hero_jumping
+    lda hero_flags
+    and #<~HERO_FLAG_JUMPING
+    sta hero_flags
 
     ; restart sequence done
-    sta hero_restarting
+    lda hero_flags
+    and #<~HERO_FLAG_RESTARTING
+    sta hero_flags
 
 @collision_reaction_done:
 
@@ -998,7 +1008,9 @@ update:
     lda #0
     sta hero + o::dx_lo 
     sta hero + o::dx_hi
-    sta hero_moving
+    lda hero_flags
+    and #<~HERO_FLAG_MOVING
+    sta hero_flags
 
 @joystick_left:
     ; joystick
@@ -1006,8 +1018,9 @@ update:
     and #JOYSTICK_LEFT
     bne @joystick_right     ; note: active low
 
-    ; flag hero is moving, non-zero value means "moving"
-    inc hero_moving
+    lda hero_flags
+    ora #HERO_FLAG_MOVING
+    sta hero_flags
 
     OBJECT_ANIMATION hero, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
@@ -1037,8 +1050,9 @@ update:
     and #JOYSTICK_RIGHT
     bne @joystick_fire      ; note: active low
 
-    ; flag hero is moving, non-zero value
-    inc hero_moving
+    lda hero_flags
+    ora #HERO_FLAG_MOVING
+    sta hero_flags
 
     OBJECT_ANIMATION hero, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
@@ -1065,7 +1079,8 @@ update:
 
 @joystick_fire:
     ; is hero already jumping?
-    lda hero_jumping
+    lda hero_flags
+    and #HERO_FLAG_JUMPING
     bne @keyboard_return
 
     lda CIA1_PORT_A
@@ -1079,13 +1094,15 @@ update:
     sta hero + o::dy_hi
 
     ; flag hero is jumping and moving 
-    lda #1
-    sta hero_jumping
-    sta hero_moving
+    lda hero_flags
+    ora #HERO_FLAG_JUMPING
+    ora #HERO_FLAG_MOVING
+    sta hero_flags
 
 @keyboard_return:
     ; if restarting skip this step
-    lda hero_restarting
+    lda hero_flags
+    and #HERO_FLAG_RESTARTING
     bne @controls_done
 
     ; check if "return" key is pressed
@@ -1101,8 +1118,9 @@ update:
 
     dec hero_infinities
 
-    ; non-zero means "restarting"
-    inc hero_restarting
+    lda hero_flags
+    ora #HERO_FLAG_RESTARTING
+    inc hero_flags
 
     ; set restart position and velocity
     lda #<RESTART_X
@@ -1123,13 +1141,15 @@ update:
 
 @hero_physics:
     ; if hero is not moving animate idle
-    lda hero_moving
+    lda hero_flags
+    and #HERO_FLAG_MOVING
     bne :+
 
     OBJECT_ANIMATION hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
     ; apply gravity if hero is in a jump
-:   lda hero_jumping
+:   lda hero_flags
+    and #HERO_FLAG_JUMPING
     bne @gravity
     ; note: the jump over increasing `frame_counter` freezes animation which is 
     ;       not right, however, it looks funny
