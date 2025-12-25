@@ -406,7 +406,9 @@ program:
 .macro OBJECT_ANIMATION_TICK obj, SPR
     lda frame_counter
     and obj + o::anim + n::rate
-    bne :++ ; note: quirk in ca65 make local labels interfere with other labels
+    bne :++ 
+    ; note: quirk in ca65 make local labels interfere with outer labels thus
+    ;       the use of unnamed labels
 
     lda obj + o::anim + n::ptr
     sta ptr1
