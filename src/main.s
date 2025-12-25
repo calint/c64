@@ -147,6 +147,11 @@ HERO_SPRITE_NUM = 0
 ; hud hardware sprite number
 HUD_SPRITE_NUM = 7
 
+; animation enumeration
+HERO_ANIMATION_IDLE = 0
+HERO_ANIMATION_RIGHT = 1
+HERO_ANIMATION_LEFT = 2
+
 ;
 ; constants coupled with graphics
 ;
@@ -170,7 +175,7 @@ HUD_PROGRESS_LINE = 18
 HERO_SPRITE_IX_INIT = sprites_data_8 / 64
 
 ;
-; hard constants coupled with implementation
+; constants coupled with implementation (changes need code modification)
 ;
 
 ; number of subpixel fraction bits are used
@@ -178,11 +183,6 @@ SUBPIXEL_SHIFT = 4
 
 ; number of shifts to convert pixels to tile
 TILE_SHIFT = 3
-
-; animation enumeration
-HERO_ANIMATION_IDLE = 0
-HERO_ANIMATION_RIGHT = 1
-HERO_ANIMATION_LEFT = 2
 
 ;-------------------------------------------------------------------------------
 ; animation struct with short name `n` for code brevity
