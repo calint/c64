@@ -1143,12 +1143,13 @@ update:
     ; if hero is not moving animate idle
     lda hero_flags
     and #HERO_FLAG_MOVING
-    bne :+
+    bne @apply_gravity
 
     OBJECT_ANIMATION hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
+@apply_gravity:
     ; apply gravity if hero is in a jump
-:   lda hero_flags
+    lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @gravity
     ; note: the jump over increasing `frame_counter` freezes animation which is 
