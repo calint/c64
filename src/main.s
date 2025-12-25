@@ -189,10 +189,10 @@ TILE_SHIFT = 3
 ; animation struct with short name `n` for code brevity
 ;-------------------------------------------------------------------------------
 .struct n
-    id      .byte ; unique animation id
-    frame   .byte ; frame number in animation
-    rate    .byte ; frame rate as a bitmask that is ANDed and checked for 0
-    ptr     .word ; pointer to animation table
+    id      .byte ; animation id
+    frame   .byte ; current frame number
+    rate    .byte ; frame rate mask bitwise and is 0
+    ptr     .word ; pointer to animation data table
 .endstruct
 
 ;-------------------------------------------------------------------------------
@@ -223,18 +223,18 @@ zero_page:
 .out .sprintf("    zero_page: $%04x", zero_page)
 camera_x_lo:           .res 1  ; low byte of camera x
 camera_x_hi:           .res 1  ; high byte of camera x
-screen_offset:         .res 1  ; number of pixels (0-7) screen is shifted right
-screen_active:         .res 1  ; active screen (0 or 1)
-sprites_bg_collisions: .res 1  ; sprite / background collisions
-frame_counter:         .res 1  ; frame counter used for AND = 0 intervals
-hero_pickables:        .res 1  ; number of picked items
-hero_infinities:       .res 1  ; number of restarts remaining
-hero_restarting:       .res 1  ; 0 when not restarting sequence
-hero_moving:           .res 1  ; 0 if hero is idle
-hero_jumping:          .res 1  ; 0 if not in jump
-tmp1:                  .res 1  ; temporary
-tmp2:                  .res 1  ; temporary (after tmp1 to form temporary word)
-ptr1:                  .res 2  ; temporary pointer
+screen_offset:         .res 1  ; horizontal fine scroll pixels 0-7
+screen_active:         .res 1  ; index of active screen 0 or 1
+sprites_bg_collisions: .res 1  ; sprite to background collisions
+frame_counter:         .res 1  ; counter for bitwise and 0 intervals
+hero_pickables:        .res 1  ; count of picked items
+hero_infinities:       .res 1  ; count of remaining restarts
+hero_restarting:       .res 1  ; non-zero during restart sequence
+hero_moving:           .res 1  ; non-zero if hero is moving horizontally
+hero_jumping:          .res 1  ; non-zero if hero is jumping
+tmp1:                  .res 1  ; primary temporary byte
+tmp2:                  .res 1  ; secondary temporary byte or high byte of word
+ptr1:                  .res 2  ; primary temporary pointer
 
 ;-------------------------------------------------------------------------------
 ; program header
