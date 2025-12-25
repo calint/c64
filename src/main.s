@@ -1,6 +1,7 @@
 ;-------------------------------------------------------------------------------
 ; mapped memory
 ;-------------------------------------------------------------------------------
+; $0000 - $0001: processor port
 ; $0002 - $00ff: zero page
 ; $0400 - $07e7: default screen (screen 0)
 ; $07f8 - $07ff: sprites data index to address/64 when screen 0 is active
