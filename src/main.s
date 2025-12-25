@@ -1,19 +1,20 @@
 ;-------------------------------------------------------------------------------
 ; mapped memory
 ;-------------------------------------------------------------------------------
-; $0000 - $0001: processor port
+; $0000        : processor port data direction register
+; $0001        : processor port
 ; $0002 - $00ff: zero page
 ; $0400 - $07e7: default screen (screen 0)
-; $07f8 - $07ff: sprites data index to address/64 when screen 0 is active
-; $0800        : byte must be 0 so BASIC stub at $0801 works
+; $07f8 - $07ff: sprites data index to address / 64 when screen 0 is active
+; $0800        : byte must be 0 so BASIC stub at $0801 runs
 ; $0801 - $080d: basic stub to jump to $5900
 ; $1000 - $17ff: default character set (note: vic-ii chip sees rom data)
 ; $1800 - $1fff: alternate character set (note: vic-ii chip sees rom data)
 ; $2000 - $27ff: user defined character set 1
 ; $2800 - $2fff: user defined character set 2
-; $3000 - $3bff: 48 sprite definition data
+; $3000 - $3bff: 48 sprites data
 ; $3c00 - $3fe7: double buffer screen (screen 1)
-; $3ff8 - $3fff: sprites data index to address/64 when screen 1 is active
+; $3ff8 - $3fff: sprites data index to address / 64 when screen 1 is active
 ; $4000 - $58ff: tile map
 ; $5900 - $cfff: program
 ; $d000 - $d3ff: vic-ii video display
@@ -31,50 +32,50 @@
 ;-------------------------------------------------------------------------------
 ; constants
 ;-------------------------------------------------------------------------------
-VIC_SPRITE_X    = $d000     ; vic-ii sprite 0 x lower 8 bits
-VIC_SPRITE_Y    = $d001     ; vic-ii sprite 0 y
-VIC_SPRITES_8X  = $d010     ; vic-ii 9'th bit of x for sprites 0-7
-VIC_CTRL_1      = $d011     ; vic-ii control register 1
-VIC_RASTER_REG  = $d012     ; vic-ii raster register
-VIC_SPRITE_ENBL = $d015     ; vic-ii sprite enable bits
-VIC_CTRL_2      = $d016     ; vic-ii screen control register 2
-VIC_SPRITE_DBLY = $d017     ; vic-ii double sprites height bits
-VIC_MEM_CTRL    = $d018     ; vic-ii memory control register
-VIC_IRQ_REG     = $d019     ; vic-ii interrupt register
-VIC_BG_COLOR    = $d021     ; vic-ii background color register
-VIC_IRQ_ENABLE  = $d01a     ; vic-ii interrupt enable register
-VIC_SPRITE_DBLX = $d01d     ; vic-ii double sprites width bits
-VIC_SPR_SPR_COL = $d01e     ; vic-ii sprite vs sprite collision bits
-VIC_SPR_BG_COL  = $d01f     ; vic-ii sprite vs background collision bits
-VIC_BORDER      = $d020     ; vic-ii border color register
-VIC_SPRITE_COLR = $d027     ; vic-ii 8 sprite colors
-CIA1_PORT_A     = $dc00     ; joystick 2
-CIA1_PORT_B     = $dc01     ; joystick 1
-CIA1_ICR        = $dc0d     ; cia 1 interrupt control and status register
-CIA2_ICR        = $dd0d     ; cia 2 interrupt control and status register
-NMI_VECTOR_LO   = $fffa     ; non-maskable interrupt vector (low byte)
-NMI_VECTOR_HI   = $fffb     ; non-maskable interrupt vector (high byte)
-MEMORY_CONFIG   = %00110101 ; disable basic/kernal rom, keep i/o at $d000–$dfff
-PROCESSOR_PORT  = $0001     ; processor port address
-SPRITE_IX_OFST  = $3f8      ; sprite data index table offset from screen address
-SCREEN_0_D018   = %00011000 ; screen at $0400, char map at $2000
-SCREEN_1_D018   = %11111000 ; screen at $3c00, char map at $2000 
-SCREEN_WIDTH    = 40        ; screen width in characters
-SCREEN_HEIGHT   = 25        ; screen height in characters
-SCREEN_WIDTH_PX = 320       ; screen width in pixels for 40 column display
-SCREEN_BRDR_LFT = 24        ; x of first visible pixel (40 column display)
-SCREEN_BRDR_TOP = 50        ; y of first visible pixel
-TILE_MAP_WIDTH  = 256       ; number of horizontal tiles
-TILE_WIDTH      = 8         ; width of tile in pixels
-TILE_PIXEL_MASK = %00000111 ; mask for pixel within tile (0-7)
-RASTER_BORDER   = 251       ; raster value below bottom border (PAL)
-KEYBOARD_ROW_0  = $fe       ; scan row 0 (keys: inst/del, return, etc.)
-KEYBOARD_RETURN = 2         ; bit mask for "return" key in row 0
-JOYSTICK_UP     = 1         ; bit when joystick is up
-JOYSTICK_DOWN   = 2         ; bit when joystick is down
-JOYSTICK_LEFT   = 4         ; bit when joystick is left
-JOYSTICK_RIGHT  = 8         ; bit when joystick is right
-JOYSTICK_FIRE   = 16        ; bit when joystick is fire
+VIC_SPRITE_X    = $d000      ; vic-ii sprite 0 x low 8 bits
+VIC_SPRITE_Y    = $d001      ; vic-ii sprite 0 y
+VIC_SPRITES_8X  = $d010      ; vic-ii 9th x bits for sprites 0-7
+VIC_CTRL_1      = $d011      ; vic-ii screen control register 1
+VIC_RASTER_REG  = $d012      ; vic-ii raster register
+VIC_SPRITE_ENBL = $d015      ; vic-ii sprite enable bits
+VIC_CTRL_2      = $d016      ; vic-ii screen control register 2
+VIC_SPRITE_DBLY = $d017      ; vic-ii sprite double-height bits
+VIC_MEM_CTRL    = $d018      ; vic-ii memory control register
+VIC_IRQ_REG     = $d019      ; vic-ii interrupt register
+VIC_BG_COLOR    = $d021      ; vic-ii background color register
+VIC_IRQ_ENABLE  = $d01a      ; vic-ii interrupt enable register
+VIC_SPRITE_DBLX = $d01d      ; vic-ii sprite double-width bits
+VIC_SPR_SPR_COL = $d01e      ; vic-ii sprite vs sprite collision bits
+VIC_SPR_BG_COL  = $d01f      ; vic-ii sprite vs background collision bits
+VIC_BORDER      = $d020      ; vic-ii border color register
+VIC_SPRITE_COLR = $d027      ; vic-ii 8 sprite color registers
+CIA1_PORT_A     = $dc00      ; joystick 2
+CIA1_PORT_B     = $dc01      ; joystick 1
+CIA1_ICR        = $dc0d      ; cia 1 interrupt control and status register
+CIA2_ICR        = $dd0d      ; cia 2 interrupt control and status register
+NMI_VECTOR_LO   = $fffa      ; non-maskable interrupt vector low byte
+NMI_VECTOR_HI   = $fffb      ; non-maskable interrupt vector high byte
+MEMORY_CONFIG   = %00110101  ; disable basic kernal rom keep i/o at d000-dfff
+PROCESSOR_PORT  = $01        ; processor port address
+SPRITE_IX_OFST  = $3f8       ; sprite data index table offset from screen base
+SCREEN_0_D018   = %00011000  ; screen at 0400 char map at 2000
+SCREEN_1_D018   = %11111000  ; screen at 3c00 char map at 2000
+SCREEN_WIDTH    = 40         ; screen width in characters
+SCREEN_HEIGHT   = 25         ; screen height in characters
+SCREEN_WIDTH_PX = 320        ; screen width in pixels for 40 column display
+SCREEN_BRDR_LFT = 24         ; x of first visible pixel for 40 column display
+SCREEN_BRDR_TOP = 50         ; y of first visible pixel for 25 row display
+TILE_MAP_WIDTH  = 256        ; number of horizontal tiles
+TILE_WIDTH      = 8          ; width of tile in pixels
+TILE_PIXEL_MASK = %00000111  ; mask for pixel within tile 0-7
+RASTER_BORDER   = 251        ; raster value below bottom border pal
+KEYBOARD_ROW_0  = $fe        ; scan row 0 keys inst del return etc
+KEYBOARD_RETURN = 2          ; bit mask for return key in row 0
+JOYSTICK_UP     = 1          ; bit when joystick is up
+JOYSTICK_DOWN   = 2          ; bit when joystick is down
+JOYSTICK_LEFT   = 4          ; bit when joystick is left
+JOYSTICK_RIGHT  = 8          ; bit when joystick is right
+JOYSTICK_FIRE   = 16         ; bit when joystick is fire
 COLOR_BLACK     = 0
 COLOR_WHITE     = 1
 COLOR_RED       = 2
@@ -94,7 +95,7 @@ COLOR_GREY_3    = 15
 BORDER_COLOR    = COLOR_BLUE
 BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
-BORDER_REFRESH  = COLOR_YELLOW 
+BORDER_REFRESH  = COLOR_YELLOW
 
 ;
 ; tunable game constants
