@@ -101,33 +101,33 @@ BORDER_REFRESH  = COLOR_YELLOW
 ; tunable game constants
 ;
 
-; moving velocity to left and right (including subpixels)
+; horizontal movement velocity including subpixels
 MOVE_DX = 8
 
-; when moving, hero makes a "skip" (a small jump) at interval mask (AND is 0)
+; move skip (small jump) interval mask bitwise and is 0
 MOVE_SKIP_INTERVAL = %1111
 
-; amount of dy when hero "skips" while moving (including subpixels)
+; move skip dy velocity including subpixels
 MOVE_SKIP_VELOCITY = 20
 
-; initial velocity upwards when jumping (including subpixels)
+; initial upward jump velocity including subpixels
 JUMP_VELOCITY = 33
 
-; gravity to add to velocity every frame (including subpixels)
+; gravity added to velocity when applied including subpixels
 GRAVITY = 3
 
-; gravity applied when hero is not jumping at interval mask (AND is 0)
+; gravity interval mask for non jumping hero bitwise and is 0
 GRAVITY_INTERVAL = %1111
 
-; restarting position including subpixels
+; restart position including subpixels
 RESTART_X = (TILE_WIDTH / 2) << SUBPIXEL_SHIFT
 RESTART_Y = -16 << SUBPIXEL_SHIFT
 
-; animation rate masks (AND is 0)
+; animation rate masks bitwise and is 0
 HERO_ANIMATION_RATE_MOVING = %111
 HERO_ANIMATION_RATE_IDLE = %11111
 
-; initial infinities (respawns) hero has
+; initial respawns for hero
 INITIAL_INFINITIES = 7
 
 ; hero sprite color
@@ -136,10 +136,10 @@ HERO_SPRITE_COLOR = 1
 ; hud sprite color
 HUD_SPRITE_COLOR = 1
 
-; tile id for pickable item
+; tile id for pickable
 TILE_ID_PICKABLE = 33
 
-; tile id for empty
+; tile id for empty tile
 TILE_ID_EMPTY = 32
 
 ; hero hardware sprite number
@@ -148,7 +148,7 @@ HERO_SPRITE_NUM = 0
 ; hud hardware sprite number
 HUD_SPRITE_NUM = 7
 
-; animation enumeration
+; animation states
 HERO_ANIMATION_IDLE = 0
 HERO_ANIMATION_RIGHT = 1
 HERO_ANIMATION_LEFT = 2
@@ -157,32 +157,32 @@ HERO_ANIMATION_LEFT = 2
 ; constants coupled with graphics
 ;
 
-; sprite used for hud
+; sprite data source for hud
 HUD_SPRITE_DATA = sprites_data_47
 
-; hud sprite data for use in register
-HUD_SPRITE_IX = HUD_SPRITE_DATA >> 6
+; hud sprite index for vic-ii register
+HUD_SPRITE_IX = HUD_SPRITE_DATA / 64
 
-; hud start line to draw number of pickables
+; hud start line for pickable count
 HUD_PICKABLES_LINE = 4
 
-; hud start line to draw number of infinities
+; hud start line for infinity count
 HUD_INFINITIES_LINE = 12
 
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
 
-; initial sprite for hero before animation advances a frame
+; initial hero sprite index before animation advances
 HERO_SPRITE_IX_INIT = sprites_data_8 / 64
 
 ;
-; constants coupled with implementation (changes need code modification)
+; constants coupled with implementation (changes require code modification)
 ;
 
-; number of subpixel fraction bits are used
+; count of subpixel fraction bits
 SUBPIXEL_SHIFT = 4
 
-; number of shifts to convert pixels to tile
+; shift count for pixel to tile conversion
 TILE_SHIFT = 3
 
 ;-------------------------------------------------------------------------------
