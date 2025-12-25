@@ -363,27 +363,27 @@ program:
 ; 
 ;  input:
 ;    obj: object struct address
-;    aid: animation id
-;  arate: rate mask bitwise and is 0
+;    AID: animation id
+;  ARATE: rate mask bitwise and is 0
 ; atable: animation sequence address
 ;
 ; output: -
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION obj, aid, arate, atable  
+.macro OBJECT_ANIMATION obj, AID, ARATE, atable  
     ; if already animating this state, continue
     lda obj + o::anim + n::id
-    cmp #aid
+    cmp #AID
     beq :+
 
-    lda #aid
+    lda #AID
     sta obj + o::anim + n::id
 
     lda #0
     sta obj + o::anim + n::frame
 
-    lda #arate
+    lda #ARATE
     sta obj + o::anim + n::rate
 
     lda #<atable
@@ -621,7 +621,7 @@ program:
 ; initialize sprite image color position and enable bit
 ;
 ;  input:
-;    NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;     IX: sprite data address / 64
 ;  COLOR: initial color
 ;     SX: 16 bit screen coordinate x
@@ -631,27 +631,27 @@ program:
 ;
 ; clobbers: A, X
 ;-------------------------------------------------------------------------------
-.macro SPRITE_SET NUM, IX, SX, SY
+.macro SPRITE_SET SPR, IX, SX, SY
     ; set sprite index for both screens
     lda #IX
-    SPRITE_SET_IX NUM
+    SPRITE_SET_IX SPR
 
     ; sprite x position
     lda #<SX
-    sta VIC_SPRITE_X + NUM * 2
+    sta VIC_SPRITE_X + SPR * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 
     ; set sprite x 9'th bit if `cx` is greater than 256
     lda VIC_SPRITES_8X
-    and #<~(1 << NUM)       ; mask out sprite bit
+    and #<~(1 << SPR)       ; mask out sprite bit
     ldx #>SX                ; check if high bits are 0
     beq :+
-    ora #(1 << NUM)         ; set sprite x 9'th bit
+    ora #(1 << SPR)         ; set sprite x 9'th bit
 :   sta VIC_SPRITES_8X
 
     ; set sprite y
     lda #SY
-    sta VIC_SPRITE_Y + NUM * 2
+    sta VIC_SPRITE_Y + SPR * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 .endmacro
 
@@ -659,15 +659,15 @@ program:
 ; enables hardware sprite
 ;
 ;  input:
-;    NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;
 ; output: -
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
-.macro SPRITE_ENABLE NUM
+.macro SPRITE_ENABLE SPR
     lda VIC_SPRITE_ENBL
-    ora #(1 << NUM)
+    ora #(1 << SPR)
     sta VIC_SPRITE_ENBL
 .endmacro
 
@@ -675,15 +675,15 @@ program:
 ; disable hardware sprite
 ;
 ;  input:
-;    NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;
 ; output: -
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
-.macro SPRITE_DISABLE NUM
+.macro SPRITE_DISABLE SPR
     lda VIC_SPRITE_ENBL
-    and #<~(1 << NUM)
+    and #<~(1 << SPR)
     sta VIC_SPRITE_ENBL
 .endmacro
 
@@ -691,16 +691,16 @@ program:
 ; sets hardware sprite color
 ;
 ;  input:
-;    NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;  COLOR: color
 ;
 ; output: -
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
-.macro SPRITE_COLOR NUM, COLOR
+.macro SPRITE_COLOR SPR, COLOR
     lda #COLOR
-    sta VIC_SPRITE_COLR + NUM
+    sta VIC_SPRITE_COLR + SPR
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -708,15 +708,15 @@ program:
 ;
 ;  input:
 ;      A: sprite data address / 64
-;    NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;
 ; output: -
 ;
 ; clobbers: -
 ;-------------------------------------------------------------------------------
-.macro SPRITE_SET_IX NUM
-    sta screen_0 + SPRITE_IX_OFST + NUM
-    sta screen_1 + SPRITE_IX_OFST + NUM
+.macro SPRITE_SET_IX SPR
+    sta screen_0 + SPRITE_IX_OFST + SPR
+    sta screen_1 + SPRITE_IX_OFST + SPR
 .endmacro
 
 ;-------------------------------------------------------------------------------
