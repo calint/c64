@@ -362,10 +362,10 @@ program:
 ; same id
 ; 
 ;  input:
-;    obj: address of object struct
+;    obj: object struct address
 ;    aid: animation id
-;  arate: rate of animation mask (AND = 0)
-; atable: address of animation sequence
+;  arate: rate mask bitwise and is 0
+; atable: animation sequence address
 ;
 ; output: -
 ;
@@ -394,10 +394,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; advance animation frame if rate AND frame_counter == 0
+; advance animation frame if `rate` and `frame_counter` bitwise and is 0
 ;
 ;   input:
-;     obj: address of object struct
+;     obj: object struct address
 ;    SPR: hardware sprite number
 ;
 ;  output: -
@@ -433,8 +433,8 @@ program:
 ; render vertical bars on hud sprite 
 ;
 ;  input:
-;    var: number of bars
-;   LINE: render on sprite hud line number
+;    var: count of bars
+;   LINE: sprite line number for rendering
 ;
 ; output: -
 ;
@@ -463,10 +463,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; refresh x, y using dx, dy and update sprite definition data
-;
+; update pixels and subpixels via velocity
+; 
 ;  input:
-;    obj: address of object struct
+;    obj: object struct address
 ;
 ; output: -
 ;
@@ -503,11 +503,11 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; converts object's fixed-point x position to integer world pixels
+; convert object fixed-point x position to world coordinate pixels
 ; (arithmetic shift right by SUBPIXEL_SHIFT)
 ;
 ;  input:
-;    obj: address to object struct
+;    obj: object struct address
 ;
 ;  output:
 ;    tmp1: x low byte
@@ -529,10 +529,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; updates object sprite position by converting camera coordinates to screen
+; convert world pixels to screen pixels and update sprite position
 ;
 ;  input:
-;    obj: address of object struct
+;    obj: object struct address
 ;    SPR: hardware sprite number
 ;     cx: object 16 bit x in pixels in world coordinate system
 ;
@@ -597,10 +597,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; restore object state by writing x, y, dx, dy with previous frame values
+; restore object position and velocity from previous frame values
 ;
 ;  input:
-;    obj: address to object struct
+;    obj: object struct address
 ;
 ; output: -
 ;
@@ -618,14 +618,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; initiates a sprite by assigning image data, color, screen x, y and enabling it
+; initialize sprite image color position and enable bit
 ;
 ;  input:
 ;    NUM: hardware sprite number
 ;     IX: sprite data address / 64
 ;  COLOR: initial color
-;     SX: 16 bit screen x
-;     SY: screen y
+;     SX: 16 bit screen coordinate x
+;     SY: screen y coordinate
 ;
 ; output: -
 ;
@@ -704,7 +704,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; sets hardware sprite data source
+; set hardware sprite data source pointers for both screens
 ;
 ;  input:
 ;      A: sprite data address / 64
@@ -720,11 +720,11 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; centers camera on specified x adding a bias
+; center camera on world coordinate x and add bias
 ;
 ;  input:
-;     cx: 16 bit x in world coordinate system to center on
-;   BIAS: bias added to calculated center
+;     cx: 16 bit world x coordinate to center on
+;   BIAS: offset added to calculated center
 ;
 ; output:
 ;   camera_x_lo
