@@ -136,10 +136,10 @@ HERO_SPRITE_COLOR = 1
 ; hud sprite color
 HUD_SPRITE_COLOR = 1
 
-; tile id for pickable
+; tile id for pickable items
 TILE_ID_PICKABLE = 33
 
-; tile id for empty tile
+; tile id for empty tiles
 TILE_ID_EMPTY = 32
 
 ; hero hardware sprite number
@@ -176,7 +176,7 @@ HUD_PROGRESS_LINE = 18
 HERO_SPRITE_IX_INIT = sprites_data_8 / 64
 
 ;
-; constants coupled with implementation (changes require code modification)
+; constants coupled with implementation
 ;
 
 ; count of subpixel fraction bits
