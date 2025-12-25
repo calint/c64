@@ -390,6 +390,10 @@ program:
     sta obj + o::anim + n::ptr
     lda #>atable
     sta obj + o::anim + n::ptr + 1
+
+    ; note: first frame should be displayed, however, it looks funny when it
+    ;       does not
+
     :
 .endmacro
 
@@ -1127,6 +1131,8 @@ update:
     ; apply gravity if hero is in a jump
 :   lda hero_jumping
     bne @gravity
+    ; note: the jump over increasing `frame_counter` freezes animation which is 
+    ;       not right, however, it looks funny
 
     ; every n'th frame apply gravity for collision with floor detection
     inc frame_counter 
