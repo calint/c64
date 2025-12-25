@@ -896,11 +896,11 @@ update:
 
     ; convert hero world x, y to tile map coordinates
 
-    ; bias by half a tile, then extract tile coordinate via bit rotation
+    ; rounding by adding a bias of half a tile, then extract tile coordinate via
+    ; bit rotation
 
-    ; note: assumes 4 subpixels bits and 3 tile pixels bits effectively needing
-    ;       to do a 16 bit left shift and using the high byte but rounding
-    ;       complicates it
+    ; note: assumes 4 subpixel bits and 3 tile bits effectively needing a 16 bit
+    ;       left shift then using the high byte, but rounding complicates it
 
     .assert SUBPIXEL_SHIFT = 4, error, "code assumes 4 subpixel fraction bits"
     .assert TILE_WIDTH = 8, error, "code assumes tile width to be 8"
