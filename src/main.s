@@ -397,13 +397,13 @@ program:
 ;
 ;   input:
 ;     obj: address of object struct
-; SPR_NUM: hardware sprite number
+;    SPR: hardware sprite number
 ;
 ;  output: -
 ;
 ; clobbers: a, y, ptr1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION_TICK obj, SPR_NUM
+.macro OBJECT_ANIMATION_TICK obj, SPR
     lda frame_counter
     and obj + o::anim + n::rate
     bne :++
@@ -421,7 +421,7 @@ program:
     sta obj + o::anim + n::frame
     tay
     lda (ptr1), y
-:   SPRITE_SET_IX SPR_NUM 
+:   SPRITE_SET_IX SPR 
     inc obj + o::anim + n::frame
     :
 .endmacro
@@ -464,7 +464,6 @@ program:
 ;
 ;  input:
 ;    obj: address of object struct
-;    spr: address of sprite struct used by object
 ;
 ; output: -
 ;
@@ -532,7 +531,7 @@ program:
 ;  input:
 ;    obj: address of object struct
 ;    SPR: hardware sprite number
-;     cx: 16 bit object x in camera coordinate system
+;     cx: object 16 bit x in pixels in world coordinate system
 ;
 ; output: -
 ;
@@ -616,11 +615,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; initiates a sprite by assigning image data, color and screen x, y and enabling
-; it
+; initiates a sprite by assigning image data, color, screen x, y and enabling it
 ;
 ;  input:
-;    NUM: sprite hardware number starting at 0 through 7
+;    NUM: hardware sprite number
 ;     IX: sprite data address / 64
 ;  COLOR: initial color
 ;     SX: 16 bit screen x
@@ -707,7 +705,7 @@ program:
 ;
 ;  input:
 ;    NUM: hardware sprite number
-;      a: sprite data address / 64
+;      a: sprite data address / 64 in accumulator
 ;
 ; output: -
 ;
@@ -722,7 +720,7 @@ program:
 ; centers camera on specified x adding a bias
 ;
 ;  input:
-;     cx: 16 bit x to center on
+;     cx: 16 bit x in world coordinate system to center on
 ;   BIAS: bias added to calculated center
 ;
 ; output:
