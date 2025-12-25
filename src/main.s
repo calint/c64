@@ -368,7 +368,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro OBJECT_ANIMATION obj, aid, arate, atable  
     ; if already animating this state, continue
@@ -401,7 +401,7 @@ program:
 ;
 ;  output: -
 ;
-; clobbers: a, y, ptr1
+; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
 .macro OBJECT_ANIMATION_TICK obj, SPR
     lda frame_counter
@@ -435,7 +435,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a, x, y
+; clobbers: A, X, Y
 ;-------------------------------------------------------------------------------
 .macro HUD_BARS var, LINE
     lda var                 ; load number of lines to draw
@@ -467,7 +467,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro OBJECT_UPDATE obj
     ; save current state to previous
@@ -510,7 +510,7 @@ program:
 ;    tmp1: x low byte
 ;    tmp2: x high byte
 ;
-; clobbers: a, tmp1, tmp2
+; clobbers: A, tmp1, tmp2
 ;-------------------------------------------------------------------------------
 .macro OBJECT_X_TO_WCS obj
     ; signed arithmetic shift right across 16 bits
@@ -535,7 +535,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a, x, tmp1
+; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
 .macro OBJECT_SPRITE_TO_SCREEN obj, SPR, cx
     ; put object coordinates on screen by subtracting camera x position
@@ -601,7 +601,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro OBJECT_RESTORE_STATE obj
     lda obj + o::x_prv_lo
@@ -626,7 +626,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a, x
+; clobbers: A, X
 ;-------------------------------------------------------------------------------
 .macro SPRITE_SET NUM, IX, SX, SY
     ; set sprite index for both screens
@@ -660,7 +660,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro SPRITE_ENABLE NUM
     lda VIC_SPRITE_ENBL
@@ -676,7 +676,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro SPRITE_DISABLE NUM
     lda VIC_SPRITE_ENBL
@@ -693,7 +693,7 @@ program:
 ;
 ; output: -
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro SPRITE_COLOR NUM, COLOR
     lda #COLOR
@@ -704,8 +704,8 @@ program:
 ; sets hardware sprite data source
 ;
 ;  input:
+;      A: sprite data address / 64
 ;    NUM: hardware sprite number
-;      a: sprite data address / 64 in accumulator
 ;
 ; output: -
 ;
@@ -727,7 +727,7 @@ program:
 ;   camera_x_lo
 ;   camera_x_hi
 ;
-; clobbers: a
+; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro CAMERA_CENTER_ON_X cx, BIAS
     sec
