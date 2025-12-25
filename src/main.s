@@ -933,7 +933,8 @@ update:
     ; accumulator is now tile y
 
     ; add it to row pointer
-    .assert TILE_MAP_WIDTH = 256, error, "tile_map must be 256 for optimization"
+    .assert TILE_MAP_WIDTH = 256, error, "tile_map width must be 256 for optimization"
+
     clc
     adc #>tile_map
     sta ptr1 + 1
