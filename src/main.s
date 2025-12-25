@@ -242,7 +242,7 @@ ptr1:                  .res 2  ; primary temporary pointer
 .org $0000
 .segment "HEADER"
 header:
-.word $0801                ; prg load address hard-coded to BASIC segment
+.word $0801                ; c64 prg load address hard-coded to BASIC segment
 
 ;-------------------------------------------------------------------------------
 ; stack
