@@ -398,7 +398,7 @@ program:
 ;
 ;   input:
 ;     obj: object struct address
-;    SPR: hardware sprite number
+;     SPR: hardware sprite number
 ;
 ;  output: -
 ;
