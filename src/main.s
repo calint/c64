@@ -1152,7 +1152,7 @@ update:
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @gravity
-    ; note: the jump over increasing `frame_counter` freezes animation which is 
+    ; note: the jump over increasing `frame_counter` freezes animation which is
     ;       not right, however, it looks funny
 
     ; every n'th frame apply gravity for collision with floor detection
