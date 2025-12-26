@@ -1165,8 +1165,6 @@ update:
     ora hero + o::dy_hi
     beq @gravity_done
 
-@hero_physics_done:
-
 @gravity:
     ; increase dy
     clc
@@ -1178,6 +1176,8 @@ update:
     sta hero + o::dy_hi
 
 @gravity_done:
+
+@hero_physics_done:
 
 @animation:
     ; animate hero
