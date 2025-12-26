@@ -755,7 +755,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; check if tile pointed to by `ptr1` is "pickable" and in case so pick it and
+; checks if tile pointed to by `ptr1` is "pickable" and if so pick it and 
 ; replace tile with empty
 ;
 ;  input:
