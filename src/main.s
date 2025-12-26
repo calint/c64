@@ -420,8 +420,8 @@ program:
     lda fctr
     and obj + o::anim + n::rate
     bne :++ 
-    ; note: quirk in ca65 make local labels interfere with outer labels thus
-    ;       the use of unnamed labels
+    ; note: quirk in ca65 local labels interfere with outer labels thus the use
+    ;       of unnamed labels
 
     lda obj + o::anim + n::ptr
     sta ptr1
