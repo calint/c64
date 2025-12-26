@@ -895,8 +895,7 @@ update:
 
     ; stop the jump logic and restart sequence
     lda hero_flags
-    and #<~HERO_FLAG_JUMPING
-    and #<~HERO_FLAG_RESTARTING
+    and #<(~HERO_FLAG_JUMPING & ~HERO_FLAG_RESTARTING)
     sta hero_flags
 
 @collision_reaction_done:
