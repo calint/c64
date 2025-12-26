@@ -148,10 +148,10 @@ HERO_SPRITE_NUM = 0
 ; hud hardware sprite number
 HUD_SPRITE_NUM = 7
 
-; animation states
-HERO_ANIMATION_IDLE = 0
-HERO_ANIMATION_RIGHT = 1
-HERO_ANIMATION_LEFT = 2
+; animation states (0 is reserved)
+HERO_ANIMATION_IDLE = 1
+HERO_ANIMATION_RIGHT = 2
+HERO_ANIMATION_LEFT = 3
 
 ;
 ; constants coupled with graphics
@@ -171,9 +171,6 @@ HUD_INFINITIES_LINE = 12
 
 ; hud start line for progress bar
 HUD_PROGRESS_LINE = 18
-
-; initial hero sprite index before animation advances
-HERO_SPRITE_IX_INIT = sprites_data_8 / 64
 
 ;
 ; constants coupled with implementation
@@ -376,9 +373,9 @@ program:
 ;
 ; output: -
 ;
-; clobbers: A
+; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION obj, AID, ARATE, atable  
+.macro OBJECT_ANIMATION obj, SPR, AID, ARATE, atable  
     ; if already animating this state, continue
     lda obj + o::anim + n::id
     cmp #AID
@@ -395,12 +392,15 @@ program:
 
     lda #<atable
     sta obj + o::anim + n::ptr
+    sta ptr1
     lda #>atable
     sta obj + o::anim + n::ptr + 1
+    sta ptr1 + 1
 
-    ; note: first frame should be displayed, however, it looks funny when it
-    ;       does not
-
+    ; set sprite to first frame
+    ldy #0
+    lda (ptr1), y
+    SPRITE_SET_IX SPR 
     :
 .endmacro
 
@@ -820,8 +820,7 @@ program:
     SPRITE_ENABLE HUD_SPRITE_NUM
 
     ; enable and color hero sprite
-    lda #HERO_SPRITE_IX_INIT
-    SPRITE_SET_IX HERO_SPRITE_NUM
+    OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
     SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
     SPRITE_ENABLE HERO_SPRITE_NUM
 
@@ -1023,7 +1022,7 @@ update:
     ora #HERO_FLAG_MOVING
     sta hero_flags
 
-    OBJECT_ANIMATION hero, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
+    OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
     lda #<-MOVE_DX
     sta hero + o::dx_lo
@@ -1055,7 +1054,7 @@ update:
     ora #HERO_FLAG_MOVING
     sta hero_flags
 
-    OBJECT_ANIMATION hero, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
+    OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
     lda #<MOVE_DX
     sta hero + o::dx_lo
@@ -1146,7 +1145,7 @@ update:
     and #HERO_FLAG_MOVING
     bne @apply_gravity
 
-    OBJECT_ANIMATION hero, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
+    OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
 @apply_gravity:
     ; apply gravity if hero is in a jump
@@ -1365,11 +1364,11 @@ hero:
     .byte 0              ; x_prv_hi
     .byte 0              ; y_prv_lo
     .byte 0              ; y_prv_hi
-    .byte HERO_ANIMATION_IDLE      ; n::id
-    .byte 0                        ; n::frame
-    .byte HERO_ANIMATION_RATE_IDLE ; n::rate
-    .byte <hero_animation_idle     ; n::ptr
-    .byte >hero_animation_idle     ;
+    .byte 0              ; n::id
+    .byte 0              ; n::frame
+    .byte 0              ; n::rate
+    .byte 0              ; n::ptr
+    .byte 0              ;
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
