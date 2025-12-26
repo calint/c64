@@ -995,7 +995,7 @@ update:
 
 @pickables_done:
 
-@controls:
+@input:
     ; set non horizontal movement
     lda #0
     sta hero + o::dx_lo 
@@ -1137,7 +1137,7 @@ update:
 
 @keyboard_return_done:
 
-@controls_done:
+@input_done:
 
 @hero_physics:
     ; if hero is not moving animate idle
