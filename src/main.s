@@ -755,6 +755,27 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
+; check if tile pointed to by `ptr1` is "pickable" and in case so pick it and
+; replace tile with empty
+;
+;  input:
+;      Y: offset in tile row
+;   ptr1: pointer to tile row
+;
+; output: -
+;
+; clobbers: A
+;-------------------------------------------------------------------------------
+.macro HERO_PICK
+    lda (ptr1), y
+    cmp #TILE_ID_PICKABLE
+    bne :+
+    inc hero_pickables
+    lda #TILE_ID_EMPTY
+    sta (ptr1), y
+    :
+.endmacro
+;-------------------------------------------------------------------------------
     ;
     ; setup system 
     ;
@@ -958,40 +979,19 @@ update:
     ; note: wraps horizontally into a cylindrical world
 
     ; check top left tile
-    lda (ptr1), y
-    cmp #TILE_ID_PICKABLE
-    bne :+
-    inc hero_pickables
-    lda #TILE_ID_EMPTY
-    sta (ptr1), y
+    HERO_PICK
 
     ; check top right tile
-:   iny
-    lda (ptr1), y
-    cmp #TILE_ID_PICKABLE
-    bne :+
-    inc hero_pickables
-    lda #TILE_ID_EMPTY
-    sta (ptr1), y
+    iny
+    HERO_PICK
 
     ; check bottom right tile
-:   inc ptr1 + 1
-    lda (ptr1), y
-    cmp #TILE_ID_PICKABLE
-    bne :+
-    inc hero_pickables
-    lda #TILE_ID_EMPTY
-    sta (ptr1), y
+    inc ptr1 + 1
+    HERO_PICK
 
     ; check bottom left tile
-:   dey
-    lda (ptr1), y
-    cmp #TILE_ID_PICKABLE
-    bne :+
-    inc hero_pickables
-    lda #TILE_ID_EMPTY
-    sta (ptr1), y
-    :
+    dey
+    HERO_PICK
 
 @pickables_done:
 
