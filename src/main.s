@@ -235,7 +235,7 @@ camera_x_hi:           .res 1  ; high byte of camera x
 screen_offset:         .res 1  ; horizontal fine scroll pixels 0-7
 screen_active:         .res 1  ; index of active screen 0 or 1
 sprites_bg_collisions: .res 1  ; sprite to background collisions
-frame_counter:         .res 1  ; counter for bitwise and 0 intervals
+hero_frame_counter:    .res 1  ; counter for bitwise and 0 intervals
 hero_pickables:        .res 1  ; count of picked items
 hero_infinities:       .res 1  ; count of remaining restarts
 hero_flags:            .res 1  ; flags defined in constants
@@ -410,13 +410,14 @@ program:
 ;   input:
 ;     obj: object struct address
 ;     SPR: hardware sprite number
+;    fctr: frame counter for this animation
 ;
 ;  output: -
 ;
 ; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
-.macro OBJECT_ANIMATION_TICK obj, SPR
-    lda frame_counter
+.macro OBJECT_ANIMATION_TICK obj, SPR, fctr
+    lda fctr
     and obj + o::anim + n::rate
     bne :++ 
     ; note: quirk in ca65 make local labels interfere with outer labels thus
@@ -793,7 +794,7 @@ program:
     sta camera_x_hi
     sta screen_active
     sta hero_flags
-    sta frame_counter
+    sta hero_frame_counter
     sta hero_pickables
     lda #INITIAL_INFINITIES
     sta hero_infinities
@@ -1030,7 +1031,7 @@ update:
     sta hero + o::dx_hi
 
     ; regularly "skip" (small jump) when moving
-    lda frame_counter
+    lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_right
 
@@ -1062,7 +1063,7 @@ update:
     sta hero + o::dx_hi
 
     ; regularly "skip" (small jump) when moving
-    lda frame_counter
+    lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_fire
 
@@ -1156,10 +1157,10 @@ update:
     ;       not right, however, it looks funny
 
     ; every n'th frame apply gravity for collision with floor detection
-    inc frame_counter 
+    inc hero_frame_counter 
     ; note: best result when frame counter is increased here when interacting
     ;       with the move "skip" use of same variable
-    lda frame_counter
+    lda hero_frame_counter
     and #GRAVITY_INTERVAL
     beq @gravity
 
@@ -1184,7 +1185,7 @@ update:
 
 @animation:
     ; animate hero
-    OBJECT_ANIMATION_TICK hero, HERO_SPRITE_NUM
+    OBJECT_ANIMATION_TICK hero, HERO_SPRITE_NUM, hero_frame_counter
 
 @animation_done:
 
