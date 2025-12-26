@@ -790,8 +790,6 @@ program:
     ;
 
     lda #0
-    sta camera_x_lo
-    sta camera_x_hi
     sta screen_active
     sta hero_flags
     sta hero_frame_counter
