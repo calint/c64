@@ -1008,7 +1008,7 @@ update:
     ; joystick
     lda CIA1_PORT_A 
     and #JOYSTICK_LEFT
-    bne @joystick_right     ; note: active low
+    bne @joystick_left_done  ; note: active low
 
     lda hero_flags
     ora #HERO_FLAG_MOVING
@@ -1024,7 +1024,7 @@ update:
     ; regularly "skip" (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
-    bne @joystick_right
+    bne @joystick_left_done
 
     ; "skip" if dy is 0
     lda hero + o::dy_lo
@@ -1037,10 +1037,12 @@ update:
     lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
+@joystick_left_done:
+
 @joystick_right:
     lda CIA1_PORT_A 
     and #JOYSTICK_RIGHT
-    bne @joystick_fire      ; note: active low
+    bne @joystick_right_done ; note: active low
 
     lda hero_flags
     ora #HERO_FLAG_MOVING
@@ -1056,7 +1058,7 @@ update:
     ; regularly "skip" (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
-    bne @joystick_fire
+    bne @joystick_right_done
 
     ; "skip" if dy is 0
     lda hero + o::dy_lo
@@ -1069,15 +1071,17 @@ update:
     lda #>-MOVE_SKIP_VELOCITY
     sta hero + o::dy_hi
 
+@joystick_right_done:
+
 @joystick_fire:
     ; is hero already jumping?
     lda hero_flags
     and #HERO_FLAG_JUMPING
-    bne @keyboard_return
+    bne @joystick_fire_done  ; note: active low
 
     lda CIA1_PORT_A
     and #JOYSTICK_FIRE
-    bne @keyboard_return    ; note: active low
+    bne @joystick_fire_done  ; note: active low
 
     ; set negative dy to jump up
     lda #<-JUMP_VELOCITY
@@ -1091,28 +1095,30 @@ update:
     ora #HERO_FLAG_MOVING
     sta hero_flags
 
+@joystick_fire_done:
+
 @keyboard_return:
     ; if restarting skip this step
     lda hero_flags
     and #HERO_FLAG_RESTARTING
-    bne @controls_done
+    bne @keyboard_return_done ; note: active low
 
     ; check if "return" key is pressed
     lda #KEYBOARD_ROW_0
     sta CIA1_PORT_A
     lda CIA1_PORT_B
     and #KEYBOARD_RETURN
-    bne @controls_done      ; note: active low
+    bne @keyboard_return_done ; note: active low
 
     ; if infinities left
     lda hero_infinities
-    beq @controls_done
+    beq @keyboard_return_done
 
     dec hero_infinities
 
     lda hero_flags
     ora #HERO_FLAG_RESTARTING
-    inc hero_flags
+    sta hero_flags
 
     ; set restart position and velocity
     lda #<RESTART_X
@@ -1128,6 +1134,8 @@ update:
     sta hero + o::dx_hi
     sta hero + o::dy_lo
     sta hero + o::dy_hi
+
+@keyboard_return_done:
 
 @controls_done:
 
