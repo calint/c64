@@ -893,13 +893,9 @@ update:
     sta hero + o::dy_lo
     sta hero + o::dy_hi
 
-    ; stop the jump logic
+    ; stop the jump logic and restart sequence
     lda hero_flags
     and #<~HERO_FLAG_JUMPING
-    sta hero_flags
-
-    ; restart sequence done
-    lda hero_flags
     and #<~HERO_FLAG_RESTARTING
     sta hero_flags
 
