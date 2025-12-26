@@ -340,7 +340,7 @@ sprites_data:
 .segment "SCREEN_1"
 screen_1:
 .out .sprintf("     screen_1: $%04x", screen_1)
-    .res $400
+    .res 1000
 
 ;-------------------------------------------------------------------------------
 ; tile map
