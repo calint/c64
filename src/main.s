@@ -1143,11 +1143,11 @@ update:
     ; if hero is not moving animate idle
     lda hero_flags
     and #HERO_FLAG_MOVING
-    bne @apply_gravity
+    bne @apply
 
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
-@apply_gravity:
+@apply:
     ; apply gravity if hero is in a jump
     lda hero_flags
     and #HERO_FLAG_JUMPING
