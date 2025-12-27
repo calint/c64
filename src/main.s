@@ -1366,8 +1366,7 @@ hero:
     .byte 0              ; n::id
     .byte 0              ; n::frame
     .byte 0              ; n::rate
-    .byte 0              ; n::ptr
-    .byte 0              ;
+    .word 0              ; n::ptr
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
