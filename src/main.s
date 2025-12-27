@@ -8,8 +8,8 @@
 ; $07f8 - $07ff: sprites data index to address / 64 when screen 0 is active
 ; $0800        : byte must be 0 so BASIC stub at $0801 runs
 ; $0801 - $080d: basic stub to jump to $5900
-; $1000 - $17ff: default character set (note: vic-ii chip sees rom data)
-; $1800 - $1fff: alternate character set (note: vic-ii chip sees rom data)
+; $1000 - $17ff: default character set (vic-ii chip sees rom data)
+; $1800 - $1fff: alternate character set (vic-ii chip sees rom data)
 ; $2000 - $27ff: user defined character set 1
 ; $2800 - $2fff: user defined character set 2
 ; $3000 - $3bff: 48 sprites data
@@ -282,7 +282,7 @@ basic:
 .assert * = $80e, error, "segment BASIC has unexpected size"
 
 ;-------------------------------------------------------------------------------
-; charset 0 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
+; charset 0 (vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
 .assert * <= $1000, error, "segment overflows into CHARSET_0"
 .org $1000
@@ -292,7 +292,7 @@ charset_0:
     .res $0800
 
 ;-------------------------------------------------------------------------------
-; charset 1 (note: vic-ii sees rom mapped memory, cpu sees regular ram)
+; charset 1 (vic-ii sees rom mapped memory, cpu sees regular ram)
 ;-------------------------------------------------------------------------------
 .assert * <= $1800, error, "segment overflows into CHARSET_1"
 .org $1800
@@ -885,6 +885,7 @@ update:
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
+@collision_reaction:
     ; read and save the collisions for this frame
     lda VIC_SPR_BG_COL
     sta sprites_bg_collisions
@@ -993,7 +994,7 @@ update:
     ; joystick
     lda CIA1_PORT_A 
     and #JOYSTICK_LEFT
-    bne @joystick_left_done  ; note: active low
+    bne @joystick_left_done  ; active low
 
     lda hero_flags
     ora #HERO_FLAG_MOVING
@@ -1027,7 +1028,7 @@ update:
 @joystick_right:
     lda CIA1_PORT_A 
     and #JOYSTICK_RIGHT
-    bne @joystick_right_done ; note: active low
+    bne @joystick_right_done ; active low
 
     lda hero_flags
     ora #HERO_FLAG_MOVING
@@ -1062,11 +1063,11 @@ update:
     ; already jumping?
     lda hero_flags
     and #HERO_FLAG_JUMPING
-    bne @joystick_fire_done  ; note: active low
+    bne @joystick_fire_done  ; active low
 
     lda CIA1_PORT_A
     and #JOYSTICK_FIRE
-    bne @joystick_fire_done  ; note: active low
+    bne @joystick_fire_done  ; active low
 
     ; set negative `dy` to jump
     lda #<-JUMP_VELOCITY
@@ -1086,14 +1087,14 @@ update:
     ; skip if restarting
     lda hero_flags
     and #HERO_FLAG_RESTARTING
-    bne @keyboard_return_done ; note: active low
+    bne @keyboard_return_done ; active low
 
     ; check return key
     lda #KEYBOARD_ROW_0
     sta CIA1_PORT_A
     lda CIA1_PORT_B
     and #KEYBOARD_RETURN
-    bne @keyboard_return_done ; note: active low
+    bne @keyboard_return_done ; active low
 
     ; if infinities left
     lda hero_infinities
@@ -1280,7 +1281,7 @@ render:
     .endrepeat
     sta tmp1                ; tmp1 = camera_x lo >> 3
     lda camera_x + 1        ; get high byte
-    .repeat 8 - TILE_SHIFT  ; note: 8 is number of bits in a byte
+    .repeat 8 - TILE_SHIFT  ; 8 is number of bits in a byte
         asl
     .endrepeat
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
@@ -1294,7 +1295,7 @@ render:
 render_tile_map:
 ;-------------------------------------------------------------------------------
 
-    ; note: register x contains tile map x
+    ; register x contains tile map x
     ldy #0                  ; screen column start
 
     ; jump to unrolled loop for current screen
