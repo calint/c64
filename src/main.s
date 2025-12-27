@@ -202,22 +202,23 @@ HERO_FLAG_JUMPING = 4
 .endstruct
 
 ;-------------------------------------------------------------------------------
+
+    ; coordinate system:
+    ; - world coordinates are signed 16-bit fixed point
+    ; - upper 12 bits = pixels
+    ; - lower 4 bits = subpixels
+
+;-------------------------------------------------------------------------------
 ; object struct with short name `o` for code brevity
 ;-------------------------------------------------------------------------------
 .struct o
-    x_lo     .byte
-    x_hi     .byte
-    y_lo     .byte
-    y_hi     .byte
-    dx_lo    .byte
-    dx_hi    .byte
-    dy_lo    .byte
-    dy_hi    .byte
-    x_prv_lo .byte
-    x_prv_hi .byte
-    y_prv_lo .byte
-    y_prv_hi .byte
-    anim     .tag n
+    wx       .word  ; world x position in pixels (fixed point 12.4)
+    wy       .word  ; world y position in pixels (fixed point 12.4)
+    dx       .word  ; x velocity in pixels/frame (fixed point 12.4, signed)
+    dy       .word  ; y velocity in pixels/frame (fixed point 12.4, signed)
+    wx_prv   .word  ; previous frame `wx`
+    wy_prv   .word  ; previous frame `wy`
+    anim     .tag n ; animation state
 .endstruct
 
 ;-------------------------------------------------------------------------------
@@ -227,8 +228,7 @@ HERO_FLAG_JUMPING = 4
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04x", zero_page)
-camera_x_lo:           .res 1  ; low byte of camera x
-camera_x_hi:           .res 1  ; high byte of camera x
+camera_x:              .res 2  ; 16-bit world coordinate
 screen_offset:         .res 1  ; horizontal fine scroll pixels 0-7
 screen_active:         .res 1  ; index of active screen 0 or 1
 sprites_bg_collisions: .res 1  ; sprite to background collisions
@@ -486,32 +486,32 @@ program:
 ;-------------------------------------------------------------------------------
 .macro OBJECT_UPDATE obj
     ; save current state to previous
-    lda obj + o::x_lo
-    sta obj + o::x_prv_lo
-    lda obj + o::x_hi
-    sta obj + o::x_prv_hi
-    lda obj + o::y_lo
-    sta obj + o::y_prv_lo
-    lda obj + o::y_hi
-    sta obj + o::y_prv_hi
+    lda obj + o::wx
+    sta obj + o::wx_prv
+    lda obj + o::wx + 1
+    sta obj + o::wx_prv + 1
+    lda obj + o::wy
+    sta obj + o::wy_prv
+    lda obj + o::wy + 1
+    sta obj + o::wy_prv + 1
 
     ; add dx to x
     clc
-    lda obj + o::x_lo
-    adc obj + o::dx_lo
-    sta obj + o::x_lo
-    lda obj + o::x_hi
-    adc obj + o::dx_hi
-    sta obj + o::x_hi
+    lda obj + o::wx
+    adc obj + o::dx
+    sta obj + o::wx
+    lda obj + o::wx + 1
+    adc obj + o::dx + 1
+    sta obj + o::wx + 1
 
     ; add dy to y
     clc
-    lda obj + o::y_lo
-    adc obj + o::dy_lo
-    sta obj + o::y_lo
-    lda obj + o::y_hi
-    adc obj + o::dy_hi
-    sta obj + o::y_hi
+    lda obj + o::wy
+    adc obj + o::dy
+    sta obj + o::wy
+    lda obj + o::wy + 1
+    adc obj + o::dy + 1
+    sta obj + o::wy + 1
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -529,9 +529,9 @@ program:
 ;-------------------------------------------------------------------------------
 .macro OBJECT_X_TO_WCS obj
     ; signed arithmetic shift right across 16 bits
-    lda obj + o::x_lo
+    lda obj + o::wx
     sta tmp1
-    lda obj + o::x_hi
+    lda obj + o::wx + 1
     .repeat SUBPIXEL_SHIFT
         cmp #$80            ; sets carry bit if negative preserving sign
         ror
@@ -556,10 +556,10 @@ program:
     ; put object coordinates on screen by subtracting camera x position
     sec
     lda cx
-    sbc camera_x_lo
+    sbc camera_x
     sta cx
     lda cx + 1
-    sbc camera_x_hi
+    sbc camera_x + 1
     sta cx + 1
 
     ; add left border (40-column display)
@@ -588,13 +588,13 @@ program:
 
     ; update sprite y position
 
-    ; combines fixed-point y_hi:y_lo >> SUBPIXEL_SHIFT into `tmp1`
-    lda obj + o::y_lo
+    ; fixed-point o::wy >> SUBPIXEL_SHIFT into `tmp1`
+    lda obj + o::wy
     .repeat SUBPIXEL_SHIFT
         lsr
     .endrepeat
     sta tmp1                ; low bits in screen coordinates
-    lda obj + o::y_hi
+    lda obj + o::wy + 1
     .repeat SUBPIXEL_SHIFT
         asl
     .endrepeat
@@ -619,14 +619,14 @@ program:
 ; clobbers: A
 ;-------------------------------------------------------------------------------
 .macro OBJECT_RESTORE_STATE obj
-    lda obj + o::x_prv_lo
-    sta obj + o::x_lo
-    lda obj + o::x_prv_hi
-    sta obj + o::x_hi
-    lda obj + o::y_prv_lo
-    sta obj + o::y_lo
-    lda obj + o::y_prv_hi
-    sta obj + o::y_hi
+    lda obj + o::wx_prv
+    sta obj + o::wx
+    lda obj + o::wx_prv + 1
+    sta obj + o::wx + 1
+    lda obj + o::wy_prv
+    sta obj + o::wy
+    lda obj + o::wy_prv + 1
+    sta obj + o::wy + 1
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -739,8 +739,7 @@ program:
 ;   BIAS: offset added to calculated center
 ;
 ; output:
-;   camera_x_lo
-;   camera_x_hi
+;   camera_x
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -748,10 +747,10 @@ program:
     sec
     lda cx
     sbc #SCREEN_WIDTH_PX / 2 + BIAS
-    sta camera_x_lo
+    sta camera_x
     lda cx + 1
     sbc #0
-    sta camera_x_hi
+    sta camera_x + 1
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -854,12 +853,6 @@ program:
     ; step 2 and 3 must finish before raster is at top border
     ; step 4 must finish before raster is at bottom border
 
-    ; coordinate system:
-    ; - world coordinates are signed 16-bit fixed point
-    ; - upper 12 bits = pixels
-    ; - lower 4 bits = subpixels
-
-
 ;-------------------------------------------------------------------------------
 main_loop:
 ;-------------------------------------------------------------------------------
@@ -910,9 +903,9 @@ update:
     OBJECT_RESTORE_STATE hero
 
     lda #0
-    ; note: `dx_lo` and `dx_hi` will be set to 0 in `@controls`
-    sta hero + o::dy_lo
-    sta hero + o::dy_hi
+    ; note: `dx` will be set to 0 in `@controls`
+    sta hero + o::dy
+    sta hero + o::dy + 1
 
     ; stop the jump logic and restart sequence
     lda hero_flags
@@ -935,30 +928,30 @@ update:
     .assert SUBPIXEL_SHIFT = 4, error, "code assumes 4 subpixel fraction bits"
     .assert TILE_WIDTH = 8, error, "code assumes tile width to be 8"
 
-    lda hero + o::x_lo
+    lda hero + o::wx
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `x_lo` for later
-    lda hero + o::x_hi
+    tax                     ; save `wx` lo for later
+    lda hero + o::wx + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `x_hi` into register y
-    txa                     ; restore `x_lo`
+    tay                     ; save intermediate `wx` hi into register y
+    txa                     ; restore `wx` lo
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `x_hi`
+    tya                     ; restore `wx` hi
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile x
     sta tmp1
 
-    lda hero + o::y_lo
+    lda hero + o::wy
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `y_lo` for later
-    lda hero + o::y_hi
+    tax                     ; save `wy` lo for later
+    lda hero + o::wy + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `y_hi` for later
-    txa                     ; restore `y_lo`
+    tay                     ; save intermediate `wy` hi for later
+    txa                     ; restore `wy` lo
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `y_hi`
+    tya                     ; restore `wy` hi
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile y
 
@@ -998,8 +991,8 @@ update:
 @input:
     ; set non horizontal movement
     lda #0
-    sta hero + o::dx_lo 
-    sta hero + o::dx_hi
+    sta hero + o::dx 
+    sta hero + o::dx + 1
     lda hero_flags
     and #<~HERO_FLAG_MOVING
     sta hero_flags
@@ -1017,9 +1010,9 @@ update:
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
     lda #<-MOVE_DX
-    sta hero + o::dx_lo
+    sta hero + o::dx
     lda #>-MOVE_DX
-    sta hero + o::dx_hi
+    sta hero + o::dx + 1
 
     ; regularly "skip" (small jump) when moving
     lda hero_frame_counter
@@ -1027,15 +1020,15 @@ update:
     bne @joystick_left_done
 
     ; "skip" if dy is 0
-    lda hero + o::dy_lo
-    ora hero + o::dy_hi
+    lda hero + o::dy
+    ora hero + o::dy + 1
     bne @joystick_right
 
     ; "skip" by a negative dy
     lda #<-MOVE_SKIP_VELOCITY
-    sta hero + o::dy_lo
+    sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
-    sta hero + o::dy_hi
+    sta hero + o::dy + 1
 
 @joystick_left_done:
 
@@ -1051,9 +1044,9 @@ update:
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
     lda #<MOVE_DX
-    sta hero + o::dx_lo
+    sta hero + o::dx
     lda #>MOVE_DX
-    sta hero + o::dx_hi
+    sta hero + o::dx + 1
 
     ; regularly "skip" (small jump) when moving
     lda hero_frame_counter
@@ -1061,15 +1054,15 @@ update:
     bne @joystick_right_done
 
     ; "skip" if dy is 0
-    lda hero + o::dy_lo
-    ora hero + o::dy_hi
+    lda hero + o::dy
+    ora hero + o::dy + 1
     bne @joystick_fire
 
     ; "skip" by a negative dy
     lda #<-MOVE_SKIP_VELOCITY
-    sta hero + o::dy_lo
+    sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
-    sta hero + o::dy_hi
+    sta hero + o::dy + 1
 
 @joystick_right_done:
 
@@ -1085,9 +1078,9 @@ update:
 
     ; set negative dy to jump up
     lda #<-JUMP_VELOCITY
-    sta hero + o::dy_lo
+    sta hero + o::dy
     lda #>-JUMP_VELOCITY
-    sta hero + o::dy_hi
+    sta hero + o::dy + 1
 
     ; flag hero is jumping and moving 
     lda hero_flags
@@ -1122,18 +1115,18 @@ update:
 
     ; set restart position and velocity
     lda #<RESTART_X
-    sta hero + o::x_lo
+    sta hero + o::wx
     lda #>RESTART_X
-    sta hero + o::x_hi
+    sta hero + o::wx + 1
     lda #<RESTART_Y 
-    sta hero + o::y_lo
+    sta hero + o::wy
     lda #>RESTART_Y
-    sta hero + o::y_hi
+    sta hero + o::wy + 1
     lda #0
-    sta hero + o::dx_lo
-    sta hero + o::dx_hi
-    sta hero + o::dy_lo
-    sta hero + o::dy_hi
+    sta hero + o::dx
+    sta hero + o::dx + 1
+    sta hero + o::dy
+    sta hero + o::dy + 1
 
 @keyboard_return_done:
 
@@ -1164,19 +1157,19 @@ update:
     beq @gravity
 
     ; check if dy is zero and skip gravity if so
-    lda hero + o::dy_lo
-    ora hero + o::dy_hi
+    lda hero + o::dy
+    ora hero + o::dy + 1
     beq @gravity_done
 
 @gravity:
     ; increase dy
     clc
-    lda hero + o::dy_lo
+    lda hero + o::dy
     adc #GRAVITY
-    sta hero + o::dy_lo
-    lda hero + o::dy_hi 
+    sta hero + o::dy
+    lda hero + o::dy + 1 
     adc #0
-    sta hero + o::dy_hi
+    sta hero + o::dy + 1
 
 @gravity_done:
 
@@ -1196,7 +1189,7 @@ update:
     ; render progress bar
 
     ; get (approximate) number of dots in the line
-    lda hero + o::x_hi
+    lda hero + o::wx + 1
     ; shift to fit graph of 21 dots 
     lsr
     lsr
@@ -1242,7 +1235,7 @@ refresh:
     ; get world coordinate in pixels for x
     OBJECT_X_TO_WCS hero
 
-    ; `tmp1` and `tmp2` now contains hero `x_lo`, `x_hi` pixels in world
+    ; `tmp1` and `tmp2` now contains hero `wx` lo, `wx` hi pixels in world
     ; coordinates
 
     ; center camera on object with 16 pixels wide sprite
@@ -1275,7 +1268,7 @@ render:
     sta VIC_BORDER
 
     ; convert camera 16 bit pixel position to tile map x and screen right offset
-    lda camera_x_lo
+    lda camera_x
     tax
     and #TILE_PIXEL_MASK    ; extract sub-tile screen offset (0-7)
     eor #TILE_PIXEL_MASK    ; start negation by inverting
@@ -1284,14 +1277,14 @@ render:
     and #TILE_PIXEL_MASK    ; mask to 3 bits
     sta screen_offset       ; store screen shift right offset
 
-    ; calculate tile map x: (camera_x_hi << 5) | (camera_x_lo >> 3) with
+    ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
-    txa                     ; restore `camera_x_lo`
+    txa                     ; restore `camera_x lo`
     .repeat TILE_SHIFT
         lsr
     .endrepeat
-    sta tmp1                ; tmp1 = camera_x_lo >> 3
-    lda camera_x_hi         ; get high byte
+    sta tmp1                ; tmp1 = camera_x lo >> 3
+    lda camera_x + 1        ; get high byte
     .repeat 8 - TILE_SHIFT  ; note: 8 is number of bits in a byte
         asl
     .endrepeat
@@ -1351,18 +1344,14 @@ nmi_handler:
 data:
 ;-------------------------------------------------------------------------------
 hero:
-    .byte <RESTART_X     ; x_lo
-    .byte >RESTART_X     ; x_hi
-    .byte <RESTART_Y     ; y_lo
-    .byte >RESTART_Y     ; y_hi
-    .byte 0              ; dx_lo
-    .byte 0              ; dx_hi
-    .byte 0              ; dy_lo
-    .byte 0              ; dy_hi
-    .byte 0              ; x_prv_lo
-    .byte 0              ; x_prv_hi
-    .byte 0              ; y_prv_lo
-    .byte 0              ; y_prv_hi
+    .byte <RESTART_X     ; wx low
+    .byte >RESTART_X     ; wx high
+    .byte <RESTART_Y     ; wy low
+    .byte >RESTART_Y     ; wy high
+    .word 0              ; dx
+    .word 0              ; dy
+    .word 0              ; wx_prv
+    .word 0              ; wy_prv
     .byte 0              ; n::id
     .byte 0              ; n::frame
     .byte 0              ; n::rate
