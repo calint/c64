@@ -910,14 +910,11 @@ update:
 @collision_reaction_done:
 
 @pickables:
-    ; detect pickable items hero is in range of
-    ; uses half-tile rounding bias
-    ; checks top-left, top-right, bottom-left, bottom-right tiles
+    ; detect pickables in hero range (half-tile bias, 4 corners)
 
     ; convert hero world x, y to tile map coordinates
 
-    ; rounding by adding a bias of half a tile, then extract tile coordinate via
-    ; bit rotation
+    ; add half-tile bias, extract tile coordinates by bit shift
 
     ; note: assumes 4 subpixel bits and 3 tile bits effectively needing a 16 bit
     ;       left shift then using the high byte, but rounding complicates it
@@ -952,7 +949,7 @@ update:
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile y
 
-    ; add it to row pointer
+    ; add to row pointer
     .assert TILE_MAP_WIDTH = 256, error, "tile_map width must be 256 for optimization"
 
     clc
@@ -964,29 +961,27 @@ update:
 
     ldy tmp1                ; is now tile x
 
-    ; check tiles for pickables
-    ; not fully correct but makes for good game play
-    ; note: wraps horizontally into a cylindrical world
+    ; check tiles for pickables (wraps horizontally)
 
-    ; check top left tile
+    ; top left
     HERO_PICK
 
-    ; check top right tile
+    ; top right
     iny
     HERO_PICK
 
-    ; check bottom right tile
+    ; bottom right
     inc ptr1 + 1
     HERO_PICK
 
-    ; check bottom left tile
+    ; bottom left
     dey
     HERO_PICK
 
 @pickables_done:
 
 @input:
-    ; set non horizontal movement
+    ; clear horizontal movement
     lda #0
     sta hero + o::dx 
     sta hero + o::dx + 1
@@ -1011,7 +1006,7 @@ update:
     lda #>-MOVE_DX
     sta hero + o::dx + 1
 
-    ; regularly skip (small jump) when moving
+    ; skip (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_left_done
@@ -1064,7 +1059,7 @@ update:
 @joystick_right_done:
 
 @joystick_fire:
-    ; is hero already jumping?
+    ; already jumping?
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @joystick_fire_done  ; note: active low
@@ -1073,13 +1068,13 @@ update:
     and #JOYSTICK_FIRE
     bne @joystick_fire_done  ; note: active low
 
-    ; set negative `dy` to jump up
+    ; set negative `dy` to jump
     lda #<-JUMP_VELOCITY
     sta hero + o::dy
     lda #>-JUMP_VELOCITY
     sta hero + o::dy + 1
 
-    ; flag hero is jumping and moving
+    ; set jumping and moving flags
     lda hero_flags
     ora #HERO_FLAG_JUMPING
     ora #HERO_FLAG_MOVING
@@ -1088,12 +1083,12 @@ update:
 @joystick_fire_done:
 
 @keyboard_return:
-    ; if restarting skip this step
+    ; skip if restarting
     lda hero_flags
     and #HERO_FLAG_RESTARTING
     bne @keyboard_return_done ; note: active low
 
-    ; check if "return" key is pressed
+    ; check return key
     lda #KEYBOARD_ROW_0
     sta CIA1_PORT_A
     lda CIA1_PORT_B
@@ -1110,7 +1105,7 @@ update:
     ora #HERO_FLAG_RESTARTING
     sta hero_flags
 
-    ; set restart position and velocity
+    ; restart position and velocity
     lda #<RESTART_X
     sta hero + o::wx
     lda #>RESTART_X
@@ -1130,7 +1125,7 @@ update:
 @input_done:
 
 @hero_physics:
-    ; if hero is not moving animate idle
+    ; idle if not moving
     lda hero_flags
     and #HERO_FLAG_MOVING
     bne @apply
@@ -1138,14 +1133,14 @@ update:
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
 @apply:
-    ; apply gravity if hero is in a jump
+    ; gravity if jumping
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @gravity
     ; note: skipping increment of `hero_frame_counter` when jumping freezes
     ;       animation which makes it look funny
 
-    ; every n'th frame apply gravity for collision with floor
+    ; every n'th frame: gravity for floor collision
     inc hero_frame_counter 
     ; note: best result when frame counter is increased here when interacting
     ;       with the move "skip" use of same variable
