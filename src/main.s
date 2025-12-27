@@ -553,7 +553,7 @@ program:
 ; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
 .macro OBJECT_SPRITE_TO_SCREEN obj, SPR, cx
-    ; put object coordinates on screen by subtracting camera x position
+    ; object world coordinates to screen by subtracting camera x position
     sec
     lda cx
     sbc camera_x
@@ -604,6 +604,8 @@ program:
     ; add top border (25 rows display)
     clc
     adc #SCREEN_BRDR_TOP
+
+    ; update sprite y
     sta VIC_SPRITE_Y + SPR * 2
     ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
 .endmacro
