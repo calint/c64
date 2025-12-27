@@ -362,7 +362,7 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; set animation state, skip re-init if same animation id running
+; set animation state, skip if already set
 ;
 ;  input:
 ;    obj: object struct address
@@ -372,7 +372,7 @@ program:
 ;
 ; output: obj animation struct initialized
 ;
-; clobbers: A, Y, ptr1
+;  clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
 .macro OBJECT_ANIMATION obj, SPR, AID, ARATE, atable  
     ; if already animating this state, continue
@@ -404,14 +404,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; advance sprite animation frame each time (frame_counter & rate) == 0, loops
+; advance animation frame if (frame_counter & rate) == 0, loops
 ;
 ;  input:
 ;    obj: object struct address
 ;    SPR: hardware sprite number (0-7)
-;   fctr: frame counter for this animation (fctr & rate == 0 to advance)
+;   fctr: frame counter (advance if fctr & rate == 0)
 ;
-; output: sprite frame incremented, sprite register updated
+; output: sprite frame incremented, register updated
 ;
 ; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
@@ -444,10 +444,10 @@ program:
 ; render vertical bar graph on hud sprite
 ;
 ;  input:
-;  count: number if bars (0-7) to display
-;   LINE: sprite row offset for this bar group
+;  count: number of bars (0-7)
+;   LINE: sprite row offset
 ;
-; output: sprite data updated with bar pattern
+; output: sprite data updated
 ;
 ; clobbers: A, X, Y
 ;-------------------------------------------------------------------------------
@@ -474,12 +474,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; apply velocity to position (fixed-point 12.4 addition across 16 bits)
+; add velocity to position (fixed-point 12.4)
 ;
 ;  input:
 ;    obj: object struct address
 ;
-; output: obj wx, wy updated; previous values saved to wx_prv, wy_prv
+; output: wx, wy updated, previous saved
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -514,13 +514,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; extract pixel coordinate from fixed-point subpixel value (12.4 >> 4)
-; uses sign-extending right shift for correct negative number handling
+; extract pixel coordinate from fixed-point (12.4 >> 4), sign-extends
 ;
 ;  input:
 ;    obj: object struct with wx (fixed-point 12.4)
 ;
-; output: tmp1, tmp2: 16-bit pixel coordinate (high byte in tmp2)
+; output: tmp1, tmp2 = 16-bit pixel coordinate
 ;
 ; clobbers: A, tmp1, tmp2
 ;-------------------------------------------------------------------------------
@@ -538,14 +537,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; convert world coordinates to screen coordinates and update vic-ii sprite
+; convert world to screen coordinates, update vic-ii sprite
 ;
 ;  input:
 ;    obj: object struct address
 ;    SPR: hardware sprite number (0-7)
-;     cx: world x in pixels (16-bit)
+;     cx: world x (16-bit)
 ;
-; output: sprite x/y position registers and msb register updated
+; output: sprite x/y and msb updated
 ;
 ; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
@@ -608,12 +607,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; undo position to previous frame
+; restore previous position (collision rollback)
 ;
 ;  input:
 ;    obj: object struct address
 ;
-; output: wx, wy overwritten with previous frame values
+; output: wx, wy restored
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -629,16 +628,16 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; initialize sprite: set image pointer, position, and color registers
+; set sprite: pointer, position, color
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
-;     IX: sprite data base address / 64 (vic-ii pointer offset)
-;  COLOR: from palette (0-15)
-;     SX: screen x position
-;     SY: screen y position
+;     IX: sprite data pointer / 64
+;  COLOR: color (0-15)
+;     SX: screen x
+;     SY: screen y
 ;
-; output: vic-ii registers updated for sprite
+; output: vic-ii registers updated
 ;
 ; clobbers: A, X
 ;-------------------------------------------------------------------------------
@@ -667,12 +666,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; enable hardware sprite (set enable bit in vic-ii register)
+; enable hardware sprite
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: vic-ii sprite enable register updated
+; output: vic-ii sprite enable updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -683,12 +682,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; disable hardware sprite (clear enable bit in vic-ii register)
+; disable hardware sprite
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: vic-ii sprite enable register updated
+; output: vic-ii sprite enable updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -699,13 +698,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set sprite color (vic-ii color register)
+; set sprite color
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
-;  COLOR: from palette (0-15)
+;  COLOR: color (0-15)
 ;
-; output: vic-ii sprite color register updated
+; output: vic-ii sprite color updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -715,13 +714,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set sprite image pointer for both screen buffers
+; set sprite pointer for both screens (double-buffered)
 ;
 ;  input:
-;      A: sprite data address / 64 (vic-ii pointer offset)
+;      A: sprite data pointer / 64
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: sprite pointer in screen_0 and screen_1 updated
+; output: pointer in screen_0 and screen_1 updated
 ;
 ; clobbers: none
 ;-------------------------------------------------------------------------------
@@ -731,13 +730,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; position camera centered on object with optional bias
+; center camera on x with bias
 ;
 ;  input:
-;     cx: world x coordinate (16-bit pixels) to center on
-;   BIAS: offset from center
+;     cx: world x (16-bit)
+;   BIAS: offset
 ;
-; output: camera_x set to center screen on target
+; output: camera_x set
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -752,13 +751,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; check tile for item, if found, increment pickables and clear
+; check tile for item (id 33), increment pickables and clear if found
 ;
 ;  input:
-;      Y: x offset within tile row (tile x coordinate)
-;   ptr1: pointer to tile row in map
+;      Y: tile x
+;   ptr1: tile row pointer
 ;
-; output: hero_pickables, tile replaced with empty
+; output: pickables++, tile set to empty if found
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
