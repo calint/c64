@@ -362,7 +362,7 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; set animation state, skip if already set
+; set animation state if changed
 ;
 ;  input:
 ;    obj: object struct address
@@ -404,7 +404,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; advance animation frame if (frame_counter & rate) == 0, loops
+; advance animation frame on (frame_counter & rate) == 0
 ;
 ;  input:
 ;    obj: object struct address
@@ -441,7 +441,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; render vertical bar graph on hud sprite
+; draw vertical bar graph on hud
 ;
 ;  input:
 ;  count: number of bars (0-7)
@@ -474,7 +474,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; add velocity to position (fixed-point 12.4)
+; add velocity to position (12.4 fixed-point)
 ;
 ;  input:
 ;    obj: object struct address
@@ -514,7 +514,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; extract pixel coordinate from fixed-point (12.4 >> 4), sign-extends
+; extract pixel from fixed-point (12.4 >> 4), sign-extended
 ;
 ;  input:
 ;    obj: object struct with wx (fixed-point 12.4)
@@ -537,7 +537,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; convert world to screen coordinates, update vic-ii sprite
+; convert world to screen, update sprite
 ;
 ;  input:
 ;    obj: object struct address
@@ -607,7 +607,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; restore previous position (collision rollback)
+; restore previous position
 ;
 ;  input:
 ;    obj: object struct address
@@ -628,7 +628,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set sprite: pointer, position, color
+; set sprite pointer, position, color
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
@@ -666,7 +666,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; enable hardware sprite
+; enable sprite
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
@@ -682,7 +682,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; disable hardware sprite
+; disable sprite
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
@@ -714,7 +714,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set sprite pointer for both screens (double-buffered)
+; set sprite pointer for both screens
 ;
 ;  input:
 ;      A: sprite data pointer / 64
@@ -751,7 +751,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; check tile for item (id 33), increment pickables and clear if found
+; check tile for item 33, increment pickables, clear
 ;
 ;  input:
 ;      Y: tile x
