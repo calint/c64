@@ -362,16 +362,15 @@ program:
 .out .sprintf("      program: $%04x", program)
 
 ;-------------------------------------------------------------------------------
-; populate object animation struct with initial values if not already animating
-; same id
-; 
+; set animation state, skip re-init if same animation id running
+;
 ;  input:
 ;    obj: object struct address
-;    AID: animation id
-;  ARATE: rate mask bitwise and is 0
-; atable: animation sequence address
+;    AID: animation id to set
+;  ARATE: advance interval mask (bitwise and with frame counter)
+; atable: animation frame table address
 ;
-; output: -
+; output: obj animation struct initialized
 ;
 ; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
@@ -405,14 +404,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; advance animation frame if `rate` and `frame_counter` bitwise and is 0
+; advance sprite animation frame each time (frame_counter & rate) == 0, loops
 ;
 ;   input:
 ;     obj: object struct address
-;     SPR: hardware sprite number
-;    fctr: frame counter for this animation
+;     SPR: hardware sprite number (0-7)
+;    fctr: frame counter for this animation (fctr & rate == 0 to advance)
 ;
-;  output: -
+; output: sprite frame incremented, sprite register updated
 ;
 ; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
@@ -442,13 +441,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; render vertical bars on hud sprite 
+; render vertical bar graph on hud sprite
 ;
 ;  input:
-;    var: count of bars
-;   LINE: sprite line number for rendering
+;    var: count (0-7) to display as bars
+;   LINE: sprite row offset for this bar group
 ;
-; output: -
+; output: sprite data updated with bar pattern
 ;
 ; clobbers: A, X, Y
 ;-------------------------------------------------------------------------------
@@ -475,12 +474,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; update pixels and subpixels via velocity
-; 
-;  input:
-;    obj: object struct address
+; apply velocity to position (fixed-point 12.4 addition across 16 bits)
 ;
-; output: -
+;  input:
+;    obj: object struct with wx, wy, dx, dy (all 16-bit fixed point)
+;
+; output: obj wx, wy updated; previous values saved to wx_prv, wy_prv
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -515,15 +514,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; convert object fixed-point x position to world coordinate pixels
-; (arithmetic shift right by SUBPIXEL_SHIFT)
+; extract pixel coordinate from fixed-point subpixel value (12.4 >> 4)
+; uses sign-extending right shift for correct negative number handling
 ;
 ;  input:
-;    obj: object struct address
+;    obj: object struct with wx (fixed-point 12.4)
 ;
 ;  output:
-;    tmp1: x low byte
-;    tmp2: x high byte
+;    tmp1, tmp2: 16-bit pixel coordinate (high byte in tmp2)
 ;
 ; clobbers: A, tmp1, tmp2
 ;-------------------------------------------------------------------------------
@@ -541,14 +539,15 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; transform object world coordinates to screen and update sprite position
+; convert world coordinates to screen coordinates and update vic-ii sprite
+; applies camera offset and screen border, handles x overflow via 9th bit
 ;
 ;  input:
-;    obj: object struct address
-;    SPR: hardware sprite number
-;     cx: object 16 bit x in pixels in world coordinate system
+;    obj: object struct with wy (fixed-point, needs conversion)
+;    SPR: hardware sprite number (0-7)
+;     cx: world x in pixels (16-bit)
 ;
-; output: -
+; output: sprite x/y position registers and msb register updated
 ;
 ; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
@@ -611,12 +610,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; restore object position and velocity from previous frame values
+; undo position/velocity changes (collision rollback)
+; restores _prv values
 ;
 ;  input:
-;    obj: object struct address
+;    obj: object struct with wx_prv, wy_prv (saved state)
 ;
-; output: -
+; output: wx, wy overwritten with previous frame values
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -632,16 +632,16 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; initialize sprite image color position and enable bit
+; initialize sprite: set image pointer, position, and color registers
 ;
 ;  input:
-;    SPR: hardware sprite number
-;     IX: sprite data address / 64
-;  COLOR: initial color
-;     SX: 16 bit screen coordinate x
-;     SY: screen y coordinate
+;    SPR: hardware sprite number (0-7)
+;     IX: sprite data base address / 64 (vic-ii pointer offset)
+;  COLOR: color palette (0-15)
+;     SX: screen x position (0-320+)
+;     SY: screen y position (0-200+)
 ;
-; output: -
+; output: vic-ii registers updated for sprite
 ;
 ; clobbers: A, X
 ;-------------------------------------------------------------------------------
@@ -670,12 +670,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; enables hardware sprite
+; enable hardware sprite (set enable bit in vic-ii register)
 ;
 ;  input:
-;    SPR: hardware sprite number
+;    SPR: hardware sprite number (0-7)
 ;
-; output: -
+; output: vic-ii sprite enable register updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -686,12 +686,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; disable hardware sprite
+; disable hardware sprite (clear enable bit in vic-ii register)
 ;
 ;  input:
-;    SPR: hardware sprite number
+;    SPR: hardware sprite number (0-7)
 ;
-; output: -
+; output: vic-ii sprite enable register updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -702,13 +702,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; sets hardware sprite color
+; set sprite color palette (vic-ii color register)
 ;
 ;  input:
-;    SPR: hardware sprite number
-;  COLOR: color
+;    SPR: hardware sprite number (0-7)
+;  COLOR: color value (0-15)
 ;
-; output: -
+; output: vic-ii sprite color register updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -718,15 +718,15 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set hardware sprite data source pointers for both screens
+; set sprite image pointer for both screen buffers (double-buffered)
 ;
 ;  input:
-;      A: sprite data address / 64
-;    SPR: hardware sprite number
+;      A: sprite data base address / 64 (vic-ii pointer offset)
+;    SPR: hardware sprite number (0-7)
 ;
-; output: -
+; output: sprite pointer in screen_0 and screen_1 updated
 ;
-; clobbers: -
+; clobbers: none
 ;-------------------------------------------------------------------------------
 .macro SPRITE_SET_IX SPR
     sta screen_0 + SPRITE_IX_OFST + SPR
@@ -734,14 +734,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; center camera on world coordinate x and add bias
+; position camera centered on object with optional bias (e.g., sprite width)
 ;
 ;  input:
-;     cx: 16 bit world x coordinate to center on
-;   BIAS: offset added to calculated center
+;     cx: world x coordinate (16-bit pixels) to center on
+;   BIAS: offset from center (typically -TILE_WIDTH for left-bias)
 ;
-; output:
-;   camera_x
+; output: camera_x set to (cx - 160 + BIAS) to center screen on target
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -756,14 +755,14 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; checks if tile pointed to by `ptr1` is "pickable" and if so pick it and 
-; replace tile with empty
+; check tile for item (tile_id 33)
+; if found, increment pickables and clear
 ;
 ;  input:
-;      Y: offset in tile row
-;   ptr1: pointer to tile row
+;      Y: x offset within tile row (tile x coordinate)
+;   ptr1: pointer to tile row in map
 ;
-; output: -
+; output: if pickable found: hero_pickables++, tile replaced with empty (32)
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -917,7 +916,9 @@ update:
 @collision_reaction_done:
 
 @pickables:
-    ; check for collision with pickables
+    ; detect pickable items hero is in range of
+    ; uses half-tile rounding bias
+    ; checks top-left, top-right, bottom-left, bottom-right tiles
 
     ; convert hero world x, y to tile map coordinates
 
@@ -1147,8 +1148,8 @@ update:
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @gravity
-    ; note: the jump over increasing `frame_counter` freezes animation which is
-    ;       not right, however, it looks funny
+    ; note: skipping increment of `hero_frame_counter` when jumping freezes
+    ;       animation which makes it look funny
 
     ; every n'th frame apply gravity for collision with floor detection
     inc hero_frame_counter 
@@ -1250,7 +1251,10 @@ refresh:
 render:
 ;-------------------------------------------------------------------------------
 
-    ; note:
+    ; convert camera world pixel position to tile map coordinate + fine scroll
+    ; offset
+
+    ; example:
     ; | camera_x | offset | tile_map_x |
     ; | 0        | 0      | 0          |
     ; | 1        | 7      | 1          |
@@ -1263,7 +1267,7 @@ render:
     ; | 8        | 0      | 1          |
     ; | 9        | 7      | 2          |
     ; | 10       | 6      | 2          |
-    ; etc
+    ; etc (pattern repeats every 8 pixels)
 
     ; set border color to illustrate duration of render
     lda #BORDER_RENDER
@@ -1272,12 +1276,12 @@ render:
     ; convert camera 16 bit pixel position to tile map x and screen right offset
     lda camera_x
     tax
-    and #TILE_PIXEL_MASK    ; extract sub-tile screen offset (0-7)
-    eor #TILE_PIXEL_MASK    ; start negation by inverting
+    and #TILE_PIXEL_MASK    ; extract sub-tile pixel offset (0-7)
+    eor #TILE_PIXEL_MASK    ; negate: flip bits
     clc
-    adc #1
-    and #TILE_PIXEL_MASK    ; mask to 3 bits
-    sta screen_offset       ; store screen shift right offset
+    adc #1                  ; add 1 to complete negation
+    and #TILE_PIXEL_MASK    ; mask to 3 bits (0-7)
+    sta screen_offset       ; rightward scroll amount for this frame
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
@@ -1293,8 +1297,8 @@ render:
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
     ldx screen_offset       ; check if `screen_offset` is 0
     beq :+                  ; if 0, no adjustment needed
-    clc                     ; clear unknown carry flag
-    adc #1                  ; add 1 to match desired table values 
+    clc                     ; clear carry (state unknown after calc)
+    adc #1                  ; adjust tile_x to match mapping table
 :   tax                     ; transfer to x used in `render_tile_map`
 
 ;-------------------------------------------------------------------------------
@@ -1310,7 +1314,8 @@ render_tile_map:
     jmp @screen_1
 
 @screen_0:
-    ; generated unrolled loop using absolute indexed stores (avoids indirect)
+    ; generated unrolled render loop (avoids indirect addressing overhead)
+    ; source: gen-render-to-screen.py creates column render
     .include "render_to_screen_0.s"
     inx
     iny
@@ -1321,7 +1326,8 @@ render_tile_map:
     jmp @done 
 
 @screen_1:
-    ; generated unrolled loop using absolute indexed stores (avoids indirect)
+    ; generated unrolled render loop (avoids indirect addressing overhead)
+    ; source: gen-render-to-screen.py creates column render
     .include "render_to_screen_1.s"
     inx
     iny
