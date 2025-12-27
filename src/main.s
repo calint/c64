@@ -1429,6 +1429,7 @@ hero_animation_idle:
 .byte sprites_data / 64 + 8
 .byte sprites_data / 64 + 9
 .byte sprites_data / 64 + 10
+.byte sprites_data / 64 + 9
 .byte 0
 
 ;-------------------------------------------------------------------------------
