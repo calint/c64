@@ -572,7 +572,7 @@ program:
     ; update sprite x position
     lda cx
     sta VIC_SPRITE_X + SPR * 2
-    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+    ; 2: sprite registers are x0, y0, x1, y1...
 
     ; set sprite x 9'th bit if `cx` is greater than 256
     lda VIC_SPRITES_8X
@@ -603,7 +603,7 @@ program:
 
     ; update sprite y
     sta VIC_SPRITE_Y + SPR * 2
-    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+    ; 2: sprite registers are x0, y0, x1, y1...
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -649,7 +649,7 @@ program:
     ; sprite x position
     lda #<SX
     sta VIC_SPRITE_X + SPR * 2
-    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+    ; 2: sprite registers are x0, y0, x1, y1...
 
     ; set sprite x 9'th bit if `cx` is greater than 256
     lda VIC_SPRITES_8X
@@ -662,7 +662,7 @@ program:
     ; set sprite y
     lda #SY
     sta VIC_SPRITE_Y + SPR * 2
-    ; note: 2 because sprite registers are bytes: x0, y0, x1, y1 etc
+    ; 2: sprite registers are x0, y0, x1, y1...
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -786,7 +786,7 @@ program:
     sta PROCESSOR_PORT
   
     ; disable cia timers
-    ; note: even with `sei`, these chips "latch" interrupts
+    ; cia interrupts latch even with sei
     lda #$7f                ; bit 7 = 0 (disable all)
     sta CIA1_ICR
     sta CIA2_ICR
@@ -826,7 +826,7 @@ program:
     sta color_ram + $300, x ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
-    ; note: also writes to the unused 24 nibbles
+    ; also writes unused 24 nibbles
 
     ; hud sprite on screen
     SPRITE_SET HUD_SPRITE_NUM, HUD_SPRITE_IX, 310, 51
@@ -855,7 +855,7 @@ main_loop:
 
     ; synchronization point: must occur below bottom border on pal
     ; (raster >= 251)
-    ; note: timing and raster values assume pal c64
+    ; timing/raster for pal c64
 
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
@@ -878,8 +878,8 @@ main_loop:
 ;-------------------------------------------------------------------------------
 update:
 ;-------------------------------------------------------------------------------
-    ; note: previous x and y for objects are saved at `refresh`
-    ;       state must be consistent when `update` is done
+    ; note: previous x/y saved at `refresh`; state must be consistent after
+    ;       `update`
  
     ; give visual for number of scan lines `update` uses
     lda #BORDER_UPDATE
