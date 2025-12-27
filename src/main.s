@@ -1344,18 +1344,16 @@ nmi_handler:
 data:
 ;-------------------------------------------------------------------------------
 hero:
-    .byte <RESTART_X     ; wx low
-    .byte >RESTART_X     ; wx high
-    .byte <RESTART_Y     ; wy low
-    .byte >RESTART_Y     ; wy high
-    .word 0              ; dx
-    .word 0              ; dy
-    .word 0              ; wx_prv
-    .word 0              ; wy_prv
-    .byte 0              ; n::id
-    .byte 0              ; n::frame
-    .byte 0              ; n::rate
-    .word 0              ; n::ptr
+    .byte <RESTART_X, >RESTART_X  ; wx
+    .byte <RESTART_Y, >RESTART_Y  ; wy 
+    .word 0 ; dx
+    .word 0 ; dy
+    .word 0 ; wx_prv
+    .word 0 ; wy_prv
+    .byte 0 ; n::id
+    .byte 0 ; n::frame
+    .byte 0 ; n::rate
+    .word 0 ; n::ptr
 
 ;-------------------------------------------------------------------------------
 .assert * <= $d000, error, "segment overflows into I/O"
