@@ -541,7 +541,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; convert world pixels to screen pixels and update sprite position
+; transform object world coordinates to screen and update sprite position
 ;
 ;  input:
 ;    obj: object struct address
