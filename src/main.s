@@ -228,7 +228,7 @@ HERO_FLAG_JUMPING = 4
 .segment "ZERO_PAGE"
 zero_page:
 .out .sprintf("    zero_page: $%04x", zero_page)
-camera_x:              .res 2  ; 16-bit world coordinate
+camera_x:              .res 2  ; 16-bit world coordinate in pixels
 screen_offset:         .res 1  ; horizontal fine scroll pixels 0-7
 screen_active:         .res 1  ; index of active screen 0 or 1
 sprites_bg_collisions: .res 1  ; sprite to background collisions
