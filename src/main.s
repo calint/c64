@@ -894,7 +894,8 @@ update:
     and #(1 << HERO_SPRITE_NUM)
     beq @collision_reaction_done
 
-    ; if hero collided with background, restore previous x, y and set dx, dy to 0
+    ; if hero collided with background, restore previous x, y and set dx, dy to
+    ; 0
 
     OBJECT_RESTORE_STATE hero
 
