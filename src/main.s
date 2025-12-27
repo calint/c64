@@ -1012,17 +1012,17 @@ update:
     lda #>-MOVE_DX
     sta hero + o::dx + 1
 
-    ; regularly "skip" (small jump) when moving
+    ; regularly skip (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_left_done
 
-    ; "skip" if dy is 0
+    ; skip if `dy` is 0
     lda hero + o::dy
     ora hero + o::dy + 1
     bne @joystick_right
 
-    ; "skip" by a negative dy
+    ; skip by negative `dy`
     lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
@@ -1046,17 +1046,17 @@ update:
     lda #>MOVE_DX
     sta hero + o::dx + 1
 
-    ; regularly "skip" (small jump) when moving
+    ; regularly skip (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_right_done
 
-    ; "skip" if dy is 0
+    ; skip if `dy` is 0
     lda hero + o::dy
     ora hero + o::dy + 1
     bne @joystick_fire
 
-    ; "skip" by a negative dy
+    ; skip by negative `dy`
     lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
@@ -1074,7 +1074,7 @@ update:
     and #JOYSTICK_FIRE
     bne @joystick_fire_done  ; note: active low
 
-    ; set negative dy to jump up
+    ; set negative `dy` to jump up
     lda #<-JUMP_VELOCITY
     sta hero + o::dy
     lda #>-JUMP_VELOCITY
@@ -1146,7 +1146,7 @@ update:
     ; note: skipping increment of `hero_frame_counter` when jumping freezes
     ;       animation which makes it look funny
 
-    ; every n'th frame apply gravity for collision with floor detection
+    ; every n'th frame apply gravity for collision with floor
     inc hero_frame_counter 
     ; note: best result when frame counter is increased here when interacting
     ;       with the move "skip" use of same variable
@@ -1154,13 +1154,13 @@ update:
     and #GRAVITY_INTERVAL
     beq @gravity
 
-    ; check if dy is zero and skip gravity if so
+    ; skip gravity if `dy` is zero
     lda hero + o::dy
     ora hero + o::dy + 1
     beq @gravity_done
 
 @gravity:
-    ; increase dy
+    ; increase `dy`
     clc
     lda hero + o::dy
     adc #GRAVITY
@@ -1186,13 +1186,13 @@ update:
 
     ; render progress bar
 
-    ; get (approximate) number of dots in the line
+    ; get approximate number of dots in the line
     lda hero + o::wx + 1
-    ; shift to fit graph of 21 dots 
+    ; shift to fit graph of 21 dots
     lsr
     lsr
     lsr
-    ; acc now contains number of dots in the progress line
+    ; accumulator now contains number of dots in the progress line
     ; multiply by 3 bytes per sprite data row
     sta tmp1
     asl
@@ -1227,19 +1227,19 @@ refresh:
     lda #BORDER_REFRESH
     sta VIC_BORDER
 
-    ; update objects state
+    ; update hero state
     OBJECT_UPDATE hero
 
     ; get world coordinate in pixels for x
     OBJECT_X_TO_WCS hero
 
-    ; `tmp1` and `tmp2` now contains hero `wx` lo, `wx` hi pixels in world
+    ; `tmp1` and `tmp2` now contain hero `wx` low, `wx` high pixels in world
     ; coordinates
 
-    ; center camera on object with 16 pixels wide sprite
+    ; center camera on hero with 16 pixels wide sprite
     CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
 
-    ; place object sprite in screen coordinate system
+    ; place hero sprite in screen coordinate system
     OBJECT_SPRITE_TO_SCREEN hero, HERO_SPRITE_NUM, tmp1
 
 ;-------------------------------------------------------------------------------
