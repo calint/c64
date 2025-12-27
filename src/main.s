@@ -893,8 +893,7 @@ update:
     and #(1 << HERO_SPRITE_NUM)
     beq @collision_reaction_done
 
-    ; hero has collided with background, restore state to previous x,y and set
-    ; dx, dy to 0
+    ; if hero collided with background, restore previous x, y and set dx, dy to 0
 
     OBJECT_RESTORE_STATE hero
 
@@ -1080,7 +1079,7 @@ update:
     lda #>-JUMP_VELOCITY
     sta hero + o::dy + 1
 
-    ; flag hero is jumping and moving 
+    ; flag hero is jumping and moving
     lda hero_flags
     ora #HERO_FLAG_JUMPING
     ora #HERO_FLAG_MOVING
@@ -1239,7 +1238,7 @@ refresh:
     ; center camera on hero with 16 pixels wide sprite
     CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
 
-    ; place hero sprite in screen coordinate system
+    ; place hero sprite in screen coordinates
     OBJECT_SPRITE_TO_SCREEN hero, HERO_SPRITE_NUM, tmp1
 
 ;-------------------------------------------------------------------------------
