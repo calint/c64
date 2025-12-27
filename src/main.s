@@ -366,11 +366,11 @@ program:
 ;
 ;  input:
 ;    obj: object struct address
-;    AID: animation id to set
+;    AID: animation id
 ;  ARATE: advance interval mask (bitwise and with frame counter)
 ; atable: animation frame table address
 ;
-; output: obj animation struct initialized
+; output: obj animation struct set
 ;
 ;  clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
@@ -404,7 +404,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; advance animation frame on (frame_counter & rate) == 0
+; advance animation frame if (fctr & rate) == 0
 ;
 ;  input:
 ;    obj: object struct address
@@ -544,7 +544,7 @@ program:
 ;    SPR: hardware sprite number (0-7)
 ;     cx: world x (16-bit)
 ;
-; output: sprite x/y and msb updated
+; output: sprite x/y, msb updated
 ;
 ; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
@@ -720,7 +720,7 @@ program:
 ;      A: sprite data pointer / 64
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: pointer in screen_0 and screen_1 updated
+; output: pointer in screen_0, screen_1 updated
 ;
 ; clobbers: none
 ;-------------------------------------------------------------------------------
@@ -757,7 +757,7 @@ program:
 ;      Y: tile x
 ;   ptr1: tile row pointer
 ;
-; output: pickables++, tile set to empty if found
+; output: pickables++, tile set empty if found
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
