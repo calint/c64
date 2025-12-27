@@ -1346,8 +1346,8 @@ nmi_handler:
 data:
 ;-------------------------------------------------------------------------------
 hero:
-    .byte <RESTART_X, >RESTART_X  ; wx
-    .byte <RESTART_Y, >RESTART_Y  ; wy 
+    .word .loword(RESTART_X) ; wx
+    .word .loword(RESTART_Y) ; wy 
     .word 0 ; dx
     .word 0 ; dy
     .word 0 ; wx_prv
