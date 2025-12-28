@@ -240,6 +240,8 @@ tmp1:                  .res 1  ; primary temporary byte
 tmp2:                  .res 1  ; secondary temporary byte or high byte of word
 ptr1:                  .res 2  ; primary temporary pointer
 
+.assert * <= $100, error, "zero page overflows"
+
 ;-------------------------------------------------------------------------------
 ; program header
 ;-------------------------------------------------------------------------------
