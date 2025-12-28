@@ -22,13 +22,6 @@
 [ ] minor priority: clc may be unnecessary in certain cases
 ```
 
-## The VIC-II "odd" numbers due to hardware timing
-
-* Bottom border (PAL): raster line 251
-* Top border in 25-row mode: 50 px
-* Left border in 40-column mode: 24 px
-* Left border in 38-column mode: 31 px
-
 ## 6502 hardware bugs
 
 <https://www.youtube.com/watch?v=ZsRRCnque2E>  21:25
@@ -41,10 +34,13 @@
 ## Curious VIC chip
 
 * 4 banks of 16 KB each, however, bank 0 and 2 have sections that always access
-  rom
-* bad lines when VIC blocks CPU from memory access
+  ROM
+* bad lines when VIC "steals" cycles from CPU on first pixel row of every
+  character line
 
 ## Screen on Vice PAL
 
+* Bottom border (PAL): raster line 251
 * 25 row display: first visible pixel y 50, last visible y 249
 * 38 column display: first visible pixel x 31, last visible x 334
+* 40 column display: first visible pixel x 24, last visible x 343
