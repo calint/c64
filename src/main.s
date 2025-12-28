@@ -459,20 +459,13 @@ program:
     tax                     ; x now holds the base index for the 2-byte pattern
 
     ldy #LINE * 3 + 1       ; 3 bytes per sprite row, second byte
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA, y  ; row 1
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 1, y
- 
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA + 3, y ; row 2 (+3 bytes per sprite row)
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 4, y
- 
-    lda hud_lines, x
-    sta HUD_SPRITE_DATA + 6, y ; row 3
-    lda hud_lines + 1, x
-    sta HUD_SPRITE_DATA + 7, y
+
+    .repeat 3, I
+        lda hud_lines, x
+        sta HUD_SPRITE_DATA + 3 * I, y  ; row 1
+        lda hud_lines + 1, x
+        sta HUD_SPRITE_DATA + 1 + 3 * I, y
+    .endrepeat
 .endmacro
 
 ;-------------------------------------------------------------------------------
