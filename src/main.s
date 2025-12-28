@@ -1196,12 +1196,9 @@ update:
     lsr
     ; accumulator now contains number of dots in the progress line
 
-    ; place accumulator at the sprite data to be written by multiplying by 3
-    ; bytes per sprite row
-    sta tmp1
-    asl
-    clc
-    adc tmp1
+    ; table look up of multiplication by 3
+    tax
+    lda multiply_by_3, x
 
     ; render on sprite
     tax
@@ -1276,10 +1273,8 @@ render:
     lda camera_x
     tax
     and #TILE_PIXEL_MASK    ; extract sub-tile pixel offset (0-7)
-    eor #TILE_PIXEL_MASK    ; negate: flip bits
-    clc
-    adc #1                  ; add 1 to complete negation
-    and #TILE_PIXEL_MASK    ; mask to 3 bits (0-7)
+    tay
+    lda tile_pixel_to_screen_offset, y
     sta screen_offset       ; rightward scroll amount for this frame
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
@@ -1361,7 +1356,18 @@ hero:
     .word 0 ; n::ptr
 
 ;-------------------------------------------------------------------------------
-hud_lines:
+tile_pixel_to_screen_offset: ; used in `render`
+;-------------------------------------------------------------------------------
+.byte 0, 7, 6, 5, 4, 3, 2, 1
+
+;-------------------------------------------------------------------------------
+multiply_by_3: ; used in `update:@hud` 32 entries
+;-------------------------------------------------------------------------------
+.byte 0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54
+.byte 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93
+
+;-------------------------------------------------------------------------------
+hud_lines: ; used in `HUD_BARS`
 ;-------------------------------------------------------------------------------
 .byte %11111111, %11111111
 .byte %01111111, %11111111
@@ -1374,7 +1380,7 @@ hud_lines:
 .byte %01010101, %01010101
 
 ;-------------------------------------------------------------------------------
-progress_lines:
+progress_lines: ; used in `update:@hud`
 ;-------------------------------------------------------------------------------
 .byte %11000000, %00000000, %00000011
 .byte %11100000, %00000000, %00000011
@@ -1410,7 +1416,7 @@ progress_lines:
 .byte %11000000, %00000000, %00000011
 
 ;-------------------------------------------------------------------------------
-hero_animation_idle:
+hero_animation_idle: ; used in `update`
 ;-------------------------------------------------------------------------------
 .byte sprites_data / 64 + 8
 .byte sprites_data / 64 + 9
@@ -1419,14 +1425,14 @@ hero_animation_idle:
 .byte 0
 
 ;-------------------------------------------------------------------------------
-hero_animation_right:
+hero_animation_right: ; used in `update`
 ;-------------------------------------------------------------------------------
 .byte sprites_data / 64 + 1
 .byte sprites_data / 64 + 0
 .byte 0
 
 ;-------------------------------------------------------------------------------
-hero_animation_left:
+hero_animation_left: ; used in `update`
 ;-------------------------------------------------------------------------------
 .byte sprites_data / 64 + 3
 .byte sprites_data / 64 + 2
