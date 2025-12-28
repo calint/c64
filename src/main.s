@@ -880,7 +880,7 @@ update:
     ; note: previous x/y saved at `refresh`; state must be consistent after
     ;       `update`
  
-    ; give visual for number of scan lines `update` uses
+    ; set border color to visualize duration of `update`
     lda #BORDER_UPDATE
     sta VIC_BORDER
 
@@ -889,12 +889,11 @@ update:
     lda VIC_SPR_BG_COL
     sta sprites_bg_collisions
 
-    ; check if hero sprite has collided with background
+    ; if hero did not collide with background skip collision reaction
     and #(1 << HERO_SPRITE_NUM)
     beq @collision_reaction_done
 
-    ; if hero collided with background, restore previous x, y and set dx, dy to
-    ; 0
+    ; hero collided with background, restore previous x, y and set dx, dy to 0
 
     OBJECT_RESTORE_STATE hero
 
@@ -903,7 +902,7 @@ update:
     sta hero + o::dy
     sta hero + o::dy + 1
 
-    ; stop the jump logic and restart sequence
+    ; stop the jump and restart sequence
     lda hero_flags
     and #<(~HERO_FLAG_JUMPING & ~HERO_FLAG_RESTARTING)
     sta hero_flags
@@ -911,11 +910,10 @@ update:
 @collision_reaction_done:
 
 @pickables:
-    ; detect pickables in hero range (half-tile bias, 4 corners)
+    ; detect "pickables" in hero range (half-tile bias, 4 corners)
 
     ; convert hero world x, y to tile map coordinates
-
-    ; add half-tile bias, extract tile coordinates by bit shift
+    ; add half-tile bias and extract tile coordinates by bit shift
 
     ; note: assumes 4 subpixel bits and 3 tile bits effectively needing a 16 bit
     ;       left shift then using the high byte, but rounding complicates it
@@ -926,13 +924,13 @@ update:
     lda hero + o::wx
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `wx` low for later
+    tax                     ; save adjusted `wx` low byte for later
     lda hero + o::wx + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wx` high into register y
-    txa                     ; restore `wx` low
+    tay                     ; save intermediate `wx` high byte in register y
+    txa                     ; restore adjusted `wx` low byte
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wx` high
+    tya                     ; restore `wx` high byte
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile x
     sta tmp1
@@ -940,18 +938,20 @@ update:
     lda hero + o::wy
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `wy` low for later
+    tax                     ; save adjusted `wy` low byte for later
     lda hero + o::wy + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wy` high for later
-    txa                     ; restore `wy` low
+    tay                     ; save intermediate `wy` high in register y
+    txa                     ; restore `wy` low byte
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wy` high
+    tya                     ; restore `wy` high byte
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile y
 
     ; add to row pointer
     .assert TILE_MAP_WIDTH = 256, error, "tile_map width must be 256 for optimization"
+    
+    ; note: assumes row number is within range of 0 - 24
 
     clc
     adc #>tile_map
@@ -962,7 +962,7 @@ update:
 
     ldy tmp1                ; is now tile x
 
-    ; check tiles for pickables (wraps horizontally)
+    ; check tiles for "pickables" (wraps horizontally)
 
     ; top left
     HERO_PICK
@@ -986,38 +986,43 @@ update:
     lda #0
     sta hero + o::dx 
     sta hero + o::dx + 1
+
+    ; clear "hero is moving" flag
     lda hero_flags
     and #<~HERO_FLAG_MOVING
     sta hero_flags
 
 @joystick_left:
-    ; joystick
+    ; if joystick left is not active then continue to next step
     lda CIA1_PORT_A 
     and #JOYSTICK_LEFT
     bne @joystick_left_done  ; active low
 
+    ; set "hero is moving" flag
     lda hero_flags
     ora #HERO_FLAG_MOVING
     sta hero_flags
 
+    ; set hero animation for "left"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
+    ; set horizontal velocity
     lda #<-MOVE_DX
     sta hero + o::dx
     lda #>-MOVE_DX
     sta hero + o::dx + 1
 
-    ; regularly skip (small jump) when moving
+    ; if not at skip (small jump) interval then continue to next step
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_left_done
 
-    ; skip if `dy` is 0
+    ; if there is vertical movement then don't skip (small jump)
     lda hero + o::dy
     ora hero + o::dy + 1
-    bne @joystick_right
+    bne @joystick_left_done
 
-    ; skip by negative `dy`
+    ; set skip (small jump) `dy`
     lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
@@ -1026,32 +1031,36 @@ update:
 @joystick_left_done:
 
 @joystick_right:
+    ; if joystick right is not active then continue to next step
     lda CIA1_PORT_A 
     and #JOYSTICK_RIGHT
     bne @joystick_right_done ; active low
 
+    ; set "hero is moving" flag
     lda hero_flags
     ora #HERO_FLAG_MOVING
     sta hero_flags
 
+    ; set hero animation for "right"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
+    ; set horizontal velocity
     lda #<MOVE_DX
     sta hero + o::dx
     lda #>MOVE_DX
     sta hero + o::dx + 1
 
-    ; regularly skip (small jump) when moving
+    ; if not at skip (small jump) interval then continue to next step
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_right_done
 
-    ; skip if `dy` is 0
+    ; if there is vertical movement then don't skip (small jump)
     lda hero + o::dy
     ora hero + o::dy + 1
-    bne @joystick_fire
+    bne @joystick_right_done
 
-    ; skip by negative `dy`
+    ; set skip (small jump) `dy`
     lda #<-MOVE_SKIP_VELOCITY
     sta hero + o::dy
     lda #>-MOVE_SKIP_VELOCITY
@@ -1060,23 +1069,23 @@ update:
 @joystick_right_done:
 
 @joystick_fire:
-    ; already jumping?
+    ; if hero is already jumping then jump to next step
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @joystick_fire_done  ; active low
 
-    ; fire button pressed?
+    ; if fire button is not pressed then jump to next step
     lda CIA1_PORT_A
     and #JOYSTICK_FIRE
     bne @joystick_fire_done  ; active low
 
-    ; set negative `dy` to jump
+    ; set vertical velocity for jump
     lda #<-JUMP_VELOCITY
     sta hero + o::dy
     lda #>-JUMP_VELOCITY
     sta hero + o::dy + 1
 
-    ; set jumping and moving flags
+    ; flag hero as jumping and moving
     lda hero_flags
     ora #(HERO_FLAG_JUMPING | HERO_FLAG_MOVING)
     sta hero_flags
@@ -1084,24 +1093,27 @@ update:
 @joystick_fire_done:
 
 @keyboard_return:
-    ; continue if restarting
+    ; if hero is in restart sequence then jump to next step
     lda hero_flags
     and #HERO_FLAG_RESTARTING
     bne @keyboard_return_done ; active low
 
-    ; return key pressed?
+    ; if key "return" is not pressed then jump to next step
     lda #KEYBOARD_ROW_0
     sta CIA1_PORT_A
     lda CIA1_PORT_B
     and #KEYBOARD_RETURN
     bne @keyboard_return_done ; active low
 
-    ; infinities left?
+    ; if hero has no more "infinities" (respawns) then jump to next step 
     lda hero_infinities
     beq @keyboard_return_done
 
+    ; restart sequence
+
     dec hero_infinities
 
+    ; flag hero as restarting
     lda hero_flags
     ora #HERO_FLAG_RESTARTING
     sta hero_flags
@@ -1126,25 +1138,26 @@ update:
 @input_done:
 
 @hero_physics:
-    ; set idle if not moving
+    ; if hero is moving then jump to next step
     lda hero_flags
     and #HERO_FLAG_MOVING
     bne @apply
 
+    ; hero is not moving, initiate animation for "idle"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_IDLE, HERO_ANIMATION_RATE_IDLE, hero_animation_idle
 
 @apply:
-    ; gravity if jumping
+    ; if hero is jumping then jump to next step
     lda hero_flags
     and #HERO_FLAG_JUMPING
     bne @gravity
     ; note: skipping increment of `hero_frame_counter` when jumping freezes
     ;       animation which makes it look funny
 
-    ; every n'th frame: gravity for floor collision
+    ; at regular intervals apply gravity for "floor" collision detection
     inc hero_frame_counter 
-    ; note: best result when frame counter is increased here when interacting
-    ;       with the move "skip" use of same variable
+    ; note: best result when frame counter is increased here because of
+    ;       interaction with the move "skip" use of same variable
     lda hero_frame_counter
     and #GRAVITY_INTERVAL
     beq @gravity
@@ -1155,7 +1168,7 @@ update:
     beq @gravity_done
 
 @gravity:
-    ; increase `dy`
+    ; increase `dy` by `GRAVITY`
     clc
     lda hero + o::dy
     adc #GRAVITY
@@ -1188,7 +1201,9 @@ update:
     lsr
     lsr
     ; accumulator now contains number of dots in the progress line
-    ; multiply by 3 bytes per sprite data row
+
+    ; place accumulator at the sprite data to be written by multiplying by 3
+    ; bytes per sprite row
     sta tmp1
     asl
     clc
@@ -1218,21 +1233,21 @@ sound:
 refresh:
 ;-------------------------------------------------------------------------------
 
-    ; set border color to illustrate duration of this pass
+    ; set border color to visualize duration of `refresh`
     lda #BORDER_REFRESH
     sta VIC_BORDER
 
     ; update hero state
     OBJECT_UPDATE hero
 
-    ; get world coordinate in pixels for x
+    ; get world coordinate in pixels for hero x
     OBJECT_X_TO_WCS hero
 
     ; `tmp1` and `tmp2` now contain hero `wx` low, `wx` high pixels in world
     ; coordinates
 
-    ; center camera on hero with 16 pixels wide sprite
-    CAMERA_CENTER_ON_X tmp1, -TILE_WIDTH
+    ; center camera on hero with offset for 16 pixels wide sprite
+    CAMERA_CENTER_ON_X tmp1, -8
 
     ; place hero sprite in screen coordinates
     OBJECT_SPRITE_TO_SCREEN hero, HERO_SPRITE_NUM, tmp1
@@ -1259,7 +1274,7 @@ render:
     ; | 10       | 6      | 2          |
     ; etc
 
-    ; set border color to visualize duration of render
+    ; set border color to visualize duration of `render` and `render_tile_map`
     lda #BORDER_RENDER
     sta VIC_BORDER
 
