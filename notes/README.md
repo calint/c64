@@ -40,7 +40,7 @@
 
 ## Screen on Vice PAL
 
-* Bottom border (PAL): raster line 251
-* 25 row display: first visible pixel y 50, last visible y 249
-* 38 column display: first visible pixel x 31, last visible x 334
-* 40 column display: first visible pixel x 24, last visible x 343
+* bottom border: raster line 251
+* 25 row display: first visible y 50 px, last visible y 249 px
+* 40 column display: first visible x 24 px, last visible x 343 px
+* 38 column display: first visible x 31 px, last visible x 334 px
