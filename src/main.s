@@ -1259,7 +1259,7 @@ render:
     ; | 10       | 6      | 2          |
     ; etc
 
-    ; set border color to illustrate duration of render
+    ; set border color to visualize duration of render
     lda #BORDER_RENDER
     sta VIC_BORDER
 
