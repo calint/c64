@@ -232,7 +232,7 @@ camera_x:              .res 2  ; 16-bit world coordinate in pixels
 screen_offset:         .res 1  ; horizontal fine scroll pixels 0-7
 screen_active:         .res 1  ; index of active screen 0 or 1
 sprites_bg_collisions: .res 1  ; sprite to background collisions
-hero_frame_counter:    .res 1  ; counter for bitwise and 0 intervals
+hero_frame_counter:    .res 1  ; counter for bitwise and is 0 intervals
 hero_pickables:        .res 1  ; count of picked items
 hero_infinities:       .res 1  ; count of remaining restarts
 hero_flags:            .res 1  ; flags defined in constants
@@ -289,7 +289,7 @@ basic:
 .segment "CHARSET_0"
 charset_0:
 .out .sprintf("    charset_0: $%04x", charset_0)
-    .res $0800
+    .res $800
 
 ;-------------------------------------------------------------------------------
 ; charset 1 (vic-ii sees rom mapped memory, cpu sees regular ram)
@@ -299,7 +299,7 @@ charset_0:
 .segment "CHARSET_1"
 charset_1:
 .out .sprintf("    charset_1: $%04x", charset_1)
-    .res $0800
+    .res $800
 
 ;-------------------------------------------------------------------------------
 ; charset 2 (can be modified)
@@ -348,7 +348,7 @@ screen_1:
 .assert * <= $4000, error, "segment overflows into TILE_MAP"
 .segment "TILE_MAP"
 .org $4000
-tile_map:                   ; the tile map included from resources
+tile_map:
 .out .sprintf("     tile_map: $%04x", tile_map)
     .include "tile_map.s"
 
@@ -411,7 +411,7 @@ program:
 ;    SPR: hardware sprite number (0-7)
 ;   fctr: frame counter
 ;
-; output: sprite frame incremented, register updated
+; output: sprite updated if frame advanced
 ;
 ; clobbers: A, Y, ptr1
 ;-------------------------------------------------------------------------------
@@ -474,7 +474,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; add velocity to position (12.4 fixed-point)
+; add velocity to position
 ;
 ;  input:
 ;    obj: object struct address
@@ -514,7 +514,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; extract pixel from fixed-point (12.4 >> SUBPIXEL_SHIFT), sign-extended
+; convert object x to world pixel coordinate, sign-extended
 ;
 ;  input:
 ;    obj: object struct address
@@ -537,12 +537,12 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; convert world to screen, update sprite
+; convert object world coordinates to screen and update sprite
 ;
 ;  input:
 ;    obj: object struct address
 ;    SPR: hardware sprite number (0-7)
-;     cx: world x (16-bit)
+;     cx: world pixel x (16-bit)
 ;
 ; output: sprite x, y, msb updated
 ;
@@ -595,7 +595,7 @@ program:
         asl
     .endrepeat
     ora tmp1
-    ; accumulator now contains y with 0 being at top of screen within border
+    ; accumulator now contains y with 0 being at top of screen in border
 
     ; add top border (25 rows display)
     clc
@@ -628,16 +628,15 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; set sprite pointer, position, color
+; set sprite pointer, position
 ;
 ;  input:
 ;    SPR: hardware sprite number (0-7)
 ;     IX: sprite data pointer / 64
-;  COLOR: color (0-15)
 ;     SX: screen x
 ;     SY: screen y
 ;
-; output: vic-ii registers updated
+; output: sprite updated
 ;
 ; clobbers: A, X
 ;-------------------------------------------------------------------------------
@@ -671,7 +670,7 @@ program:
 ;  input:
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: vic-ii sprite enable updated
+; output: sprite updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -687,7 +686,7 @@ program:
 ;  input:
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: vic-ii sprite enable updated
+; output: sprite updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -704,7 +703,7 @@ program:
 ;    SPR: hardware sprite number (0-7)
 ;  COLOR: color (0-15)
 ;
-; output: vic-ii sprite color updated
+; output: sprite updated
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -720,7 +719,7 @@ program:
 ;      A: sprite data pointer / 64
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: pointer in screen_0, screen_1 updated
+; output: pointer in screen_0 and screen_1 updated
 ;
 ; clobbers: none
 ;-------------------------------------------------------------------------------
@@ -733,7 +732,7 @@ program:
 ; center camera on x with bias
 ;
 ;  input:
-;     cx: world x (16-bit)
+;     cx: world x in pixels (16-bit)
 ;   BIAS: offset
 ;
 ; output: camera_x set
@@ -751,7 +750,7 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; check tile for item, increment pickables if any and clear
+; check tile for item, if found increment pickables and clear
 ;
 ;  input:
 ;      Y: tile x
