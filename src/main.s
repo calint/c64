@@ -849,13 +849,13 @@ program:
     ; step 2 and 3 must finish before raster is at top border
     ; step 4 must finish before raster is at bottom border
 
+
 ;-------------------------------------------------------------------------------
 main_loop:
 ;-------------------------------------------------------------------------------
 
-    ; synchronization point: must occur below bottom border on pal
+    ; synchronization point: must occur below bottom border on pal c64
     ; (raster >= 251)
-    ; timing/raster for pal c64
 
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
@@ -900,7 +900,7 @@ update:
     OBJECT_RESTORE_STATE hero
 
     lda #0
-    ; note: `dx` will be set to 0 in `@controls`
+    ; note: `dx` will be set to 0 in `@input`
     sta hero + o::dy
     sta hero + o::dy + 1
 
