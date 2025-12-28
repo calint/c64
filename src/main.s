@@ -1258,7 +1258,7 @@ render:
     ; | 8        | 0      | 1          |
     ; | 9        | 7      | 2          |
     ; | 10       | 6      | 2          |
-    ; etc (pattern repeats every 8 pixels)
+    ; etc
 
     ; set border color to illustrate duration of render
     lda #BORDER_RENDER
