@@ -1289,7 +1289,7 @@ render:
     beq :+                  ; if 0, no adjustment needed
     clc
     adc #1                  ; adjust tile x to match mapping table
-:   tax                     ; transfer to x used in `render_tile_map`
+:   tax                     ; transfer to register x used in `render_tile_map`
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
