@@ -24,10 +24,10 @@
 
 ## The VIC-II "odd" numbers due to hardware timing
 
-* Raster line 251: Bottom border (not 250 or 252)
-* Cycle 17: Bad line DMA starts (not 16 or 18)
-* 50 pixels: Top border in 25-row mode (not 48 or 52)
-* 31 pixels: Left border in 38-column mode
+* Bottom border (PAL): raster line 251
+* Top border in 25-row mode: 50 px
+* Left border in 40-column mode: 24 px
+* Left border in 38-column mode: 31 px
 
 ## 6502 hardware bugs
 
