@@ -409,7 +409,7 @@ program:
 ;  input:
 ;    obj: object struct address
 ;    SPR: hardware sprite number (0-7)
-;   fctr: frame counter (advance if fctr & rate == 0)
+;   fctr: frame counter
 ;
 ; output: sprite frame incremented, register updated
 ;
@@ -514,10 +514,10 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; extract pixel from fixed-point (12.4 >> 4), sign-extended
+; extract pixel from fixed-point (12.4 >> SUBPIXEL_SHIFT), sign-extended
 ;
 ;  input:
-;    obj: object struct with wx (fixed-point 12.4)
+;    obj: object struct address
 ;
 ; output: tmp1, tmp2 = 16-bit pixel coordinate
 ;
@@ -544,7 +544,7 @@ program:
 ;    SPR: hardware sprite number (0-7)
 ;     cx: world x (16-bit)
 ;
-; output: sprite x/y, msb updated
+; output: sprite x, y, msb updated
 ;
 ; clobbers: A, X, tmp1
 ;-------------------------------------------------------------------------------
@@ -751,13 +751,13 @@ program:
 .endmacro
 
 ;-------------------------------------------------------------------------------
-; check tile for item 33, increment pickables, clear
+; check tile for item, increment pickables if any and clear
 ;
 ;  input:
 ;      Y: tile x
 ;   ptr1: tile row pointer
 ;
-; output: pickables++, tile set empty if found
+; output: pickables, tile set empty if item picked
 ;
 ; clobbers: A
 ;-------------------------------------------------------------------------------
@@ -826,14 +826,14 @@ program:
     sta color_ram + $300, x ; of color memory
     inx
     bne :-                  ; loop until x wraps to 0
-    ; also writes unused 24 nibbles
+    ; also writes to 24 unused nibbles
 
-    ; hud sprite on screen
+    ; initiate hud sprite
     SPRITE_SET HUD_SPRITE_NUM, HUD_SPRITE_IX, 310, 51
     SPRITE_COLOR HUD_SPRITE_NUM, HUD_SPRITE_COLOR
     SPRITE_ENABLE HUD_SPRITE_NUM
 
-    ; enable and color hero sprite
+    ; initiate hero sprite 
     SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
     SPRITE_ENABLE HERO_SPRITE_NUM
 
@@ -855,7 +855,6 @@ main_loop:
 ;-------------------------------------------------------------------------------
 
     ; synchronization point: must occur below bottom border on pal c64
-    ; (raster >= 251)
 
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
@@ -900,7 +899,7 @@ update:
     OBJECT_RESTORE_STATE hero
 
     lda #0
-    ; note: `dx` will be set to 0 in `@input`
+    ; note: `dx` will be set to 0 at `@input`
     sta hero + o::dy
     sta hero + o::dy + 1
 
@@ -927,13 +926,13 @@ update:
     lda hero + o::wx
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `wx` lo for later
+    tax                     ; save `wx` low for later
     lda hero + o::wx + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wx` hi into register y
-    txa                     ; restore `wx` lo
+    tay                     ; save intermediate `wx` high into register y
+    txa                     ; restore `wx` low
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wx` hi
+    tya                     ; restore `wx` high
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile x
     sta tmp1
@@ -941,13 +940,13 @@ update:
     lda hero + o::wy
     clc
     adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save `wy` lo for later
+    tax                     ; save `wy` low for later
     lda hero + o::wy + 1
     adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wy` hi for later
-    txa                     ; restore `wy` lo
+    tay                     ; save intermediate `wy` high for later
+    txa                     ; restore `wy` low
     rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wy` hi
+    tya                     ; restore `wy` high
     rol                     ; rotate carry into bit 0
     ; accumulator is now tile y
 
@@ -1008,7 +1007,7 @@ update:
     lda #>-MOVE_DX
     sta hero + o::dx + 1
 
-    ; skip (small jump) when moving
+    ; regularly skip (small jump) when moving
     lda hero_frame_counter
     and #MOVE_SKIP_INTERVAL
     bne @joystick_left_done
@@ -1066,6 +1065,7 @@ update:
     and #HERO_FLAG_JUMPING
     bne @joystick_fire_done  ; active low
 
+    ; fire button pressed?
     lda CIA1_PORT_A
     and #JOYSTICK_FIRE
     bne @joystick_fire_done  ; active low
@@ -1078,26 +1078,25 @@ update:
 
     ; set jumping and moving flags
     lda hero_flags
-    ora #HERO_FLAG_JUMPING
-    ora #HERO_FLAG_MOVING
+    ora #(HERO_FLAG_JUMPING | HERO_FLAG_MOVING)
     sta hero_flags
 
 @joystick_fire_done:
 
 @keyboard_return:
-    ; skip if restarting
+    ; continue if restarting
     lda hero_flags
     and #HERO_FLAG_RESTARTING
     bne @keyboard_return_done ; active low
 
-    ; check return key
+    ; return key pressed?
     lda #KEYBOARD_ROW_0
     sta CIA1_PORT_A
     lda CIA1_PORT_B
     and #KEYBOARD_RETURN
     bne @keyboard_return_done ; active low
 
-    ; if infinities left
+    ; infinities left?
     lda hero_infinities
     beq @keyboard_return_done
 
@@ -1127,7 +1126,7 @@ update:
 @input_done:
 
 @hero_physics:
-    ; idle if not moving
+    ; set idle if not moving
     lda hero_flags
     and #HERO_FLAG_MOVING
     bne @apply
@@ -1276,20 +1275,20 @@ render:
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
-    txa                     ; restore `camera_x lo`
+    txa                     ; restore `camera_x` low
     .repeat TILE_SHIFT
         lsr
     .endrepeat
-    sta tmp1                ; tmp1 = camera_x lo >> 3
+    sta tmp1                ; tmp1 = camera_x low >> 3
     lda camera_x + 1        ; get high byte
-    .repeat 8 - TILE_SHIFT  ; 8 is number of bits in a byte
+    .repeat 8 - TILE_SHIFT  ; 8: number of bits in a byte
         asl
     .endrepeat
     ora tmp1                ; combine: (hi << 5) | (lo >> 3)
     ldx screen_offset       ; check if `screen_offset` is 0
     beq :+                  ; if 0, no adjustment needed
-    clc                     ; clear carry (state unknown after calc)
-    adc #1                  ; adjust tile_x to match mapping table
+    clc
+    adc #1                  ; adjust tile x to match mapping table
 :   tax                     ; transfer to x used in `render_tile_map`
 
 ;-------------------------------------------------------------------------------
@@ -1306,7 +1305,6 @@ render_tile_map:
 
 @screen_0:
     ; generated unrolled render loop (avoids indirect addressing overhead)
-    ; source: gen-render-to-screen.py creates column render
     .include "render_to_screen_0.s"
     inx
     iny
@@ -1318,7 +1316,6 @@ render_tile_map:
 
 @screen_1:
     ; generated unrolled render loop (avoids indirect addressing overhead)
-    ; source: gen-render-to-screen.py creates column render
     .include "render_to_screen_1.s"
     inx
     iny
