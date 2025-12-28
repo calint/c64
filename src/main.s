@@ -854,7 +854,7 @@ program:
 main_loop:
 ;-------------------------------------------------------------------------------
 
-    ; synchronization point: must occur below bottom border on pal c64
+    ; synchronization point: must occur below bottom border on c64 pal
 
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
