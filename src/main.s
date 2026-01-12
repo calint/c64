@@ -944,7 +944,7 @@ update:
 
     ; add to row pointer
     .assert TILE_MAP_WIDTH = 256, error, "tile_map width must be 256 for optimization"
-    
+
     ; note: assumes row number is within range of 0 - 24
 
     clc
