@@ -811,7 +811,7 @@ program:
     bne :-                  ; loop until x wraps to 0
     ; also writes to 24 unused nibbles
 
-    ; initiate hud sprite
+    ; initiate hud sprite at top right of the screen
     SPRITE_SET HUD_SPRITE_NUM, HUD_SPRITE_IX, 310, 51
     SPRITE_COLOR HUD_SPRITE_NUM, HUD_SPRITE_COLOR
     SPRITE_ENABLE HUD_SPRITE_NUM
@@ -823,6 +823,8 @@ program:
     ; initiate screen and custom charset
     lda #SCREEN_D018
     sta VIC_MEM_CTRL
+
+
 ;-------------------------------------------------------------------------------
 
 
