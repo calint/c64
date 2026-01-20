@@ -12,7 +12,7 @@ num_rows = int(sys.argv[3])
 lines = []
 
 print("    ;")
-print("    ; generated code, do not edit")
+print("    ; generated code by `gen-render-to-screen.py`, do not edit")
 print("    ;\n")
 for i in range(num_rows):
     tile_row = i

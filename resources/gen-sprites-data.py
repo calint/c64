@@ -11,7 +11,7 @@ label_ix = int(sys.argv[1])
 filename = sys.argv[2]
 
 print(";")
-print("; generated code, do not edit")
+print("; generated code by `gen-sprites-data.py`, do not edit")
 print(";\n")
 with Image.open(filename) as img:
     if img.mode != "P":

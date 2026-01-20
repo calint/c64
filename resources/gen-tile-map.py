@@ -19,7 +19,7 @@ height = int(root.attrib["height"])
 data = root.find("layer").find("data").text.strip().split(",")
 
 print(";")
-print("; generated code, do not edit")
+print("; generated code by `gen-tile-map.py`, do not edit")
 print(";\n")
 for row in range(height):
     row_data = []

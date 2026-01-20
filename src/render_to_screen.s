@@ -1,5 +1,5 @@
     ;
-    ; generated code, do not edit
+    ; generated code by `gen-render-to-screen.py`, do not edit
     ;
 
     lda tile_map + TILE_MAP_WIDTH *  0, x

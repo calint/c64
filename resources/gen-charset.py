@@ -10,7 +10,7 @@ if len(sys.argv) < 2:
 filename = sys.argv[1]
 
 print(";")
-print("; generated code, do not edit")
+print("; generated code by `gen-charset.py`, do not edit")
 print(";\n")
 with Image.open(filename) as img:
     if img.mode != "P":

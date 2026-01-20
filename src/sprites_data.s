@@ -1,5 +1,5 @@
 ;
-; generated code, do not edit
+; generated code by `gen-sprites-data.py`, do not edit
 ;
 
 sprites_data_0:

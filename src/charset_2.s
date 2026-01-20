@@ -1,5 +1,5 @@
 ;
-; generated code, do not edit
+; generated code by `gen-charset.py`, do not edit
 ;
 
 ; 0
