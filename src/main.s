@@ -58,8 +58,7 @@ NMI_VECTOR_HI   = $fffb      ; non-maskable interrupt vector high byte
 MEMORY_CONFIG   = %00110101  ; disable basic kernal rom keep i/o at d000-dfff
 PROCESSOR_PORT  = $01        ; processor port address
 SPRITE_IX_OFST  = $3f8       ; sprite data index table offset from screen base
-SCREEN_0_D018   = %00011000  ; screen at 0400 char map at 2000
-SCREEN_1_D018   = %11111000  ; screen at 3c00 char map at 2000
+SCREEN_D018     = %00011000  ; screen at 0400 char map at 2000
 SCREEN_WIDTH    = 40         ; screen width in characters
 SCREEN_HEIGHT   = 25         ; screen height in characters
 SCREEN_WIDTH_PX = 320        ; screen width in pixels for 40 column display
@@ -93,7 +92,8 @@ COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
 BORDER_COLOR    = COLOR_BLUE
-BORDER_RENDER   = COLOR_LHT_BLUE
+BORDER_RENDER_1 = COLOR_GREEN
+BORDER_RENDER_2 = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
 BORDER_REFRESH  = COLOR_YELLOW
 
@@ -263,9 +263,9 @@ stack:
 ; screen 0
 ;-------------------------------------------------------------------------------
 .org $0400
-.segment "SCREEN_0"
-screen_0:
-.out .sprintf("     screen_0: $%04x", screen_0)
+.segment "SCREEN"
+screen:
+.out .sprintf("       screen: $%04x", screen)
 .res 1000
 
 ;-------------------------------------------------------------------------------
@@ -326,23 +326,13 @@ charset_3:
 ;-------------------------------------------------------------------------------
 ; sprites data
 ;-------------------------------------------------------------------------------
-; 0x3c00 - 0x3000 = 3072 / 64 = 48 sprites
+; 0x4000 - 0x3000 = 4096 / 64 = 64 sprites
 .assert * <= $3000, error, "segment overflows into SPRITES_DATA"
 .org $3000
 .segment "SPRITES_DATA"
 sprites_data:
 .out .sprintf(" sprites_data: $%04x", sprites_data)
     .include "sprites_data.s"
-
-;-------------------------------------------------------------------------------
-; screen 1
-;-------------------------------------------------------------------------------
-.assert * <= $3c00, error, "segment overflows into SCREEN_1"
-.org $3c00
-.segment "SCREEN_1"
-screen_1:
-.out .sprintf("     screen_1: $%04x", screen_1)
-    .res 1000
 
 ;-------------------------------------------------------------------------------
 ; tile map
@@ -714,13 +704,12 @@ program:
 ;      A: sprite data pointer / 64
 ;    SPR: hardware sprite number (0-7)
 ;
-; output: pointer in screen_0 and screen_1 updated
+; output: pointer in screen updated
 ;
 ; clobbers: none
 ;-------------------------------------------------------------------------------
 .macro SPRITE_SET_IX SPR
-    sta screen_0 + SPRITE_IX_OFST + SPR
-    sta screen_1 + SPRITE_IX_OFST + SPR
+    sta screen + SPRITE_IX_OFST + SPR
 .endmacro
 
 ;-------------------------------------------------------------------------------
@@ -831,6 +820,9 @@ program:
     SPRITE_COLOR HERO_SPRITE_NUM, HERO_SPRITE_COLOR
     SPRITE_ENABLE HERO_SPRITE_NUM
 
+    ; initiate screen and custom charset
+    lda #SCREEN_D018
+    sta VIC_MEM_CTRL
 ;-------------------------------------------------------------------------------
 
 
@@ -853,20 +845,6 @@ main_loop:
     lda #RASTER_BORDER
 :   cmp VIC_RASTER_REG
     bne :-
-
-    ; swap screens
-    lda screen_active       ; load active screen
-    eor #1                  ; swap to next active screen
-    sta screen_active
-    lda #SCREEN_0_D018      ; default is to activate screen 0
-    ldx screen_active       ; load next active screen
-    bne :+                  ; if next activate screen is 1 then swap to 0
-    lda #SCREEN_1_D018      ; next active screen is 0, swap to 1
-:   sta VIC_MEM_CTRL
-
-    ; set screen right offset in vblank, takes effect next frame
-    lda screen_offset
-    sta VIC_CTRL_2
 
 ;-------------------------------------------------------------------------------
 update:
@@ -999,6 +977,7 @@ update:
 
     ; set hero animation for "left"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
+
 
     ; set horizontal velocity
     lda #<-MOVE_DX
@@ -1266,7 +1245,7 @@ render:
     ; etc
 
     ; set border color to visualize duration of `render` and `render_tile_map`
-    lda #BORDER_RENDER
+    lda #BORDER_RENDER_1
     sta VIC_BORDER
 
     ; convert camera 16 bit pixel position to tile map x and screen right offset
@@ -1276,6 +1255,13 @@ render:
     tay
     lda tile_pixel_to_screen_offset, y
     sta screen_offset       ; rightward scroll amount for this frame
+    sta VIC_CTRL_2
+
+    ; note: from here on is "racing the beam" with the update being in front of
+    ;       the raster to avoid screen tearing
+
+    lda #BORDER_RENDER_2
+    sta VIC_BORDER
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
@@ -1302,30 +1288,14 @@ render_tile_map:
     ; register x contains tile map x
     ldy #0                  ; screen column start
 
-    ; jump to unrolled loop for current screen
-    lda screen_active
-    beq @screen_0
-    jmp @screen_1
-
-@screen_0:
+@loop:
     ; generated unrolled render loop (avoids indirect addressing overhead)
-    .include "render_to_screen_0.s"
-    inx
-    iny
-    cpy #SCREEN_WIDTH
-    beq @jmp_to_done
-    jmp @screen_0
-@jmp_to_done:
-    jmp @done 
-
-@screen_1:
-    ; generated unrolled render loop (avoids indirect addressing overhead)
-    .include "render_to_screen_1.s"
+    .include "render_to_screen.s"
     inx
     iny
     cpy #SCREEN_WIDTH
     beq @done
-    jmp @screen_1
+    jmp @loop
 
 @done:
     ; restore border color
@@ -1453,7 +1423,9 @@ color_ram:
     .res 1000
 
 ;-------------------------------------------------------------------------------
+.out .sprintf("--------------------")
 .out .sprintf("         code: %d B", data - program)
 .out .sprintf("         data: %d B", data_done - data)
 .out .sprintf("         free: %d B", $d000 - data_done)
+.out .sprintf("--------------------")
 ;-------------------------------------------------------------------------------
