@@ -1283,7 +1283,7 @@ render:
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
-    
+
     lda camera_x
     .repeat TILE_SHIFT
         lsr
