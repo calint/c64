@@ -4,17 +4,15 @@
 ; $0000        : processor port data direction register
 ; $0001        : processor port
 ; $0002 - $00ff: zero page
-; $0400 - $07e7: default screen (screen 0)
-; $07f8 - $07ff: sprites data index to address / 64 when screen 0 is active
+; $0400 - $07e7: default screen
+; $07f8 - $07ff: sprites data index to address / 64
 ; $0800        : byte must be 0 so BASIC stub at $0801 runs
 ; $0801 - $080d: basic stub to jump to $5900
 ; $1000 - $17ff: default character set (vic-ii chip sees rom data)
 ; $1800 - $1fff: alternate character set (vic-ii chip sees rom data)
 ; $2000 - $27ff: user defined character set 1
 ; $2800 - $2fff: user defined character set 2
-; $3000 - $3bff: 48 sprites data
-; $3c00 - $3fe7: double buffer screen (screen 1)
-; $3ff8 - $3fff: sprites data index to address / 64 when screen 1 is active
+; $3000 - $3fff: 64 sprites data
 ; $4000 - $58ff: tile map
 ; $5900 - $cfff: program
 ; $d000 - $d3ff: vic-ii video display
