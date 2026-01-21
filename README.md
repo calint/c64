@@ -59,7 +59,7 @@ experiments with bare metal commodore 64
   screen redraw every frame ensuring a deterministic cycle budget and prevents
   CPU-bound stuttering during heavy logic frames
 * **side-effect:** since the entire screen is refreshed, individual tile update
-  logic was eliminated
+  logic was removed
 
 ### 3. solving the raster race
 
