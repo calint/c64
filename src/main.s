@@ -822,7 +822,6 @@ program:
     lda #SCREEN_D018
     sta VIC_MEM_CTRL
 
-
 ;-------------------------------------------------------------------------------
 
 
@@ -1191,7 +1190,7 @@ update:
 
     ; get approximate number of dots in the line
     lda hero + o::wx + 1
-    ; shift to fit graph of 21 dots
+    ; shift to fit graph of 20 dots
     lsr
     lsr
     lsr
