@@ -50,8 +50,8 @@ experiments with bare metal commodore 64
 * **initial state:** used a double-buffered screen with shadow sprite structures
   and bottom-border interrupts for screen swapping
 * **simplification:** replaced interrupts with a busy-wait for the bottom border
-* **flicker free:** removed shadow sprite structures; sprite states are now updated
-  during border regions to eliminate visual artifacts
+* **flicker free:** removed shadow sprite structures and updates sprite states
+  during border regions to avoid visual artifacts
 
 ### 2. rendering
 
