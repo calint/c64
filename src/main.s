@@ -1306,15 +1306,15 @@ render_tile_map:
  
     ; unrolled loops uses ~10,075 cycles vs ~18,725 cycles using loops
 
-    .repeat 25, row
+    .repeat 25, ROW
         ldx tmp1
-        .repeat SCREEN_WIDTH - 1, col
-            lda tile_map + row * TILE_MAP_WIDTH, x
-            sta screen + row * SCREEN_WIDTH + col
+        .repeat SCREEN_WIDTH - 1, COL
+            lda tile_map + ROW * TILE_MAP_WIDTH, x
+            sta screen + ROW * SCREEN_WIDTH + COL
             inx
         .endrepeat
-        lda tile_map + row * TILE_MAP_WIDTH, x
-        sta screen + row * SCREEN_WIDTH + SCREEN_WIDTH - 1
+        lda tile_map + ROW * TILE_MAP_WIDTH, x
+        sta screen + ROW * SCREEN_WIDTH + SCREEN_WIDTH - 1
     .endrepeat
 
     ; restore border color
