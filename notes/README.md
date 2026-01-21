@@ -40,6 +40,7 @@
 
 ## Screen on Vice PAL
 
+* 63 cycles per raster line
 * bottom border: raster line 251
 * 25 row display: first visible y 50 px, last visible y 249 px
 * 40 column display: first visible x 24 px, last visible x 343 px
