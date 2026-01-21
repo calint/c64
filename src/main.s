@@ -1092,7 +1092,7 @@ update:
     ; if hero is in restart sequence then jump to next step
     lda hero_flags
     and #HERO_FLAG_RESTARTING
-    bne @keyboard_return_done ; active low
+    bne @keyboard_return_done
 
     ; if key "return" is not pressed then jump to next step
     lda #KEYBOARD_ROW_0
