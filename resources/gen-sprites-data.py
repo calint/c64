@@ -3,12 +3,13 @@
 from PIL import Image
 import sys
 
-if len(sys.argv) < 3:
-    print("Usage: ./gen-sprites-data.py <start_label_index> <filename>")
+if len(sys.argv) < 2:
+    print("Usage: ./gen-sprites-data.py <filename>")
     sys.exit(1)
 
-label_ix = int(sys.argv[1])
-filename = sys.argv[2]
+filename = sys.argv[1]
+
+label_ix = 0
 
 print(";")
 print("; generated code by `gen-sprites-data.py`, do not edit")

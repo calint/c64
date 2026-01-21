@@ -1272,7 +1272,6 @@ render:
 
     ; convert camera 16 bit pixel position to tile map x and screen right offset
     lda camera_x
-    tax
     and #TILE_PIXEL_MASK    ; extract sub-tile pixel offset (0-7)
     tay
     lda tile_pixel_to_screen_offset, y
@@ -1284,7 +1283,8 @@ render:
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
-    txa                     ; restore `camera_x` low
+    
+    lda camera_x
     .repeat TILE_SHIFT
         lsr
     .endrepeat
