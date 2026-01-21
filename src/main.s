@@ -833,7 +833,7 @@ program:
     ; 4. render    - draw tile map to offscreen buffer
 
     ; step 2 and 3 must finish before raster is at top border
-    ; step 4 must finish before raster is at bottom border
+    ; step 4 must finish before raster "catches up" with cpu writing to screen
 
 
 ;-------------------------------------------------------------------------------
