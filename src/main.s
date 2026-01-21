@@ -1068,7 +1068,7 @@ update:
     ; if hero is already jumping then jump to next step
     lda hero_flags
     and #HERO_FLAG_JUMPING
-    bne @joystick_fire_done  ; active low
+    bne @joystick_fire_done
 
     ; if fire button is not pressed then jump to next step
     lda CIA1_PORT_A
