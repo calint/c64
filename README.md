@@ -42,3 +42,52 @@ experiments with bare metal commodore 64
 ![welcome](screenshots/3.png)
 ![scroll tile map](screenshots/2.png)
 ![one pixel per frame](screenshots/1.png)
+
+## conclusion
+
+### 1. synchronization and state management
+
+* **initial state:** used a double-buffered screen with shadow sprite structures
+  and bottom-border interrupts for screen swapping
+* **simplification:** replaced interrupts with a busy-wait for the bottom border
+* **flicker free:** removed shadow sprite structures; sprite states are now updated
+  during border regions to eliminate visual artifacts
+
+### 2. rendering
+
+* **full-screen refresh:** abandoned "dirty-tile" rendering in favor of a full-
+  screen redraw every frame ensuring a deterministic cycle budget and prevents
+  CPU-bound stuttering during heavy logic frames
+* **side-effect:** since the entire screen is refreshed, individual tile update
+  logic was eliminated
+
+### 3. solving the raster race
+
+* **first try:** using a loop for rows and loop for column using indirect addressing
+  was too slow for 50 Hz performance goal
+* **second try:** column based rendering with generated code
+* **problem:** the raster beam outpaced the CPU, rendering the end of a row before
+  the CPU could finish updating it (last column rendered last)
+* **solution:** implemented a row-based unroll of every tile
+* **impact:** allows the CPU to "chase" the raster beam row-by-row freeing ~5000
+  cycles for the "update" phase but using ~7 KB
+
+### 4. hardware-correct collision detection
+
+* **double buffer:** removed double buffering because it caused a one-frame lag in
+  hardware sprite-to-background collision detection
+* **single buffer:** since rendering of tile map can start a few scanlines before
+  the visible area, "chasing the beam", double buffering has no apparent use
+* **alignment:** background and sprite states are now processed in the same frame,
+  ensuring the collision state is current and preventing the hero from getting
+  stuck in the background without escape
+* **escape logic:** implemented a horizontal movement boost applied during collision
+  states to allow the hero to escape overlapping tiles
+
+## 5. performance
+
+* **tile map renderer:** ~10,000 cycles.
+* **optimization:** unrolled rendering is ~8,700 cycles faster than looped
+  equivalents
+* **update budget:** ~5,000 free cycles for game logic during the "update" phase
+  before the raster outpaces the renderer
