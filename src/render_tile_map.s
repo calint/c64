@@ -4,6 +4,7 @@
 
     ; ~10,075 cycles vs ~18,725 cycles using loops
 
+    ; row 0
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  0, x
     sta screen + SCREEN_WIDTH *  0 +  0
@@ -124,7 +125,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  0, x
     sta screen + SCREEN_WIDTH *  0 + 39
-    inx
+
+    ; row 1
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  1, x
     sta screen + SCREEN_WIDTH *  1 +  0
@@ -245,7 +247,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  1, x
     sta screen + SCREEN_WIDTH *  1 + 39
-    inx
+
+    ; row 2
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  2, x
     sta screen + SCREEN_WIDTH *  2 +  0
@@ -366,7 +369,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  2, x
     sta screen + SCREEN_WIDTH *  2 + 39
-    inx
+
+    ; row 3
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  3, x
     sta screen + SCREEN_WIDTH *  3 +  0
@@ -487,7 +491,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  3, x
     sta screen + SCREEN_WIDTH *  3 + 39
-    inx
+
+    ; row 4
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  4, x
     sta screen + SCREEN_WIDTH *  4 +  0
@@ -608,7 +613,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  4, x
     sta screen + SCREEN_WIDTH *  4 + 39
-    inx
+
+    ; row 5
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  5, x
     sta screen + SCREEN_WIDTH *  5 +  0
@@ -729,7 +735,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  5, x
     sta screen + SCREEN_WIDTH *  5 + 39
-    inx
+
+    ; row 6
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  6, x
     sta screen + SCREEN_WIDTH *  6 +  0
@@ -850,7 +857,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  6, x
     sta screen + SCREEN_WIDTH *  6 + 39
-    inx
+
+    ; row 7
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  7, x
     sta screen + SCREEN_WIDTH *  7 +  0
@@ -971,7 +979,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  7, x
     sta screen + SCREEN_WIDTH *  7 + 39
-    inx
+
+    ; row 8
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  8, x
     sta screen + SCREEN_WIDTH *  8 +  0
@@ -1092,7 +1101,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  8, x
     sta screen + SCREEN_WIDTH *  8 + 39
-    inx
+
+    ; row 9
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH *  9, x
     sta screen + SCREEN_WIDTH *  9 +  0
@@ -1213,7 +1223,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH *  9, x
     sta screen + SCREEN_WIDTH *  9 + 39
-    inx
+
+    ; row 10
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 10, x
     sta screen + SCREEN_WIDTH * 10 +  0
@@ -1334,7 +1345,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 10, x
     sta screen + SCREEN_WIDTH * 10 + 39
-    inx
+
+    ; row 11
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 11, x
     sta screen + SCREEN_WIDTH * 11 +  0
@@ -1455,7 +1467,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 11, x
     sta screen + SCREEN_WIDTH * 11 + 39
-    inx
+
+    ; row 12
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 12, x
     sta screen + SCREEN_WIDTH * 12 +  0
@@ -1576,7 +1589,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 12, x
     sta screen + SCREEN_WIDTH * 12 + 39
-    inx
+
+    ; row 13
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 13, x
     sta screen + SCREEN_WIDTH * 13 +  0
@@ -1697,7 +1711,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 13, x
     sta screen + SCREEN_WIDTH * 13 + 39
-    inx
+
+    ; row 14
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 14, x
     sta screen + SCREEN_WIDTH * 14 +  0
@@ -1818,7 +1833,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 14, x
     sta screen + SCREEN_WIDTH * 14 + 39
-    inx
+
+    ; row 15
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 15, x
     sta screen + SCREEN_WIDTH * 15 +  0
@@ -1939,7 +1955,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 15, x
     sta screen + SCREEN_WIDTH * 15 + 39
-    inx
+
+    ; row 16
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 16, x
     sta screen + SCREEN_WIDTH * 16 +  0
@@ -2060,7 +2077,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 16, x
     sta screen + SCREEN_WIDTH * 16 + 39
-    inx
+
+    ; row 17
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 17, x
     sta screen + SCREEN_WIDTH * 17 +  0
@@ -2181,7 +2199,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 17, x
     sta screen + SCREEN_WIDTH * 17 + 39
-    inx
+
+    ; row 18
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 18, x
     sta screen + SCREEN_WIDTH * 18 +  0
@@ -2302,7 +2321,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 18, x
     sta screen + SCREEN_WIDTH * 18 + 39
-    inx
+
+    ; row 19
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 19, x
     sta screen + SCREEN_WIDTH * 19 +  0
@@ -2423,7 +2443,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 19, x
     sta screen + SCREEN_WIDTH * 19 + 39
-    inx
+
+    ; row 20
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 20, x
     sta screen + SCREEN_WIDTH * 20 +  0
@@ -2544,7 +2565,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 20, x
     sta screen + SCREEN_WIDTH * 20 + 39
-    inx
+
+    ; row 21
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 21, x
     sta screen + SCREEN_WIDTH * 21 +  0
@@ -2665,7 +2687,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 21, x
     sta screen + SCREEN_WIDTH * 21 + 39
-    inx
+
+    ; row 22
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 22, x
     sta screen + SCREEN_WIDTH * 22 +  0
@@ -2786,7 +2809,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 22, x
     sta screen + SCREEN_WIDTH * 22 + 39
-    inx
+
+    ; row 23
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 23, x
     sta screen + SCREEN_WIDTH * 23 +  0
@@ -2907,7 +2931,8 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 23, x
     sta screen + SCREEN_WIDTH * 23 + 39
-    inx
+
+    ; row 24
     ldx tmp1
     lda tile_map + TILE_MAP_WIDTH * 24, x
     sta screen + SCREEN_WIDTH * 24 +  0
@@ -3028,4 +3053,3 @@
     inx
     lda tile_map + TILE_MAP_WIDTH * 24, x
     sta screen + SCREEN_WIDTH * 24 + 39
-    inx
