@@ -992,7 +992,7 @@ update:
     ; sprite is not in collision
 :   lda #<-MOVE_DX
     ldx #>-MOVE_DX
-  
+
 :   sta hero + o::dx
     stx hero + o::dx + 1
 
