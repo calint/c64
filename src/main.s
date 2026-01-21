@@ -102,6 +102,9 @@ BORDER_REFRESH  = COLOR_YELLOW
 ; horizontal movement velocity including subpixels
 MOVE_DX = 8
 
+; horizontal movement velocity including subpixels when in collision
+MOVE_BOOST_DX = 16
+
 ; move skip (small jump) interval mask bitwise and is 0
 MOVE_SKIP_INTERVAL = %1111
 
@@ -977,12 +980,23 @@ update:
     ; set hero animation for "left"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_LEFT, HERO_ANIMATION_RATE_MOVING, hero_animation_left
 
-
     ; set horizontal velocity
-    lda #<-MOVE_DX
-    sta hero + o::dx
-    lda #>-MOVE_DX
-    sta hero + o::dx + 1
+
+    ; if sprite is in collision add a boost to exit collision
+    lda sprites_bg_collisions
+    and #(1 << HERO_SPRITE_NUM)
+    beq :+
+
+    lda #<-MOVE_BOOST_DX
+    ldx #>-MOVE_BOOST_DX
+    jmp :++
+
+    ; sprite is not in collision
+:   lda #<-MOVE_DX
+    ldx #>-MOVE_DX
+  
+:   sta hero + o::dx
+    stx hero + o::dx + 1
 
     ; if not at skip (small jump) interval then continue to next step
     lda hero_frame_counter
@@ -1016,11 +1030,21 @@ update:
     ; set hero animation for "right"
     OBJECT_ANIMATION hero, HERO_SPRITE_NUM, HERO_ANIMATION_RIGHT, HERO_ANIMATION_RATE_MOVING, hero_animation_right
 
-    ; set horizontal velocity
-    lda #<MOVE_DX
-    sta hero + o::dx
-    lda #>MOVE_DX
-    sta hero + o::dx + 1
+    ; if sprite is in collision add a boost to exit collision
+    lda sprites_bg_collisions
+    and #(1 << HERO_SPRITE_NUM)
+    beq :+
+
+    lda #<MOVE_BOOST_DX
+    ldx #>MOVE_BOOST_DX
+    jmp :++
+
+    ; sprite is not in collision
+:   lda #<MOVE_DX
+    ldx #>MOVE_DX
+
+:   sta hero + o::dx
+    stx hero + o::dx + 1
 
     ; if not at skip (small jump) interval then continue to next step
     lda hero_frame_counter
