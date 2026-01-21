@@ -1304,7 +1304,7 @@ render:
 render_tile_map:
 ;-------------------------------------------------------------------------------
  
-    ; unrolled loops uses ~10,075 cycles vs ~18,725 cycles using loops
+    ; unrolled loops uses ~10,025 cycles vs ~18,725 cycles using loops
 
     .repeat 25, ROW
         ldx tmp1
