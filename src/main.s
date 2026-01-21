@@ -880,42 +880,27 @@ update:
 @collision_reaction_done:
 
 @pickables:
-    ; detect "pickables" in hero range (half-tile bias, 4 corners)
+    ; detect "pickables" in hero range
 
     ; convert hero world x, y to tile map coordinates
-    ; add half-tile bias and extract tile coordinates by bit shift
 
     ; note: assumes 4 subpixel bits and 3 tile bits effectively needing a 16 bit
-    ;       left shift then using the high byte, but rounding complicates it
+    ;       left shift then using the high byte
 
     .assert SUBPIXEL_SHIFT = 4, error, "code assumes 4 subpixel fraction bits"
     .assert TILE_WIDTH = 8, error, "code assumes tile width to be 8"
 
     lda hero + o::wx
-    clc
-    adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save adjusted `wx` low byte for later
+    rol
     lda hero + o::wx + 1
-    adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wx` high byte in register y
-    txa                     ; restore adjusted `wx` low byte
-    rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wx` high byte
-    rol                     ; rotate carry into bit 0
+    rol
     ; accumulator is now tile x
     sta tmp1
 
     lda hero + o::wy
-    clc
-    adc #(TILE_WIDTH / 2) << SUBPIXEL_SHIFT
-    tax                     ; save adjusted `wy` low byte for later
+    rol
     lda hero + o::wy + 1
-    adc #0                  ; propagate carry into the high byte
-    tay                     ; save intermediate `wy` high in register y
-    txa                     ; restore `wy` low byte
-    rol                     ; rotate bit 7 into carry
-    tya                     ; restore `wy` high byte
-    rol                     ; rotate carry into bit 0
+    rol
     ; accumulator is now tile y
 
     ; add to row pointer
@@ -937,16 +922,32 @@ update:
     ; top left
     HERO_PICK
 
+    ; top middle
+    iny
+    HERO_PICK
+
     ; top right
     iny
+    HERO_PICK
+
+    ; middle right
+    inc ptr1 + 1
     HERO_PICK
 
     ; bottom right
     inc ptr1 + 1
     HERO_PICK
 
+    ; bottom middle
+    dey
+    HERO_PICK
+
     ; bottom left
     dey
+    HERO_PICK
+
+    ; middle left
+    dec ptr1 + 1
     HERO_PICK
 
 @pickables_done:
