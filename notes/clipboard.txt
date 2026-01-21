@@ -1,0 +1,14 @@
+    txa
+    pha
+    ldx #4
+:   ldy #0
+:   dey
+    bne :-
+    dex
+    bne :--
+    pla
+    ldx #100
+:   dex
+    bne :-
+    tax
+

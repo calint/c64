@@ -90,8 +90,7 @@ COLOR_LHT_GREEN = 13
 COLOR_LHT_BLUE  = 14
 COLOR_GREY_3    = 15
 BORDER_COLOR    = COLOR_BLUE
-BORDER_RENDER_1 = COLOR_GREEN
-BORDER_RENDER_2 = COLOR_LHT_BLUE
+BORDER_RENDER   = COLOR_LHT_BLUE
 BORDER_UPDATE   = COLOR_RED
 BORDER_REFRESH  = COLOR_YELLOW
 
@@ -1268,7 +1267,7 @@ render:
     ; etc
 
     ; set border color to visualize duration of `render` and `render_tile_map`
-    lda #BORDER_RENDER_1
+    lda #BORDER_RENDER
     sta VIC_BORDER
 
     ; convert camera 16 bit pixel position to tile map x and screen right offset
@@ -1282,9 +1281,6 @@ render:
 
     ; note: from here on is "racing the beam" with the update being in front of
     ;       the raster to avoid screen tearing
-
-    lda #BORDER_RENDER_2
-    sta VIC_BORDER
 
     ; calculate tile map x: (camera_x hi << 5) | (camera_x lo >> 3) with
     ; adjustment if `screen_offset` != 0
@@ -1302,25 +1298,15 @@ render:
     beq :+                  ; if 0, no adjustment needed
     clc
     adc #1                  ; adjust tile x to match mapping table
-:   tax                     ; transfer to register x used in `render_tile_map`
+:   sta tmp1                ; transfer to be used in `render_tile_map`
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
 ;-------------------------------------------------------------------------------
 
-    ; register x contains tile map x
-    ldy #0                  ; screen column start
-
-@loop:
     ; generated unrolled render loop (avoids indirect addressing overhead)
-    .include "render_to_screen.s"
-    inx
-    iny
-    cpy #SCREEN_WIDTH
-    beq @done
-    jmp @loop
+    .include "render_tile_map.s"
 
-@done:
     ; restore border color
     lda #BORDER_COLOR
     sta VIC_BORDER
