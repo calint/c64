@@ -1,0 +1,196 @@
+Addressing modes:
+IMP implied       ACC accumulator   IMM immediate
+ZP  zero page     ZPX zp,X          ZPY zp,Y
+ABS absolute      ABSX abs,X        ABSY abs,Y
+IND indirect      INDX (zp,X)       INDY (zp),Y
+REL relative
+
+Flags:
+N negative   V overflow            B break
+D decimal    I interrupt disable   Z zero
+C carry
+
+MNEM  MODE  BYTES CYCLES   FLAGS      DESCRIPTION
+ADC   IMM     2    2       N V Z C    add with carry
+ADC   ZP      2    3       N V Z C    add with carry
+ADC   ZPX     2    4       N V Z C    add with carry
+ADC   ABS     3    4       N V Z C    add with carry
+ADC   ABSX    3    4+1     N V Z C    add with carry
+ADC   ABSY    3    4+1     N V Z C    add with carry
+ADC   INDX    2    6       N V Z C    add with carry
+ADC   INDY    2    5+1     N V Z C    add with carry
+
+AND   IMM     2    2       N Z        logical AND
+AND   ZP      2    3       N Z        logical AND
+AND   ZPX     2    4       N Z        logical AND
+AND   ABS     3    4       N Z        logical AND
+AND   ABSX    3    4+1     N Z        logical AND
+AND   ABSY    3    4+1     N Z        logical AND
+AND   INDX    2    6       N Z        logical AND
+AND   INDY    2    5+1     N Z        logical AND
+
+ASL   ACC     1    2       N Z C      arithmetic shift left
+ASL   ZP      2    5       N Z C      arithmetic shift left
+ASL   ZPX     2    6       N Z C      arithmetic shift left
+ASL   ABS     3    6       N Z C      arithmetic shift left
+ASL   ABSX    3    7       N Z C      arithmetic shift left
+
+BCC   REL     2    2+1                branch if carry clear
+BCS   REL     2    2+1                branch if carry set
+BEQ   REL     2    2+1                branch if zero
+BMI   REL     2    2+1                branch if minus
+BNE   REL     2    2+1                branch if not zero
+BPL   REL     2    2+1                branch if plus
+BVC   REL     2    2+1                branch if overflow clear
+BVS   REL     2    2+1                branch if overflow set
+
+BIT   ZP      2    3       N V Z      bit test
+BIT   ABS     3    4       N V Z      bit test
+
+BRK   IMP     1    7       B I        force interrupt
+
+CLC   IMP     1    2       C          clear carry flag
+CLD   IMP     1    2       D          clear decimal mode
+CLI   IMP     1    2       I          clear interrupt disable
+CLV   IMP     1    2       V          clear overflow flag
+
+CMP   IMM     2    2       N Z C      compare accumulator
+CMP   ZP      2    3       N Z C      compare accumulator
+CMP   ZPX     2    4       N Z C      compare accumulator
+CMP   ABS     3    4       N Z C      compare accumulator
+CMP   ABSX    3    4+1     N Z C      compare accumulator
+CMP   ABSY    3    4+1     N Z C      compare accumulator
+CMP   INDX    2    6       N Z C      compare accumulator
+CMP   INDY    2    5+1     N Z C      compare accumulator
+
+CPX   IMM     2    2       N Z C      compare X
+CPX   ZP      2    3       N Z C      compare X
+CPX   ABS     3    4       N Z C      compare X
+
+CPY   IMM     2    2       N Z C      compare Y
+CPY   ZP      2    3       N Z C      compare Y
+CPY   ABS     3    4       N Z C      compare Y
+
+DEC   ZP      2    5       N Z        decrement memory
+DEC   ZPX     2    6       N Z        decrement memory
+DEC   ABS     3    6       N Z        decrement memory
+DEC   ABSX    3    7       N Z        decrement memory
+
+DEX   IMP     1    2       N Z        decrement X
+DEY   IMP     1    2       N Z        decrement Y
+
+EOR   IMM     2    2       N Z        exclusive OR
+EOR   ZP      2    3       N Z        exclusive OR
+EOR   ZPX     2    4       N Z        exclusive OR
+EOR   ABS     3    4       N Z        exclusive OR
+EOR   ABSX    3    4+1     N Z        exclusive OR
+EOR   ABSY    3    4+1     N Z        exclusive OR
+EOR   INDX    2    6       N Z        exclusive OR
+EOR   INDY    2    5+1     N Z        exclusive OR
+
+INC   ZP      2    5       N Z        increment memory
+INC   ZPX     2    6       N Z        increment memory
+INC   ABS     3    6       N Z        increment memory
+INC   ABSX    3    7       N Z        increment memory
+
+INX   IMP     1    2       N Z        increment X
+INY   IMP     1    2       N Z        increment Y
+
+JMP   ABS     3    3                  jump
+JMP   IND     3    5                  jump (indirect)
+
+JSR   ABS     3    6                  jump to subroutine
+
+LDA   IMM     2    2       N Z        load accumulator
+LDA   ZP      2    3       N Z        load accumulator
+LDA   ZPX     2    4       N Z        load accumulator
+LDA   ABS     3    4       N Z        load accumulator
+LDA   ABSX    3    4+1     N Z        load accumulator
+LDA   ABSY    3    4+1     N Z        load accumulator
+LDA   INDX    2    6       N Z        load accumulator
+LDA   INDY    2    5+1     N Z        load accumulator
+
+LDX   IMM     2    2       N Z        load X
+LDX   ZP      2    3       N Z        load X
+LDX   ZPY     2    4       N Z        load X
+LDX   ABS     3    4       N Z        load X
+LDX   ABSY    3    4+1     N Z        load X
+
+LDY   IMM     2    2       N Z        load Y
+LDY   ZP      2    3       N Z        load Y
+LDY   ZPX     2    4       N Z        load Y
+LDY   ABS     3    4       N Z        load Y
+LDY   ABSX    3    4+1     N Z        load Y
+
+LSR   ACC     1    2       Z C        logical shift right
+LSR   ZP      2    5       N Z C      logical shift right
+LSR   ZPX     2    6       N Z C      logical shift right
+LSR   ABS     3    6       N Z C      logical shift right
+LSR   ABSX    3    7       N Z C      logical shift right
+
+NOP   IMP     1    2                  no operation
+
+ORA   IMM     2    2       N Z        logical OR
+ORA   ZP      2    3       N Z        logical OR
+ORA   ZPX     2    4       N Z        logical OR
+ORA   ABS     3    4       N Z        logical OR
+ORA   ABSX    3    4+1     N Z        logical OR
+ORA   ABSY    3    4+1     N Z        logical OR
+ORA   INDX    2    6       N Z        logical OR
+ORA   INDY    2    5+1     N Z        logical OR
+
+PHA   IMP     1    3                  push accumulator
+PHP   IMP     1    3                  push processor status
+PLA   IMP     1    4       N Z        pull accumulator
+PLP   IMP     1    4       (all)      pull processor status
+
+ROL   ACC     1    2       N Z C      rotate left
+ROL   ZP      2    5       N Z C      rotate left
+ROL   ZPX     2    6       N Z C      rotate left
+ROL   ABS     3    6       N Z C      rotate left
+ROL   ABSX    3    7       N Z C      rotate left
+
+ROR   ACC     1    2       N Z C      rotate right
+ROR   ZP      2    5       N Z C      rotate right
+ROR   ZPX     2    6       N Z C      rotate right
+ROR   ABS     3    6       N Z C      rotate right
+ROR   ABSX    3    7       N Z C      rotate right
+
+RTI   IMP     1    6       (all)      return from interrupt
+RTS   IMP     1    6                  return from subroutine
+
+SBC   IMM     2    2       N V Z C    subtract with carry
+SBC   ZP      2    3       N V Z C    subtract with carry
+SBC   ZPX     2    4       N V Z C    subtract with carry
+SBC   ABS     3    4       N V Z C    subtract with carry
+SBC   ABSX    3    4+1     N V Z C    subtract with carry
+SBC   ABSY    3    4+1     N V Z C    subtract with carry
+SBC   INDX    2    6       N V Z C    subtract with carry
+SBC   INDY    2    5+1     N V Z C    subtract with carry
+
+SEC   IMP     1    2             C     set carry flag
+SED   IMP     1    2             D     set decimal mode
+SEI   IMP     1    2             I     set interrupt disable
+
+STA   ZP      2    3                   store accumulator
+STA   ZPX     2    4                   store accumulator
+STA   ABS     3    4                   store accumulator
+STA   ABSX    3    5                   store accumulator
+STA   ABSY    3    5                   store accumulator
+STA   INDX    2    6                   store accumulator
+STA   INDY    2    6                   store accumulator
+
+STX   ZP      2    3                   store X
+STX   ZPY     2    4                   store X
+STX   ABS     3    4                   store X
+
+STY   ZP      2    3                   store Y
+STY   ZPX     2    4                   store Y
+STY   ABS     3    4                   store Y
+
+TAX   IMP     1    2       N Z        transfer A to X
+TAY   IMP     1    2       N Z        transfer A to Y
+TSX   IMP     1    2       N Z        transfer SP to X
+TXA   IMP     1    2       N Z        transfer X to A
+TXS   IMP     1    2                  transfer X to SP
+TYA   IMP     1    2       N Z        transfer Y to A
