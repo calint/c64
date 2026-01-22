@@ -47,8 +47,8 @@ experiments with bare metal commodore 64
 
 ### 1. initial approach
 
-* **initial attempt:** used a double-buffered screen with shadow sprite
-  structures and bottom-border interrupts for screen swapping
+* **attempt:** used a double-buffered screen with shadow sprite structures and
+  bottom-border interrupts for screen swapping
 * **simplification:** replaced interrupts with busy-wait for the bottom border;
   removed shadow sprite structures; updated sprite states during border regions
   to avoid visual artifacts; removed double buffering for accurate collision
