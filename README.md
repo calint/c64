@@ -45,49 +45,54 @@ experiments with bare metal commodore 64
 
 ## conclusion
 
-### 1. synchronization and state management
+### 1. interrupts and busy waits
 
-* **initial state:** used a double-buffered screen with shadow sprite structures
+* **initial attempt:** used a double-buffered screen with shadow sprite structures
   and bottom-border interrupts for screen swapping
-* **simplification:** replaced interrupts with a busy-wait for the bottom border
-* **flicker free:** removed shadow sprite structures and updates sprite states
-  during border regions to avoid visual artifacts
+* **simplification:** replaced interrupts with a busy-wait for the bottom border;
+  removed shadow sprite structures; updates of sprite states during border
+  regions to avoid visual artifacts
 
 ### 2. rendering
 
-* **full-screen refresh:** abandoned "dirty-tile" rendering in favor of a full-
-  screen redraw every frame ensuring a deterministic cycle budget and prevents
-  CPU-bound stuttering during heavy logic frames
+* **full-screen refresh:** abandoned "dirty-tile" rendering in favor of a
+  full-screen redraw every frame ensuring a deterministic cycle budget and
+  preventing stuttering during a full redraw
 * **side-effect:** since the entire screen is refreshed, individual tile update
   logic was removed
 
-### 3. solving the raster race
+### 3. the raster race
 
-* **first try:** using a loop for rows and loop for column using indirect addressing
-  was too slow for 50 Hz performance goal
-* **second try:** column based rendering with generated code
+* **first try:** using a loop for rows and loop for column using indirect
+  addressing was too slow for 50 Hz performance goal
+* **second try:** column based rendering with generated code for rendering of
+  the rows
 * **problem:** the raster beam outpaced the CPU, rendering the end of a row before
-  the CPU could finish updating it (last column rendered last)
+  the CPU could finish updating it (last column rendered last for all rows)
 * **solution:** implemented a row-based unroll of every tile
-* **impact:** allows the CPU to "chase" the raster beam row-by-row freeing ~5000
-  cycles for the "update" phase but using ~7 KB
+* **impact:** allows the CPU to be "chased" by the raster row-by-row freeing
+  ~5000 cycles for the "update" phase but using ~7 KB
 
-### 4. hardware-correct collision detection
+### 4. collision detection
 
 * **double buffer:** removed double buffering because it caused a one-frame lag in
   hardware sprite-to-background collision detection
-* **single buffer:** since rendering of tile map can start a few scanlines before
-  the visible area, "chasing the beam", double buffering has no apparent use
+* **single buffer:** since rendering of the tile map can start a few scanlines
+  before the visible area, "chasing the beam", double buffering has no apparent
+  use
 * **alignment:** background and sprite states are now processed in the same frame,
   ensuring the collision state is current and preventing the hero from getting
   stuck in the background without escape
-* **escape logic:** implemented a horizontal movement boost applied during collision
-  states to allow the hero to escape overlapping tiles
+* **escape logic:** implemented a horizontal movement boost applied when hero is
+  in collision state due to animation frames allowing the hero to escape
+  collision
 
 ## 5. performance
 
-* **tile map renderer:** ~10,000 cycles.
+* **tile map renderer:** 10,025 cycles.
 * **optimization:** unrolled rendering is ~8,700 cycles faster than looped
   equivalents
-* **update budget:** ~5,000 free cycles for game logic during the "update" phase
+* **updated budget:** ~5,000 free cycles for game logic during the "update" phase
   before the raster outpaces the renderer
+* **discarded option**: self modifying code is more expensive when rendering a
+  full screen
