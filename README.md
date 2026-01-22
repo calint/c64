@@ -52,7 +52,7 @@ experiments with bare metal commodore 64
 * **simplification:** replaced interrupts with busy-wait for the bottom border;
   removed shadow sprite structures; updated sprite states during border regions
   to avoid visual artifacts; removed double buffering for accurate collision
-  detection; full unrolled loops of screen update every frame
+  detection; fully unrolled loops of screen update every frame
 
 ### 2. tile map rendering
 
@@ -86,11 +86,12 @@ experiments with bare metal commodore 64
   frame ensuring the collision state is current and preventing the hero from
   getting stuck in the background without escape
 * **escape logic:** implemented a horizontal movement boost applied when hero is
-  in collision state due to animation frames allowing the hero to escape
+  in collision state due to animation frames - allowing the hero to escape
   collision
 
 ## 5. performance
 
+* **total frame budget:** ~19,000 cycles (PAL)
 * **tile map renderer:** 10,025 cycles.
 * **updated budget:** ~5,000 more free cycles for game logic during the "update"
   phase before the raster outpaces the renderer
