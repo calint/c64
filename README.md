@@ -92,7 +92,8 @@ experiments with bare metal commodore 64
 * **tile map renderer:** 10,025 cycles.
 * **optimization:** unrolled rendering is ~8,700 cycles faster than looped
   equivalents
-* **updated budget:** ~5,000 free cycles for game logic during the "update" phase
+* **updated budget:** ~5,000 more free cycles for game logic during the "update"
+  phase
   before the raster outpaces the renderer
 * **discarded option**: self modifying code is more expensive when rendering a
   full screen
