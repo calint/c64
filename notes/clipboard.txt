@@ -9,3 +9,41 @@
 :   dex
     bne :-
 
+
+    ; setup smc pointers
+    lda #>tile_map
+    sta map_read+2      ; modify high byte of lda
+    lda #<screen
+    sta scr_write+1
+    lda #>screen
+    sta scr_write+2
+
+    lda #25
+    sta tmp2            ; use tmp2 as row counter
+
+rowloop:
+    ldx tmp1            ; load column offset (0-255)
+    ldy #0              ; screen column (0-39)
+
+colloop:
+map_read:
+    lda tile_map, x     ; address modified per row
+scr_write:
+    sta screen, y       ; address modified per row
+    inx                 ; wraps 255->0 (rollover support)
+    iny
+    cpy #40
+    bne colloop
+
+    ; advance map pointer (aligned 256)
+    inc map_read+2      ; just inc high byte
+
+    ; advance screen pointer (add 40)
+    clc
+    lda scr_write+1
+    adc #40
+    sta scr_write+1
+    bcc :+
+    inc scr_write+2
+:   dec tmp2
+    bne rowloop
