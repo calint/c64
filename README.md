@@ -73,7 +73,7 @@ experiments with bare metal commodore 64
   rows)
 * **solution:** implemented a row-based unroll of every tile
 * **impact:** allows the CPU to be "chased" by the raster row-by-row freeing
-  ~5,000 extra cycles for the "update" phase but using ~7 KB
+  ~5,000 extra cycles for the "update" phase but using 7,025 B
 
 ### 4. collision detection
 
