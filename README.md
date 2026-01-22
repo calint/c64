@@ -63,7 +63,7 @@ experiments with bare metal commodore 64
 
 ### 3. the raster race
 
-* **first try:** using a loop for rows and loop for column using indirect
+* **first try:** using a loop for rows and loop for columns using indirect
   addressing was too slow for 50 Hz performance goal
 * **second try:** column based rendering with generated code for rendering of
   the rows
