@@ -1303,7 +1303,7 @@ render:
 render_tile_map:
 ;-------------------------------------------------------------------------------
  
-    ; unrolled loops uses ~10,025 cycles vs ~18,725 cycles using loops
+    ; row based loop: 10,025 cycles 7025 B
 
     .repeat 25, ROW
         ldx tmp1
@@ -1315,6 +1315,22 @@ render_tile_map:
         lda tile_map + ROW * TILE_MAP_WIDTH, x
         sta screen + ROW * SCREEN_WIDTH + SCREEN_WIDTH - 1
     .endrepeat
+
+    ; column based loop: 9,443 cycles 163 bytes
+
+;     ldy #0
+;     ldx tmp1
+; @col_loop:
+;     .repeat 25, ROW
+;         lda tile_map + ROW * TILE_MAP_WIDTH, x
+;         sta screen + ROW * SCREEN_WIDTH, y
+;     .endrepeat
+;     inx
+;     iny
+;     cpy #SCREEN_WIDTH
+;     beq :+
+;     jmp @col_loop
+; :
 
     ; restore border color
     lda #BORDER_COLOR

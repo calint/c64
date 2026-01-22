@@ -45,15 +45,16 @@ experiments with bare metal commodore 64
 
 ## conclusion
 
-### 1. interrupts and busy waits
+### 1. initial approach
 
-* **initial attempt:** used a double-buffered screen with shadow sprite structures
-  and bottom-border interrupts for screen swapping
-* **simplification:** replaced interrupts with a busy-wait for the bottom border;
-  removed shadow sprite structures; updates of sprite states during border
-  regions to avoid visual artifacts
+* **initial attempt:** used a double-buffered screen with shadow sprite
+  structures and bottom-border interrupts for screen swapping
+* **simplification:** replaced interrupts with busy-wait for the bottom border;
+  removed shadow sprite structures; updated sprite states during border regions
+  to avoid visual artifacts; removed double buffering for accurate collision
+  detection; full unrolled loops of screen update every frame
 
-### 2. rendering
+### 2. tile map rendering
 
 * **full-screen refresh:** abandoned "dirty-tile" rendering in favor of a
   full-screen redraw every frame ensuring a deterministic cycle budget and
@@ -67,22 +68,23 @@ experiments with bare metal commodore 64
   addressing was too slow for 50 Hz performance goal
 * **second try:** column based rendering with generated code for rendering of
   the rows
-* **problem:** the raster beam outpaced the CPU, rendering the end of a row before
-  the CPU could finish updating it (last column rendered last for all rows)
+* **problem:** the raster beam outpaced the CPU, rendering the end of a row
+  before the CPU could finish updating it (last column rendered last for all
+  rows)
 * **solution:** implemented a row-based unroll of every tile
 * **impact:** allows the CPU to be "chased" by the raster row-by-row freeing
-  ~5000 cycles for the "update" phase but using ~7 KB
+  ~5000 extra cycles for the "update" phase but using ~7 KB
 
 ### 4. collision detection
 
-* **double buffer:** removed double buffering because it caused a one-frame lag in
-  hardware sprite-to-background collision detection
+* **double buffer:** removed double buffering because it caused a one-frame lag
+  in hardware sprite-to-background collision detection
 * **single buffer:** since rendering of the tile map can start a few scanlines
   before the visible area, "chasing the beam", double buffering has no apparent
   use
-* **alignment:** background and sprite states are now processed in the same frame,
-  ensuring the collision state is current and preventing the hero from getting
-  stuck in the background without escape
+* **alignment:** background and sprite states are now processed in the same
+  frame ensuring the collision state is current and preventing the hero from
+  getting stuck in the background without escape
 * **escape logic:** implemented a horizontal movement boost applied when hero is
   in collision state due to animation frames allowing the hero to escape
   collision
@@ -90,10 +92,7 @@ experiments with bare metal commodore 64
 ## 5. performance
 
 * **tile map renderer:** 10,025 cycles.
-* **optimization:** unrolled rendering is ~8,700 cycles faster than looped
-  equivalents
 * **updated budget:** ~5,000 more free cycles for game logic during the "update"
-  phase
-  before the raster outpaces the renderer
+  phase before the raster outpaces the renderer
 * **discarded option**: self modifying code is more expensive when rendering a
   full screen
