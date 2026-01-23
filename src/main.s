@@ -1301,7 +1301,7 @@ render_tile_map:
  
     ; row based loop: 10,025 cycles 7025 B
 
-    .repeat 25, ROW
+    .repeat SCREEN_HEIGHT, ROW
         ldx tmp1
         .repeat SCREEN_WIDTH - 1, COL
             lda tile_map + ROW * TILE_MAP_WIDTH, x
@@ -1317,7 +1317,7 @@ render_tile_map:
 ;     ldy #0
 ;     ldx tmp1
 ; @col_loop:
-;     .repeat 25, ROW
+;     .repeat SCREEN_HEIGHT, ROW
 ;         lda tile_map + ROW * TILE_MAP_WIDTH, x
 ;         sta screen + ROW * SCREEN_WIDTH, y
 ;     .endrepeat
