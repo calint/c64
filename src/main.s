@@ -1293,7 +1293,7 @@ render:
     beq :+                  ; if 0, no adjustment needed
     clc
     adc #1                  ; adjust tile x to match mapping table
-:   sta tmp1                ; transfer to be used in `render_tile_map`
+:   sta tmp1                ; to be used in `render_tile_map`
 
 ;-------------------------------------------------------------------------------
 render_tile_map:
