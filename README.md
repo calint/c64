@@ -47,53 +47,50 @@ experiments with bare metal commodore 64
 
 ### 1. initial approach
 
-* **attempt:** used a double-buffered screen with shadow sprite structures and
+* **started with:** double-buffered screen, shadow sprite structures, and
   bottom-border interrupts for screen swapping
-* **simplification:** replaced interrupts with busy-wait for the bottom border;
-  removed shadow sprite structures; updated sprite states during border regions
-  to avoid visual artifacts; removed double buffering for accurate collision
-  detection; fully unrolled loops of screen update every frame
+* **ended with:** replaced interrupts with a busy-wait for the bottom border;
+  removed shadow sprite structures and updated state during border regions to
+  avoid visual artifacts; removed double buffering for accurate collision
+  detection; fully unrolled screen update loops every frame, chasing the beam
 
 ### 2. tile map rendering
 
 * **full-screen refresh:** abandoned "dirty-tile" rendering in favor of a
-  full-screen redraw every frame ensuring a deterministic cycle budget and
-  preventing stuttering during a full redraw
-* **side-effect:** since the entire screen is refreshed, individual tile update
-  logic was removed
+  full-screen redraw every frame, giving a known cycle budget and preventing
+  stuttering during full redraws
+* **side-effect:** since the entire screen is refreshed every frame, individual
+  tile update logic was removed
 
 ### 3. the raster race
 
-* **first try:** using a loop for rows and loop for columns using indirect
-  addressing was too slow for 50 Hz performance goal
-* **second try:** column based rendering with generated code for rendering of
-  the rows
-* **problem:** the raster beam outpaced the CPU, rendering the end of a row
-  before the CPU could finish updating it (last column rendered last for all
-  rows)
-* **solution:** implemented a row-based unroll of every tile
-* **impact:** allows the CPU to be "chased" by the raster row-by-row freeing
-  ~5,000 extra cycles for the "update" phase but using 7,025 B
+* **first try:** nested loops for rows and columns using indirect addressing were
+  too slow to meet the 50 Hz target
+* **second try:** column based rendering using generated code
+* **problem:** the raster moves top-down while the renderer worked left-to-right,
+  meaning the last column had to be finished before the raster reached it on
+  first row
+* **solution:** switched to a fully unrolled, row-based renderer
+* **impact:** lets the CPU chase the raster row by row, freeing ~5,000 extra
+  cycles for the update phase at the cost of 7,025 B
 
 ### 4. collision detection
 
 * **double buffer:** removed double buffering because it caused a one-frame lag
   in hardware sprite-to-background collision detection
-* **single buffer:** since rendering of the tile map can start a few scanlines
-  before the visible area, "chasing the beam", double buffering has no apparent
-  use
-* **alignment:** background and sprite states are now processed in the same
-  frame ensuring the collision state is current and preventing the hero from
-  getting stuck in the background without escape
-* **escape logic:** implemented a horizontal movement boost applied when hero is
-  in collision state due to animation frames - allowing the hero to escape
-  collision
+* **single buffer:** since the tile map renderer can start a few scanlines before
+  the visible area, double buffering had no clear use
+* **alignment:** background rendering and sprite updates now happen in the same
+  frame, keeping collision results current and preventing the hero from getting
+  stuck in the background without escape
+* **escape logic:** added a horizontal movement boost when the hero is in
+  collision state caused by animation frames, allowing hero to escape
 
 ## 5. performance
 
 * **total frame budget:** ~19,000 cycles (PAL)
 * **tile map renderer:** 10,025 cycles.
-* **updated budget:** ~5,000 more free cycles for game logic during the "update"
-  phase before the raster outpaces the renderer
-* **discarded option**: self modifying code is more expensive when rendering a
-  full screen
+* **updated budget:** ~5,000 extra cycles available for game logic before the
+  rendering falls behind the raster
+* **discarded option**: self modifying code was tested but turned out to be more
+  expensive for full-screen rendering
