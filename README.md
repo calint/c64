@@ -86,7 +86,7 @@ experiments with bare metal commodore 64
 * **escape logic:** added a horizontal movement boost when the hero is in
   collision state caused by animation frames, allowing hero to escape
 
-## 5. performance
+### 5. performance
 
 * **total frame budget:** ~19,000 cycles (PAL)
 * **tile map renderer:** 10,025 cycles.
